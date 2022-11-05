@@ -17,3 +17,6 @@ config/ltversion.m4
 config/lt~obsolete.m4
 config/p4est_autotools_config.h.in
 configure
+
+# editors
+.vscode*

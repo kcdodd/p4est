@@ -54,6 +54,23 @@ p4est_lib_sources = [
   'p8est_wrap.c' ]
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+config_file = configure_file(
+  input: 'p4est_config.h.in',
+  output: 'p4est_config.h',
+  configuration : {
+    'package' : project_name(),
+    'version' : project_version(),
+    'version_major' : project_version().split('.')[0],
+    'version_minor' : project_version().split('.')[1], 
+    'version_revision' : project_version().split('.')[2],
+    'cc' : '',
+    'cflags' : '',
+    'cpp' : '', 
+    'cppflags' : '',
+    'ldflags' : '',
+    'libs' : '' })
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 install_subdir(
   '.',
   install_dir : get_option('includedir') + '/p4est',

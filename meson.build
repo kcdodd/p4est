@@ -53,6 +53,25 @@ build_number = run_command(py3,
     'import time; print(str(int(time.time())))' ],
   check: true ).stdout().strip()
 
+check_functions = {
+  'adler32_combine' : 'P4EST_HAVE_ZLIB' }
+
+check_headers = {
+  'netinet/in.h' : 'P4EST_HAVE_NETINET_IN_H',
+  # TODO: P4EST_HAVE_ARPA_INET_H ???
+  'arpa/inet.h' : 'P4EST_HAVE_ARPA_NET_H',
+  'winsock2.h' : 'P4EST_HAVE_WINSOCK2_H',
+  'unistd.h' : 'P4EST_HAVE_UNISTD_H' }
+
+# P4_TO_P8
+# P4EST_WITH_METIS
+# P4EST_ENABLE_DEBUG
+# P4EST_ENABLE_MPI
+# P4EST_ENABLE_MPIIO
+# P4EST_VTK_BINARY
+# P4EST_VTK_COMPRESSION
+# P4EST_VTK_DOUBLES
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # External library dependencies
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -158,6 +177,10 @@ foreach w : cc_options
 endforeach
 
 p4est_inc = include_directories('src')
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# configure files
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 build_number_file = configure_file(
   input: 'BUILDNUMBER.in',
