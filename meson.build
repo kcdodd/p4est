@@ -63,6 +63,18 @@ check_headers = {
   'winsock2.h' : 'P4EST_HAVE_WINSOCK2_H',
   'unistd.h' : 'P4EST_HAVE_UNISTD_H' }
 
+foreach func, macro : check_functions
+  if cc.has_function(func)
+    c_args += [ '-D@0@=1'.format(macro) ]
+  endif
+endforeach
+
+foreach header, macro : check_headers
+  if cc.has_header(header)
+    c_args += [ '-D@0@=1'.format(macro) ]
+  endif
+endforeach
+
 # P4_TO_P8
 # P4EST_WITH_METIS
 # P4EST_ENABLE_DEBUG
