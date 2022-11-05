@@ -1,0 +1,135 @@
+# -*- coding: UTF-8 -*-
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Package meta-data
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[project]
+dynamic = ["version"]
+name = "p4est"
+description = "A library to manage a collection (a forest) of multiple connected adaptive quadtrees or octrees in parallel."
+readme = "README"
+license = { file = "COPYING" }
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Package dependencies
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+requires-python = ">= 3.6.2"
+
+dependencies = [
+  "partis-pyproj >= 0.0.4",
+  "partis-schema >= 0.0.4",
+  'numpy >= 1.18.5',
+  "mpi4py >= 3.1.3",
+  "lxml >= 4.2.5",
+  "pyevtk >= 1.1",
+  "vtk >= 8.1.2" ]
+
+[[project.authors]]
+email = "p4est@ins.uni-bonn.de"
+
+[[project.authors]]
+name = "Carsten Burstedde"
+email = "burstedde@ins.uni-bonn.de"
+
+[[project.authors]]
+name = "Lucas C. Wilcox"
+email = "me@lucaswilcox.com"
+
+[[project.authors]]
+name = "Tobin Isaac"
+email = "tisaac@uchicago.edu"
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Build and distribution configuration
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[build-system]
+requires = [
+  "partis-pyproj[meson] >= 0.0.6",
+  "numpy==1.16.5; python_version=='3.6'",
+  "numpy==1.16.5; python_version=='3.7'",
+  "numpy==1.18.5; python_version=='3.8'",
+  "numpy==1.19.3; python_version=='3.9'",
+  "numpy==1.21.4; python_version=='3.10'",
+  "numpy; python_version>='3.11'",
+  "mpi4py >= 3.1.3",
+  "Cython >= 0.29.18" ]
+
+build-backend = "partis.pyproj.backend"
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[tool.pyproj.config]
+# build with debugging
+debug = false
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[tool.pyproj.prep]
+# updates version
+entry = "pkgaux:prep"
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[tool.pyproj.dist]
+ignore = [
+  '**/__pycache__',
+  '**/*.py[cod]',
+  '*.egg-info',
+  '**/.git',
+  '**/.github',
+  '**/.gitignore',
+  '**/.gitmodules' ]
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[tool.pyproj.dist.source]
+ignore = [
+  '**/*.so' ]
+
+copy = [
+  'pkgaux',
+  'src',
+  'pyproject.toml',
+  'README',
+  'COPYING',
+  'VERSION',
+  'BUILDNUMBER.in',
+  'BUILDTAGS.in',
+  'meson.build',
+  'meson_options.txt',
+  'build_requirements.txt']
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[tool.pyproj.dist.binary.prep]
+# updates build number and tags
+entry = "pkgaux:dist_binary_prep"
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Configuration of the meson build system for p4est
+[tool.pyproj.meson]
+compile = true
+build_clean = true
+prefix = 'build'
+build_dir = 'build/meson'
+
+setup_args = [
+  '--debug',
+  '--warnlevel', '0',
+  '--libdir', 'p4est/core/lib',
+  '--includedir', 'p4est/core/include' ]
+
+compile_args = [
+  '-j', '-1' ]
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# p4est build options
+# [tool.pyproj.meson.options]
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# binary distribution installed paths
+
+[[tool.pyproj.dist.binary.purelib.copy]]
+src = 'build/p4est'
+dst = 'p4est'
+glob = '**/*.py'
+
+[[tool.pyproj.dist.binary.platlib.copy]]
+src = 'build/p4est'
+dst = 'p4est'
+ignore = '**/*.py'
+
