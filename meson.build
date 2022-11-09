@@ -38,9 +38,13 @@ pkgconfig = import('pkgconfig')
 py_mod = import('python')
 py3 = py_mod.find_installation('python3', required: true)
 
-py3_dep = py3.dependency( required = true )
-
 message('Python: ' + py3.language_version())
+
+py3_dep = py3.dependency( required: true )
+
+cython = find_program(
+  'cython',
+  required : true )
 
 if not py3.language_version().version_compare('>= 3.6')
   error('Python 3.6 or newer is required')
@@ -143,11 +147,7 @@ py3_mpi = py_mod.find_installation(
   modules : ['mpi4py'],
   required: true )
 
-py3_deps = [py3_dep,] + openmp_deps + mpi_deps + m_deps + sc_deps
-
-cython = find_program(
-  'cython',
-  required : true )
+py3_deps = [py3_dep,] + mpi_deps + m_deps + sc_deps
 
 # disable NumPy deprecated API
 numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
