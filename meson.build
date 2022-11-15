@@ -200,3 +200,4 @@ build_number_file = configure_file(
     'buildnumber' : build_number })
 
 subdir('src')
+subdir('srcpy/core')
