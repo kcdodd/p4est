@@ -8,6 +8,9 @@ project( 'p4est',
   default_options : [
     'c_std=gnu11' ] )
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# set desired compiler options, if available
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cc = meson.get_compiler('c')
 
 compiler_options = [
@@ -23,7 +26,11 @@ compiler_options = [
   '-Werror=return-type',
   '-Werror=discarded-qualifiers' ]
 
-cc_options = []
+foreach w : compiler_options
+  if cc.has_argument(w)
+    add_global_arguments(w, language : 'c')
+  endif
+endforeach
 
 # enable POSIX features
 c_args = [
@@ -95,8 +102,6 @@ endforeach
 m_deps = [
   cc.find_library('m', required : false ) ]
 
-# TODO
-sc_deps = [ ]
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Check for enabling MPI
@@ -147,8 +152,6 @@ py3_mpi = py_mod.find_installation(
   modules : ['mpi4py'],
   required: true )
 
-py3_deps = [py3_dep,] + mpi_deps + m_deps + sc_deps
-
 # disable NumPy deprecated API
 numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
 
@@ -161,7 +164,7 @@ incdir_py3 = run_command(py3,
   check: true ).stdout().strip()
 
 message('Python includes: ' + incdir_py3)
-inc_py3 = include_directories(incdir_py3)
+py3_inc = include_directories(incdir_py3)
 
 # NumPy include directory
 incdir_numpy = run_command(py3,
@@ -170,23 +173,19 @@ incdir_numpy = run_command(py3,
   check: true ).stdout().strip()
 
 message('NumPy includes: ' + incdir_numpy)
-inc_np = include_directories(incdir_numpy)
+np_inc = include_directories(incdir_numpy)
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# set desired compiler options, if available
+# Build SC
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-foreach w : compiler_options
-  if cc.has_argument(w)
-    add_global_arguments(w, language : 'c')
-  endif
-endforeach
 
-foreach w : cc_options
-  if cc.has_argument(w)
-    add_global_arguments(w, language : 'c')
-  endif
-endforeach
+sc_proj = subproject('sc')
+sc_dep = sc_proj.get_variable('sc_shared_dep')
+
+py3_deps = [py3_dep,] + mpi_deps + m_deps + sc_dep
+sc_deps = [ sc_dep ]
+
 
 p4est_inc = include_directories('src')
 

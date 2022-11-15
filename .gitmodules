@@ -1,4 +1,4 @@
 [submodule "sc"]
-	path = sc
+	path = subprojects/sc
 	url = https://github.com/kcdodd/libsc.git
 	branch = feat/mesonbuild
