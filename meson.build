@@ -95,6 +95,8 @@ endforeach
 # P4EST_VTK_COMPRESSION
 # P4EST_VTK_DOUBLES
 
+c_args += ['-DSC_ENABLE_MPI=1', '-DP4EST_ENABLE_MPI=1']
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # External library dependencies
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
