@@ -154,10 +154,12 @@ py3_mpi = py_mod.find_installation(
   modules : ['mpi4py'],
   required: true )
 
+# NOTE: Strangely, NumPy's pxd file directly referenced the deprecated API,
+# which means that 'cdef ndarray' variables cause compilation errors if
+# 'NPY_NO_DEPRECATED_API' is set.
 # disable NumPy deprecated API
-numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
-
-c_args += [numpy_nodepr_api]
+# numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_16_API_VERSION'
+# c_args += [numpy_nodepr_api]
 
 # Python include directory
 incdir_py3 = run_command(py3,

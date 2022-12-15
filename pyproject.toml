@@ -101,11 +101,15 @@ entry = "pkgaux:dist_binary_prep"
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Configuration of the meson build system for p4est
-[tool.pyproj.meson]
-compile = true
-build_clean = true
+[[tool.pyproj.targets]]
+entry = 'partis.pyproj.builder:meson'
+
+# NOTE: for developement, setting 'build_clean = false' makes re-compiling faster,
+# since it can skip repeating some steps, but be cautious of large changes, or
+# different 'options', breaking an existing build config (delete the build directory).
+build_clean = false
 prefix = 'build'
-build_dir = 'build/meson'
+build_dir = 'build/tmp'
 
 setup_args = [
   '--debug',
@@ -116,9 +120,9 @@ setup_args = [
 compile_args = [
   '-j', '-1' ]
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#...............................................................................
 # p4est build options
-# [tool.pyproj.meson.options]
+# [tool.pyproj.targets.options]
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # binary distribution installed paths

@@ -1,3 +1,4 @@
+
 from cpython cimport PyObject
 cimport numpy as np
 
@@ -239,3 +240,46 @@ cdef extern from "p4est.h":
 
     # algorithmic switches
     p4est_inspect_t* inspect
+
+  #-----------------------------------------------------------------------------
+  ctypedef void (*p4est_init_t)(
+    p4est_t* p4est,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t* quadrant )
+
+  #-----------------------------------------------------------------------------
+  p4est_t* p4est_new_ext(
+    sc_MPI_Comm mpicomm,
+    p4est_connectivity_t* connectivity,
+    p4est_locidx_t min_quadrants,
+    int min_level,
+    int fill_uniform,
+    size_t data_size,
+    p4est_init_t init_fn,
+    void* user_pointer )
+
+  void p4est_destroy(p4est_t* p4est)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class p4est:
+  cdef _comm
+  cdef p4est_t* _p4est
+  cdef p4est_connectivity_t _tmap
+  cdef np.ndarray _vertices
+  cdef np.ndarray _tree_to_vertex
+  cdef np.ndarray _tree_to_tree
+  cdef np.ndarray _tree_to_face
+  cdef np.ndarray _tree_to_corner
+  cdef np.ndarray _corner_to_tree_offset
+  cdef np.ndarray _corner_to_tree
+  cdef np.ndarray _corner_to_corner
+
+  # cdef np.ndarray[np.npy_int32, ndim = 1] _ett_offset
+
+
+  #-----------------------------------------------------------------------------
+  cdef _init_c_data(
+    p4est self,
+    p4est_locidx_t min_quadrants,
+    int min_level,
+    int fill_uniform )

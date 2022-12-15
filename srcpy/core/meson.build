@@ -7,29 +7,24 @@ cython_gen = generator( cython,
     '@INPUT@' ],
   output : '@BASENAME@.c' )
 
-modules = [
-  '_p4est' ]
-
 install_files = [
   '__init__.py',
   '__init__.pxd',
   '_p4est.pxd' ]
 
-foreach mod : modules
-  py3.extension_module(
-    mod,
-    cython_gen.process(f'@mod@.pyx'),
-    c_args: c_args,
-    link_args : link_args,
-    include_directories: [p4est_inc, py3_inc, np_inc],
-    dependencies: py3_deps,
-    link_with : p4est_shared_lib,
-    install: true,
-    # NOTE: this is so the python extensions can find libp4est and libsc at runtime
-    install_rpath: '$ORIGIN/lib',
-    install_dir: 'p4est/core' )
+py3.extension_module(
+  '_p4est',
+  cython_gen.process(f'_p4est.pyx'),
+  c_args: c_args,
+  link_args : link_args,
+  include_directories: [p4est_inc, py3_inc, np_inc],
+  dependencies: py3_deps,
+  link_with : p4est_shared_lib,
+  install: true,
+  # NOTE: this is so the python extensions can find libp4est and libsc at runtime
+  install_rpath: '$ORIGIN/lib',
+  install_dir: 'p4est/core' )
 
-endforeach
 
 install_data(
   install_files,

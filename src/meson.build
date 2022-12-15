@@ -61,11 +61,11 @@ config_file = configure_file(
     'package' : meson.project_name(),
     'version' : meson.project_version(),
     'version_major' : meson.project_version().split('.')[0],
-    'version_minor' : meson.project_version().split('.')[1], 
+    'version_minor' : meson.project_version().split('.')[1],
     'version_revision' : meson.project_version().split('.')[2],
     'cc' : '',
     'cflags' : '',
-    'cpp' : '', 
+    'cpp' : '',
     'cppflags' : '',
     'ldflags' : '',
     'libs' : '' })
@@ -77,11 +77,11 @@ install_subdir(
   exclude_files : p4est_lib_sources + [ 'meson.build' ] )
 
 p4est_shared_lib = shared_library(
-  # NOTE: the 'public' library, and what is linked with the python warappers
   'p4est',
   p4est_lib_sources,
   dependencies : m_deps + mpi_deps + sc_deps,
   include_directories : p4est_inc,
   c_args : c_args,
   link_args : link_args,
+  install_rpath: '$ORIGIN',
   install: true )
