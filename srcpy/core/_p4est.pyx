@@ -18,9 +18,21 @@ from mpi4py.MPI cimport MPI_Comm, Comm
 from libc.stdlib cimport malloc, free
 from libc.string cimport memset
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef _init_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t which_tree,
+  p4est_quadrant_t* quadrant ):
+  """
+  .. note::
+
+    Only an intermediate callback from p4est, forwards call to bound method
+    P4est._init_quadrant to actually handle the action.
+  """
+  (<P4est>p4est.user_pointer)._init_quadrant(which_tree, quadrant)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class p4est:
+cdef class P4est:
   #-----------------------------------------------------------------------------
   def __init__(self,
     min_quadrants = None,
@@ -111,7 +123,7 @@ cdef class p4est:
 
   #-----------------------------------------------------------------------------
   cdef _init_c_data(
-    p4est self,
+    P4est self,
     p4est_locidx_t min_quadrants,
     int min_level,
     int fill_uniform ):
@@ -140,9 +152,9 @@ cdef class p4est:
       min_quadrants,
       min_level,
       fill_uniform,
-      0,
-      NULL,
-      NULL )
+      sizeof(P4est),
+      <p4est_init_t>_init_quadrant,
+      <void*>self )
 
   #-----------------------------------------------------------------------------
   def __dealloc__(self):
@@ -166,3 +178,11 @@ cdef class p4est:
   @property
   def comm( self ):
     return self._comm
+
+  #-----------------------------------------------------------------------------
+  cdef _init_quadrant(
+    P4est self,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t* quadrant ):
+
+    pass

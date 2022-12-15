@@ -258,10 +258,17 @@ cdef extern from "p4est.h":
     p4est_init_t init_fn,
     void* user_pointer )
 
+  #-----------------------------------------------------------------------------
   void p4est_destroy(p4est_t* p4est)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class p4est:
+cdef _init_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t which_tree,
+  p4est_quadrant_t* quadrant )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class P4est:
   cdef _comm
   cdef p4est_t* _p4est
   cdef p4est_connectivity_t _tmap
@@ -274,12 +281,15 @@ cdef class p4est:
   cdef np.ndarray _corner_to_tree
   cdef np.ndarray _corner_to_corner
 
-  # cdef np.ndarray[np.npy_int32, ndim = 1] _ett_offset
-
-
   #-----------------------------------------------------------------------------
   cdef _init_c_data(
-    p4est self,
+    P4est self,
     p4est_locidx_t min_quadrants,
     int min_level,
     int fill_uniform )
+
+  #-----------------------------------------------------------------------------
+  cdef _init_quadrant(
+    P4est self,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t* quadrant )
