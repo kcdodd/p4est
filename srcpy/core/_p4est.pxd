@@ -272,10 +272,11 @@ cdef class P4est:
   cdef _comm
   cdef p4est_t* _p4est
   cdef p4est_connectivity_t _tmap
-  cdef np.ndarray _vertices
-  cdef np.ndarray _tree_to_vertex
-  cdef np.ndarray _tree_to_tree
-  cdef np.ndarray _tree_to_face
+  cdef np.ndarray _verts
+  cdef np.ndarray _cells
+  cdef np.ndarray _cell_adj
+  cdef np.ndarray _cell_adj_face
+
   cdef np.ndarray _tree_to_corner
   cdef np.ndarray _corner_to_tree_offset
   cdef np.ndarray _corner_to_tree
