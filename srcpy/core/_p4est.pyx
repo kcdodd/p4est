@@ -25,6 +25,52 @@ cdef extern from "Python.h":
   PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef _quadrant_data(
+  P4est p4est,
+  p4est_topidx_t cell_idx,
+  p4est_quadrant_t* quadrant ):
+
+  cdef object buffer = <object>PyMemoryView_FromMemory(
+    <char*>quadrant.p.user_data,
+    p4est._data_size,
+    PyBUF_WRITE )
+
+  data = np.frombuffer(
+    buffer,
+    dtype = p4est._dtype,
+    count = p4est._data_count )
+
+  return data.reshape(p4est._shape)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef _quadrant_coord(
+  P4est p4est,
+  p4est_topidx_t cell_idx,
+  p4est_quadrant_t* quadrant ):
+
+  vcoord = np.empty((2,2,3), dtype = np.double)
+
+  cdef double[:] _vcoord
+
+  qwidth = 1 << (P4EST_MAXLEVEL - quadrant.level)
+
+  for i in range(2):
+    for j in range(2):
+      _vcoord = vcoord[i,j]
+
+      p4est_qcoord_to_vertex(
+        &p4est._tmap,
+        cell_idx,
+        quadrant.x + i*qwidth,
+        quadrant.y + j*qwidth,
+        <double*>&_vcoord[0] )
+
+  qcoord = np.array([quadrant.x, quadrant.y, 0], dtype = np.int32)
+
+
+  return qcoord, qwidth, vcoord
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef _init_quadrant(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
@@ -37,50 +83,63 @@ cdef _init_quadrant(
   """
   self = <P4est>p4est.user_pointer
 
-  cdef object buffer = <object>PyMemoryView_FromMemory(
-    <char*>quadrant.p.user_data,
-    self._data_size,
-    PyBUF_WRITE )
+  data = _quadrant_data(self, cell_idx, quadrant)
 
-  data = np.frombuffer(
-    buffer,
-    dtype = self._dtype,
-    count = self._data_count )
+  qcoord, qwidth, vcoord = _quadrant_coord(self, cell_idx, quadrant)
 
-  cdef cnp.ndarray[double, ndim = 1] vxyz = np.array([0., 0., 0.], dtype = np._double)
-
-  p4est_qcoord_to_vertex(
-    p4est.connectivity,
+  self._init_quadrant(
     cell_idx,
-    quadrant.x,
-    quadrant.y,
-    <double*> vxyz.data )
-
-  # (<P4est>p4est.user_pointer)._init_quadrant(cell_idx, quadrant)
+    quadrant.level,
+    qcoord,
+    qwidth,
+    vcoord,
+    data )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef _refine_quadrant(
+cdef int _refine_quadrant(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant ):
 
-  (<P4est>p4est.user_pointer)._refine_quadrant(cell_idx, quadrant)
+  self = <P4est>p4est.user_pointer
+
+  data = _quadrant_data(self, cell_idx, quadrant)
+
+  qcoord, qwidth, vcoord = _quadrant_coord(self, cell_idx, quadrant)
+
+  return int(self._refine_quadrant(
+    cell_idx,
+    quadrant.level,
+    qcoord,
+    qwidth,
+    vcoord,
+    data ))
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef _coarsen_quadrants(
+cdef int _coarsen_quadrants(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrants[] ):
+  return 0
+  # data = _quadrant_data(self, cell_idx, quadrant)
 
-  (<P4est>p4est.user_pointer)._coarsen_quadrants(cell_idx, quadrants)
+  # qcoord, qwidth, vcoord = _quadrant_coord(self, cell_idx, quadrant)
+
+  # self._coarsen_quadrants(
+  #   cell_idx,
+  #   quadrant.level,
+  #   qcoord,
+  #   qwidth,
+  #   vcoord,
+  #   data )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef _weight_quadrant(
+cdef int _weight_quadrant(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant ):
-
-  (<P4est>p4est.user_pointer)._weight_quadrant(cell_idx, quadrant)
+  return 1
+  # (<P4est>p4est.user_pointer)._weight_quadrant(cell_idx, quadrant)
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -378,29 +437,44 @@ cdef class P4est:
 
   #-----------------------------------------------------------------------------
   cdef _init_quadrant(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant ):
+    self,
+    cell_idx,
+    level,
+    qcoord,
+    qwidth,
+    vcoord,
+    data ):
 
-    pass
+    data.fill(0.0)
 
-  #-----------------------------------------------------------------------------
-  cdef _refine_quadrant(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant ):
-    pass
+    print(f"init {cell_idx}-{level}: qcoord= {qcoord}, qwidth= {qwidth}, vcoord= {vcoord}")
+    print(data)
 
-  #-----------------------------------------------------------------------------
-  cdef _coarsen_quadrants(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant[] ):
-    pass
 
   #-----------------------------------------------------------------------------
-  cdef _weight_quadrant(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant ):
-    pass
+  cdef int _refine_quadrant(
+    self,
+    cell_idx,
+    level,
+    qcoord,
+    qwidth,
+    vcoord,
+    data ):
+
+    print(f"refine {cell_idx}-{level}: qcoord= {qcoord}, qwidth= {qwidth}, vcoord= {vcoord}")
+    print(data)
+    return 0
+
+  # #-----------------------------------------------------------------------------
+  # cdef _coarsen_quadrants(
+  #   P4est self,
+  #   p4est_topidx_t cell_idx,
+  #   p4est_quadrant_t* quadrant[] ):
+  #   pass
+
+  # #-----------------------------------------------------------------------------
+  # cdef _weight_quadrant(
+  #   P4est self,
+  #   p4est_topidx_t cell_idx,
+  #   p4est_quadrant_t* quadrant ):
+  #   pass

@@ -336,17 +336,17 @@ cdef _init_quadrant(
   p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant )
 
-cdef _refine_quadrant(
+cdef int _refine_quadrant(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant )
 
-cdef _coarsen_quadrants(
+cdef int _coarsen_quadrants(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrants[] )
 
-cdef _weight_quadrant(
+cdef int _weight_quadrant(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant )
@@ -383,24 +383,32 @@ cdef class P4est:
   #-----------------------------------------------------------------------------
   # NOTE: these are for callbacks from p4est
   cdef _init_quadrant(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant )
+    self,
+    cell_idx,
+    level,
+    qcoord,
+    qwidth,
+    vcoord,
+    data )
 
   #-----------------------------------------------------------------------------
-  cdef _refine_quadrant(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant )
+  cdef int _refine_quadrant(
+    self,
+    cell_idx,
+    level,
+    qcoord,
+    qwidth,
+    vcoord,
+    data )
 
-  #-----------------------------------------------------------------------------
-  cdef _coarsen_quadrants(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant[] )
+  # #-----------------------------------------------------------------------------
+  # cdef int _coarsen_quadrants(
+  #   P4est self,
+  #   p4est_topidx_t cell_idx,
+  #   p4est_quadrant_t* quadrant[] )
 
-  #-----------------------------------------------------------------------------
-  cdef _weight_quadrant(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant )
+  # #-----------------------------------------------------------------------------
+  # cdef int _weight_quadrant(
+  #   P4est self,
+  #   p4est_topidx_t cell_idx,
+  #   p4est_quadrant_t* quadrant )
