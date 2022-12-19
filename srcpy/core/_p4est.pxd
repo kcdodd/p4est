@@ -122,6 +122,12 @@ cdef extern from "p4est.h":
     # list of tree-corners that meet at a corner
     np.npy_int8 *corner_to_corner
 
+  #-----------------------------------------------------------------------------
+  ctypedef enum p4est_connect_type_t:
+    P4EST_CONNECT_FACE = 21,
+    P4EST_CONNECT_CORNER = 22,
+    P4EST_CONNECT_FULL = P4EST_CONNECT_CORNER
+
   #.............................................................................
   # of ghost octants, store the tree and owner rank
   ctypedef struct p4est_quadrant_piggy1:
@@ -242,10 +248,31 @@ cdef extern from "p4est.h":
     p4est_inspect_t* inspect
 
   #-----------------------------------------------------------------------------
+  # Callback function prototype to initialize the quadrant's user data.
   ctypedef void (*p4est_init_t)(
     p4est_t* p4est,
     p4est_topidx_t which_tree,
     p4est_quadrant_t* quadrant )
+
+  # Callback function prototype to decide for refinement.
+  ctypedef int (*p4est_refine_t)(
+    p4est_t * p4est,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t * quadrant)
+
+  # Callback function prototype to decide for coarsening.
+  ctypedef int (*p4est_coarsen_t)(
+    p4est_t * p4est,
+    p4est_topidx_t which_tree,
+    # Pointers to 4 siblings in Morton ordering.
+    p4est_quadrant_t * quadrants[])
+
+  # Callback function prototype to calculate weights for partitioning.
+  # NOTE: Global sum of weights must fit into a 64bit integer.
+  ctypedef int (*p4est_weight_t)(
+    p4est_t * p4est,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t * quadrant)
 
   #-----------------------------------------------------------------------------
   p4est_t* p4est_new_ext(
@@ -261,8 +288,58 @@ cdef extern from "p4est.h":
   #-----------------------------------------------------------------------------
   void p4est_destroy(p4est_t* p4est)
 
+  #-----------------------------------------------------------------------------
+  void p4est_refine(
+    p4est_t * p4est,
+    int refine_recursive,
+    p4est_refine_t refine_fn,
+    p4est_init_t init_fn)
+
+  #-----------------------------------------------------------------------------
+  void p4est_coarsen (
+    p4est_t * p4est,
+    int coarsen_recursive,
+    p4est_coarsen_t coarsen_fn,
+    p4est_init_t init_fn)
+
+  #-----------------------------------------------------------------------------
+  # 2:1 balance the size differences of neighboring elements in a forest.
+  void p4est_balance(
+    p4est_t * p4est,
+    p4est_connect_type_t btype,
+    p4est_init_t init_fn)
+
+  #-----------------------------------------------------------------------------
+  # Equally partition the forest.
+  # The partition can be by element count or by a user-defined weight.
+  #
+  # The forest will be partitioned between processors such that they
+  # have an approximately equal number of quadrants (or sum of weights).
+  #
+  # On one process, the function noops and does not call the weight callback.
+  # Otherwise, the weight callback is called once per quadrant in order.
+  void p4est_partition(
+    p4est_t * p4est,
+    int allow_for_coarsening,
+    p4est_weight_t weight_fn)
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef _init_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t which_tree,
+  p4est_quadrant_t* quadrant )
+
+cdef _refine_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t which_tree,
+  p4est_quadrant_t* quadrant )
+
+cdef _coarsen_quadrants(
+  p4est_t* p4est,
+  p4est_topidx_t which_tree,
+  p4est_quadrant_t* quadrants[] )
+
+cdef _weight_quadrant(
   p4est_t* p4est,
   p4est_topidx_t which_tree,
   p4est_quadrant_t* quadrant )
@@ -270,6 +347,11 @@ cdef _init_quadrant(
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
   cdef _comm
+
+  cdef _shape
+  cdef _dtype
+  cdef _data_size
+
   cdef p4est_t* _p4est
   cdef p4est_connectivity_t _tmap
   cdef np.ndarray _verts
@@ -282,6 +364,7 @@ cdef class P4est:
   cdef np.ndarray _corner_to_tree
   cdef np.ndarray _corner_to_corner
 
+
   #-----------------------------------------------------------------------------
   cdef _init_c_data(
     P4est self,
@@ -290,7 +373,26 @@ cdef class P4est:
     int fill_uniform )
 
   #-----------------------------------------------------------------------------
+  # NOTE: these are for callbacks from p4est
   cdef _init_quadrant(
+    P4est self,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t* quadrant )
+
+  #-----------------------------------------------------------------------------
+  cdef _refine_quadrant(
+    P4est self,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t* quadrant )
+
+  #-----------------------------------------------------------------------------
+  cdef _coarsen_quadrants(
+    P4est self,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t* quadrant[] )
+
+  #-----------------------------------------------------------------------------
+  cdef _weight_quadrant(
     P4est self,
     p4est_topidx_t which_tree,
     p4est_quadrant_t* quadrant )

@@ -7,9 +7,10 @@ import os.path as osp
 from pathlib import Path
 from collections.abc import (
   Mapping,
-  Sequence )
+  Sequence,
+  Iterable )
 
-cimport numpy as np
+cimport numpy as cnp
 import numpy as np
 
 from mpi4py import MPI
@@ -31,8 +32,30 @@ cdef _init_quadrant(
   """
   (<P4est>p4est.user_pointer)._init_quadrant(which_tree, quadrant)
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef _refine_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t which_tree,
+  p4est_quadrant_t* quadrant ):
+
+  (<P4est>p4est.user_pointer)._refine_quadrant(which_tree, quadrant)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef _coarsen_quadrants(
+  p4est_t* p4est,
+  p4est_topidx_t which_tree,
+  p4est_quadrant_t* quadrants[] ):
+
+  (<P4est>p4est.user_pointer)._coarsen_quadrants(which_tree, quadrants)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef _weight_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t which_tree,
+  p4est_quadrant_t* quadrant ):
+
+  (<P4est>p4est.user_pointer)._weight_quadrant(which_tree, quadrant)
+
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
@@ -40,12 +63,65 @@ cdef class P4est:
   def __init__(self,
     verts,
     cells,
+    shape = None,
+    dtype = None,
     cell_adj = None,
     cell_adj_face = None,
     min_quadrants = None,
     min_level = None,
     fill_uniform = None,
     comm = None ):
+    """
+
+    Parameters
+    ----------
+    verts : np.ndarray with shape = (NV, 2 or 3), dtype = np.float64
+      Position of each vertex.
+    cells : np.ndarray with shape = (NC, 4), dtype = np.int32
+      Quadrilateral cells, each defined by the indices of its 4 vertices.
+
+      .. note::
+
+        The order of the vertices must
+        follow the ordering [V00, V01, V10, V11] starting with a an origin vertex V00,
+        followed by the two forming the basis vectors V01-V00 and V10-V00, and the
+        fourth V11 being a linear combination of the two bases.
+        E.G For an aligned rectangle: [lower-left, lower-right, upper-left,
+        upper-right].
+
+    shape : None | tuple[int]
+      The shape of the data stored in each leaf quadrant (default: tuple()).
+
+      .. note::
+
+        A shape = (1,1) result in the same amount of data being stored per-quadrant
+        as the default shape = tuple() because an empty shape is also interpreted
+        as a single value.
+
+    dtype : None | np.dtype
+      The type of the data stored in each leaf quadrant (default: np.float64).
+
+      .. note::
+
+        The top-level dtype may be a composition of other dtypes defined for
+        NumPy structured arrasy (https://numpy.org/doc/stable/user/basics.rec.html).
+        This gives some freedom to define either an array of structs (by setting
+        the above shape), a struct of arrays (by setting a shape in the dtype's
+        fields), or a combination.
+
+    cell_adj : None | np.ndarray with shape (NC, 4) and dtype np.int32
+      If not given, the adjacency is computed from the cells array.
+    cell_adj_face : None | np.ndarray with shape (NC, 4) and dtype np.int8
+      If not given, the adjacency is computed from the cells array.
+    min_quadrants : None | int
+      (default: 0)
+    min_level : None | int
+      (default: 0)
+    fill_uniform : bool
+    comm : None | mpi4py.MPI.Comm
+      (default: mpi4py.MPI.COMM_WORLD)
+
+    """
 
     if min_quadrants is None:
       min_quadrants = 0
@@ -60,14 +136,31 @@ cdef class P4est:
       comm = MPI.COMM_WORLD
 
     #...........................................................................
+    # define quadrant data
+
+    if shape is None:
+      shape = tuple()
+
+    shape = tuple(int(s) for s in shape)
+
+    if dtype is None:
+      dtype = np.float64
+
+    dtype = np.dtype(dtype)
+
+    #...........................................................................
     verts = np.ascontiguousarray(
       verts,
       dtype = np.float64 )
 
     if not (
       verts.ndim == 2
-      and verts.shape[1] == 3 ):
-      raise ValueError(f"'verts' must have shape (len(verts), 2): {verts.shape}")
+      and verts.shape[1] in [2, 3] ):
+      raise ValueError(f"'verts' must have shape (NV, 2 or 3): {verts.shape}")
+
+    if verts.shape[1] == 2:
+      # set z coordinates all to zero to get the right shape
+      verts = np.append(verts, np.zeros_like(verts[:,:1]), axis = 1)
 
     #...........................................................................
     cells = cells = np.ascontiguousarray(
@@ -78,7 +171,7 @@ cdef class P4est:
       cells.ndim == 2
       and cells.shape[1] == 4 ):
 
-      raise ValueError(f"'cells' must have shape (len(cells), 4): {cells.shape}")
+      raise ValueError(f"'cells' must have shape (NC, 4): {cells.shape}")
 
     #...........................................................................
     if (cell_adj is None) != (cell_adj_face is None):
@@ -178,6 +271,10 @@ cdef class P4est:
 
     corner_to_tree_offset = [0]
 
+    self._shape = shape
+    self._dtype = dtype
+    self._data_size = int(np.prod(shape)) * dtype.itemsize
+
     self._verts = verts
     self._cells = cells
     self._cell_adj = cell_adj
@@ -220,7 +317,7 @@ cdef class P4est:
       min_level,
       fill_uniform,
       # data_size per quadrant (managed by p4est)
-      0,
+      self._data_size,
       <p4est_init_t>_init_quadrant,
       <void*>self )
 
@@ -232,7 +329,11 @@ cdef class P4est:
 
   #-----------------------------------------------------------------------------
   def free(self):
+    if self._p4est == NULL:
+      return
+
     p4est_destroy(self._p4est)
+    self._p4est = NULL
 
   #-----------------------------------------------------------------------------
   def __enter__(self):
@@ -240,6 +341,8 @@ cdef class P4est:
 
   #-----------------------------------------------------------------------------
   def __exit__(self, type, value, traceback):
+    self.free()
+
     return False
 
   #-----------------------------------------------------------------------------
@@ -253,4 +356,25 @@ cdef class P4est:
     p4est_topidx_t which_tree,
     p4est_quadrant_t* quadrant ):
 
+    pass
+
+  #-----------------------------------------------------------------------------
+  cdef _refine_quadrant(
+    P4est self,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t* quadrant ):
+    pass
+
+  #-----------------------------------------------------------------------------
+  cdef _coarsen_quadrants(
+    P4est self,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t* quadrant[] ):
+    pass
+
+  #-----------------------------------------------------------------------------
+  cdef _weight_quadrant(
+    P4est self,
+    p4est_topidx_t which_tree,
+    p4est_quadrant_t* quadrant ):
     pass
