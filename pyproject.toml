@@ -84,6 +84,7 @@ ignore = [
 copy = [
   'pkgaux',
   'src',
+  'srcpy',
   'pyproject.toml',
   'README',
   'COPYING',
@@ -126,6 +127,11 @@ compile_args = [
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # binary distribution installed paths
+
+[[tool.pyproj.dist.binary.purelib.copy]]
+src = 'srcpy'
+dst = 'p4est'
+ignore = 'core'
 
 [[tool.pyproj.dist.binary.purelib.copy]]
 src = 'build/p4est'

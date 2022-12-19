@@ -19,10 +19,15 @@ from mpi4py.MPI cimport MPI_Comm, Comm
 from libc.stdlib cimport malloc, free
 from libc.string cimport memset
 
+cdef extern from "Python.h":
+  const int PyBUF_READ
+  const int PyBUF_WRITE
+  PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef _init_quadrant(
   p4est_t* p4est,
-  p4est_topidx_t which_tree,
+  p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant ):
   """
   .. note::
@@ -30,31 +35,52 @@ cdef _init_quadrant(
     Only an intermediate callback from p4est, forwards call to bound method
     P4est._init_quadrant to actually handle the action.
   """
-  (<P4est>p4est.user_pointer)._init_quadrant(which_tree, quadrant)
+  self = <P4est>p4est.user_pointer
+
+  cdef object buffer = <object>PyMemoryView_FromMemory(
+    <char*>quadrant.p.user_data,
+    self._data_size,
+    PyBUF_WRITE )
+
+  data = np.frombuffer(
+    buffer,
+    dtype = self._dtype,
+    count = self._data_count )
+
+  cdef cnp.ndarray[double, ndim = 1] vxyz = np.array([0., 0., 0.], dtype = np._double)
+
+  p4est_qcoord_to_vertex(
+    p4est.connectivity,
+    cell_idx,
+    quadrant.x,
+    quadrant.y,
+    <double*> vxyz.data )
+
+  # (<P4est>p4est.user_pointer)._init_quadrant(cell_idx, quadrant)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef _refine_quadrant(
   p4est_t* p4est,
-  p4est_topidx_t which_tree,
+  p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant ):
 
-  (<P4est>p4est.user_pointer)._refine_quadrant(which_tree, quadrant)
+  (<P4est>p4est.user_pointer)._refine_quadrant(cell_idx, quadrant)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef _coarsen_quadrants(
   p4est_t* p4est,
-  p4est_topidx_t which_tree,
+  p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrants[] ):
 
-  (<P4est>p4est.user_pointer)._coarsen_quadrants(which_tree, quadrants)
+  (<P4est>p4est.user_pointer)._coarsen_quadrants(cell_idx, quadrants)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef _weight_quadrant(
   p4est_t* p4est,
-  p4est_topidx_t which_tree,
+  p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant ):
 
-  (<P4est>p4est.user_pointer)._weight_quadrant(which_tree, quadrant)
+  (<P4est>p4est.user_pointer)._weight_quadrant(cell_idx, quadrant)
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -82,10 +108,8 @@ cdef class P4est:
 
       .. note::
 
-        The order of the vertices must
-        follow the ordering [V00, V01, V10, V11] starting with a an origin vertex V00,
-        followed by the two forming the basis vectors V01-V00 and V10-V00, and the
-        fourth V11 being a linear combination of the two bases.
+        The order of the vertices must follow the ordering [V00, V01, V10, V11]
+        for the desired geometry of the cell.
         E.G For an aligned rectangle: [lower-left, lower-right, upper-left,
         upper-right].
 
@@ -273,7 +297,9 @@ cdef class P4est:
 
     self._shape = shape
     self._dtype = dtype
-    self._data_size = int(np.prod(shape)) * dtype.itemsize
+    self._data_count = int(np.prod(shape))
+    self._data_size = self._data_count * dtype.itemsize
+
 
     self._verts = verts
     self._cells = cells
@@ -353,7 +379,7 @@ cdef class P4est:
   #-----------------------------------------------------------------------------
   cdef _init_quadrant(
     P4est self,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t* quadrant ):
 
     pass
@@ -361,20 +387,20 @@ cdef class P4est:
   #-----------------------------------------------------------------------------
   cdef _refine_quadrant(
     P4est self,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t* quadrant ):
     pass
 
   #-----------------------------------------------------------------------------
   cdef _coarsen_quadrants(
     P4est self,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t* quadrant[] ):
     pass
 
   #-----------------------------------------------------------------------------
   cdef _weight_quadrant(
     P4est self,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t* quadrant ):
     pass

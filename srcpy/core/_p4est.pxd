@@ -131,19 +131,19 @@ cdef extern from "p4est.h":
   #.............................................................................
   # of ghost octants, store the tree and owner rank
   ctypedef struct p4est_quadrant_piggy1:
-    p4est_topidx_t which_tree
+    p4est_topidx_t cell_idx
     int owner_rank
 
   #.............................................................................
   # of transformed octants, store the original tree and the target tree
   ctypedef struct p4est_quadrant_piggy2:
-    p4est_topidx_t which_tree
+    p4est_topidx_t cell_idx
     p4est_topidx_t from_tree
 
   #.............................................................................
   # of ghost octants, store the tree and index in the owner's numbering
   ctypedef struct p4est_quadrant_piggy3:
-    p4est_topidx_t which_tree
+    p4est_topidx_t cell_idx
     p4est_locidx_t local_num
 
   #.............................................................................
@@ -158,7 +158,7 @@ cdef extern from "p4est.h":
     # (used in auxiliary octants such
     # as the ghost octants in
     # p4est_ghost_t)
-    p4est_topidx_t which_tree
+    p4est_topidx_t cell_idx
 
     p4est_quadrant_piggy1 piggy1
     p4est_quadrant_piggy2 piggy2
@@ -251,19 +251,19 @@ cdef extern from "p4est.h":
   # Callback function prototype to initialize the quadrant's user data.
   ctypedef void (*p4est_init_t)(
     p4est_t* p4est,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t* quadrant )
 
   # Callback function prototype to decide for refinement.
   ctypedef int (*p4est_refine_t)(
     p4est_t * p4est,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t * quadrant)
 
   # Callback function prototype to decide for coarsening.
   ctypedef int (*p4est_coarsen_t)(
     p4est_t * p4est,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     # Pointers to 4 siblings in Morton ordering.
     p4est_quadrant_t * quadrants[])
 
@@ -271,7 +271,7 @@ cdef extern from "p4est.h":
   # NOTE: Global sum of weights must fit into a 64bit integer.
   ctypedef int (*p4est_weight_t)(
     p4est_t * p4est,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t * quadrant)
 
   #-----------------------------------------------------------------------------
@@ -323,25 +323,32 @@ cdef extern from "p4est.h":
     int allow_for_coarsening,
     p4est_weight_t weight_fn)
 
+  void p4est_qcoord_to_vertex (
+    p4est_connectivity_t * connectivity,
+    p4est_topidx_t treeid,
+    p4est_qcoord_t x,
+    p4est_qcoord_t y,
+    double vxyz[3])
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef _init_quadrant(
   p4est_t* p4est,
-  p4est_topidx_t which_tree,
+  p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant )
 
 cdef _refine_quadrant(
   p4est_t* p4est,
-  p4est_topidx_t which_tree,
+  p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant )
 
 cdef _coarsen_quadrants(
   p4est_t* p4est,
-  p4est_topidx_t which_tree,
+  p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrants[] )
 
 cdef _weight_quadrant(
   p4est_t* p4est,
-  p4est_topidx_t which_tree,
+  p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -351,6 +358,7 @@ cdef class P4est:
   cdef _shape
   cdef _dtype
   cdef _data_size
+  cdef _data_count
 
   cdef p4est_t* _p4est
   cdef p4est_connectivity_t _tmap
@@ -376,23 +384,23 @@ cdef class P4est:
   # NOTE: these are for callbacks from p4est
   cdef _init_quadrant(
     P4est self,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t* quadrant )
 
   #-----------------------------------------------------------------------------
   cdef _refine_quadrant(
     P4est self,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t* quadrant )
 
   #-----------------------------------------------------------------------------
   cdef _coarsen_quadrants(
     P4est self,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t* quadrant[] )
 
   #-----------------------------------------------------------------------------
   cdef _weight_quadrant(
     P4est self,
-    p4est_topidx_t which_tree,
+    p4est_topidx_t cell_idx,
     p4est_quadrant_t* quadrant )
