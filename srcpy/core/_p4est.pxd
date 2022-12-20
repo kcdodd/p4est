@@ -6,7 +6,7 @@ from mpi4py.MPI cimport MPI_Comm, Comm
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef extern from "p4est.h":
+cdef extern from "p4est.h" nogil:
   const int P4EST_MAXLEVEL
 
   #.............................................................................
@@ -131,19 +131,19 @@ cdef extern from "p4est.h":
   #.............................................................................
   # of ghost octants, store the tree and owner rank
   ctypedef struct p4est_quadrant_piggy1:
-    p4est_topidx_t cell_idx
+    p4est_topidx_t which_tree
     int owner_rank
 
   #.............................................................................
   # of transformed octants, store the original tree and the target tree
   ctypedef struct p4est_quadrant_piggy2:
-    p4est_topidx_t cell_idx
+    p4est_topidx_t which_tree
     p4est_topidx_t from_tree
 
   #.............................................................................
   # of ghost octants, store the tree and index in the owner's numbering
   ctypedef struct p4est_quadrant_piggy3:
-    p4est_topidx_t cell_idx
+    p4est_topidx_t which_tree
     p4est_locidx_t local_num
 
   #.............................................................................
@@ -158,7 +158,7 @@ cdef extern from "p4est.h":
     # (used in auxiliary octants such
     # as the ghost octants in
     # p4est_ghost_t)
-    p4est_topidx_t cell_idx
+    p4est_topidx_t which_tree
 
     p4est_quadrant_piggy1 piggy1
     p4est_quadrant_piggy2 piggy2
@@ -247,6 +247,7 @@ cdef extern from "p4est.h":
     # algorithmic switches
     p4est_inspect_t* inspect
 
+
   #-----------------------------------------------------------------------------
   # Callback function prototype to initialize the quadrant's user data.
   ctypedef void (*p4est_init_t)(
@@ -331,47 +332,131 @@ cdef extern from "p4est.h":
     double vxyz[3])
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef _init_quadrant(
+cdef extern from "p4est_iterate.h" nogil:
+  #.............................................................................
+  ctypedef struct p4est_ghost_t:
+    int mpisize
+    p4est_topidx_t num_trees
+    # which neighbors are in the ghost layer
+    p4est_connect_type_t btype
+
+    # An array of quadrants which make up the ghost layer around \a
+    # p4est.  Their piggy3 data member is filled with their owner's tree
+    # and local number (cumulative over trees).  Quadrants are ordered in \c
+    # p4est_quadrant_compare_piggy order.  These are quadrants inside the
+    # neighboring tree, i.e., \c p4est_quadrant_is_inside() is true for the
+    # quadrant and the neighboring tree.
+
+    sc_array_t ghosts
+    p4est_locidx_t *tree_offsets
+    p4est_locidx_t *proc_offsets
+
+    # An array of local quadrants that touch the parallel boundary from the
+    # inside, i.e., that are ghosts in the perspective of at least one other
+    # processor.  The storage convention is the same as for \c ghosts above.
+
+    sc_array_t mirrors
+    p4est_locidx_t *mirror_tree_offsets
+    p4est_locidx_t *mirror_proc_mirrors
+    p4est_locidx_t *mirror_proc_offsets
+
+    p4est_locidx_t *mirror_proc_fronts
+    p4est_locidx_t *mirror_proc_front_offsets
+
+  #-----------------------------------------------------------------------------
+  ctypedef struct p4est_iter_volume_info_t:
+    p4est_t *p4est
+    p4est_ghost_t *ghost_layer
+    p4est_quadrant_t *quad
+    p4est_locidx_t quadid
+    p4est_topidx_t treeid
+
+  # The prototype for a function that p4est_iterate will execute at every
+  # quadrant local to the current process.
+  ctypedef void (*p4est_iter_volume_t) (
+    p4est_iter_volume_info_t * info,
+    void *user_data )
+
+  #.............................................................................
+  ctypedef struct p4est_iter_face_info_t:
+    p4est_t *p4est
+    p4est_ghost_t *ghost_layer
+    np.npy_int8 orientation
+    np.npy_int8 tree_boundary
+    # array of p4est_iter_face_side_t type
+    sc_array_t sides
+
+  # The prototype for a function that p4est_iterate will execute wherever two
+  # quadrants share a face: the face can be a 2:1 hanging face, it does not have
+  # to be conformal.
+  ctypedef void (*p4est_iter_face_t) (
+    p4est_iter_face_info_t * info,
+    void *user_data )
+
+  #.............................................................................
+  ctypedef struct p4est_iter_corner_info_t:
+    p4est_t *p4est
+    p4est_ghost_t *ghost_layer
+    np.npy_int8 tree_boundary
+    # array of p4est_iter_corner_side_t type
+    sc_array_t sides
+
+  # The prototype for a function that p4est_iterate will execute wherever two
+  # quadrants share a face: the face can be a 2:1 hanging face, it does not have
+  # to be conformal.
+  ctypedef void (*p4est_iter_corner_t) (
+    p4est_iter_corner_info_t * info,
+    void *user_data )
+
+  #.............................................................................
+  void p4est_iterate (
+    p4est_t* p4est,
+    p4est_ghost_t * ghost_layer,
+    void *user_data,
+    p4est_iter_volume_t iter_volume,
+    p4est_iter_face_t iter_face,
+    p4est_iter_corner_t iter_corner)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef void _iter_volume(
+  p4est_iter_volume_info_t* info,
+  void *user_data ) with gil
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef void _init_quadrant(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant )
+  p4est_quadrant_t* quadrant ) with gil
 
 cdef int _refine_quadrant(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant )
+  p4est_quadrant_t* quadrant ) with gil
 
 cdef int _coarsen_quadrants(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrants[] )
+  p4est_quadrant_t* quadrants[] ) with gil
 
 cdef int _weight_quadrant(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant )
+  p4est_quadrant_t* quadrant ) with gil
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
   cdef _comm
-
+  cdef _mesh
   cdef _shape
   cdef _dtype
-  cdef _data_size
-  cdef _data_count
+
+  cdef _leaf_count
+  cdef _leaf_dtype
+  cdef _leaf_info
+  cdef _leaf_data
 
   cdef p4est_t* _p4est
-  cdef p4est_connectivity_t _tmap
-  cdef np.ndarray _verts
-  cdef np.ndarray _cells
-  cdef np.ndarray _cell_adj
-  cdef np.ndarray _cell_adj_face
-
-  cdef np.ndarray _tree_to_corner
-  cdef np.ndarray _corner_to_tree_offset
-  cdef np.ndarray _corner_to_tree
-  cdef np.ndarray _corner_to_corner
-
+  cdef p4est_connectivity_t _connectivity
 
   #-----------------------------------------------------------------------------
   cdef _init_c_data(
@@ -379,36 +464,3 @@ cdef class P4est:
     p4est_locidx_t min_quadrants,
     int min_level,
     int fill_uniform )
-
-  #-----------------------------------------------------------------------------
-  # NOTE: these are for callbacks from p4est
-  cdef _init_quadrant(
-    self,
-    cell_idx,
-    level,
-    qcoord,
-    qwidth,
-    vcoord,
-    data )
-
-  #-----------------------------------------------------------------------------
-  cdef int _refine_quadrant(
-    self,
-    cell_idx,
-    level,
-    qcoord,
-    qwidth,
-    vcoord,
-    data )
-
-  # #-----------------------------------------------------------------------------
-  # cdef int _coarsen_quadrants(
-  #   P4est self,
-  #   p4est_topidx_t cell_idx,
-  #   p4est_quadrant_t* quadrant[] )
-
-  # #-----------------------------------------------------------------------------
-  # cdef int _weight_quadrant(
-  #   P4est self,
-  #   p4est_topidx_t cell_idx,
-  #   p4est_quadrant_t* quadrant )
