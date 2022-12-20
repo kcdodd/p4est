@@ -22,33 +22,6 @@ cdef extern from "Python.h":
 cdef LEAF_REFINE = 1 << 31
 cdef LEAF_COARSEN = 1 << 32
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef _quadrant_coord(
-  P4est p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant ):
-
-  vcoord = np.empty((2,2,3), dtype = np.double)
-
-  cdef double[:] _vcoord
-
-  qwidth = 1 << (P4EST_MAXLEVEL - quadrant.level)
-
-  for i in range(2):
-    for j in range(2):
-      _vcoord = vcoord[i,j]
-
-      p4est_qcoord_to_vertex(
-        &p4est._connectivity,
-        cell_idx,
-        quadrant.x + i*qwidth,
-        quadrant.y + j*qwidth,
-        <double*>&_vcoord[0] )
-
-  qcoord = np.array([quadrant.x, quadrant.y, 0], dtype = np.int32)
-
-
-  return qcoord, qwidth, vcoord
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _init_quadrant(
@@ -327,3 +300,64 @@ cdef class P4est:
   @property
   def leaf_data(self):
     return self._leaf_data
+
+  #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  def leaf_coord(self,
+    leaf_info = None,
+    offset = None ):
+
+    if leaf_info is None:
+      leaf_info = self._leaf_info
+
+    if offset is None:
+      offset = np.zeros((2,), dtype = np.float64)
+
+    else:
+      offset = np.asarray(offset, dtype = np.float64)
+
+    qwidth = 1 << (P4EST_MAXLEVEL - leaf_info['lvl'])
+
+    verts = self.mesh.verts[ self.mesh.cells[ leaf_info['cell'] ] ]
+
+    wx = np.zeros((2, len(leaf_info)), dtype = np.float64)
+    np.clip(
+      ( leaf_info['i'] + offset[0] * qwidth ) / P4EST_ROOT_LEN,
+      0.0, 1.0,
+      out = wx[1])
+
+    wx[0] = 1.0 - wx[1]
+
+    wy = np.zeros((2, len(leaf_info)), dtype = np.float64)
+    np.clip(
+      ( leaf_info['j'] + offset[1] * qwidth ) / P4EST_ROOT_LEN,
+      0.0, 1.0,
+      out = wy[1])
+
+    wy[0] = 1.0 - wy[1]
+
+    xyz = np.zeros((len(leaf_info),3), dtype = np.float64)
+
+    for j in range(2):
+      yfactor = wy[j]
+
+      for i in range(2):
+        xfactor = yfactor * wx[i]
+        xyz += xfactor[:,None] * verts[:,2*j+i]
+
+    return xyz
+
+    # P4EST_ROOT_LEN
+
+    # qwidth = 1 << (P4EST_MAXLEVEL - leaf_info['lvl'])
+
+    # for i in range(2):
+    #   for j in range(2):
+    #     _vcoord = vcoord[i,j]
+
+    #     p4est_qcoord_to_vertex(
+    #       &p4est._connectivity,
+    #       cell_idx,
+    #       quadrant.x + i*qwidth,
+    #       quadrant.y + j*qwidth,
+    #       <double*>&_vcoord[0] )
+

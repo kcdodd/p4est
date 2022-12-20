@@ -8,6 +8,7 @@ from mpi4py.MPI cimport MPI_Comm, Comm
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef extern from "p4est.h" nogil:
   const int P4EST_MAXLEVEL
+  const int P4EST_ROOT_LEN
 
   #.............................................................................
   ctypedef int sc_MPI_Comm
