@@ -6,7 +6,8 @@ from mpi4py.MPI cimport MPI_Comm, Comm
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef extern from "p4est.h" nogil:
+# NOTE: Some important definitions are not in p4est.h
+cdef extern from "p4est_extended.h" nogil:
   const int P4EST_MAXLEVEL
   const int P4EST_ROOT_LEN
 
@@ -18,6 +19,7 @@ cdef extern from "p4est.h" nogil:
   ctypedef np.npy_int32 p4est_qcoord_t
   ctypedef np.npy_int32 p4est_locidx_t
   ctypedef np.npy_int64 p4est_gloidx_t
+  ctypedef np.npy_uint64 p4est_lid_t
 
   #.............................................................................
   ctypedef struct sc_array_t:
@@ -256,6 +258,17 @@ cdef extern from "p4est.h" nogil:
     p4est_topidx_t cell_idx,
     p4est_quadrant_t* quadrant )
 
+  # Callback function prototype to replace one set of quadrants with another.
+  # If the mesh is being refined, num_outgoing will be 1 and num_incoming will
+  # be 4, and vice versa if the mesh is being coarsened.
+  ctypedef void (*p4est_replace_t) (
+    p4est_t * p4est,
+    p4est_topidx_t which_tree,
+    int num_outgoing,
+    p4est_quadrant_t * outgoing[],
+    int num_incoming,
+    p4est_quadrant_t * incoming[]);
+
   # Callback function prototype to decide for refinement.
   ctypedef int (*p4est_refine_t)(
     p4est_t * p4est,
@@ -291,25 +304,37 @@ cdef extern from "p4est.h" nogil:
   void p4est_destroy(p4est_t* p4est)
 
   #-----------------------------------------------------------------------------
-  void p4est_refine(
+  void p4est_refine_ext(
     p4est_t * p4est,
     int refine_recursive,
+    int maxlevel,
     p4est_refine_t refine_fn,
-    p4est_init_t init_fn)
+    p4est_init_t init_fn,
+    p4est_replace_t replace_fn )
 
   #-----------------------------------------------------------------------------
-  void p4est_coarsen (
+  void p4est_coarsen_ext(
     p4est_t * p4est,
     int coarsen_recursive,
+    int callback_orphans,
     p4est_coarsen_t coarsen_fn,
-    p4est_init_t init_fn)
+    p4est_init_t init_fn,
+    p4est_replace_t replace_fn )
 
   #-----------------------------------------------------------------------------
   # 2:1 balance the size differences of neighboring elements in a forest.
-  void p4est_balance(
+  void p4est_balance_ext(
     p4est_t * p4est,
     p4est_connect_type_t btype,
-    p4est_init_t init_fn)
+    p4est_init_t init_fn,
+    p4est_replace_t replace_fn )
+
+  void p4est_balance_subtree_ext(
+    p4est_t * p4est,
+    p4est_connect_type_t btype,
+    p4est_topidx_t which_tree,
+    p4est_init_t init_fn,
+    p4est_replace_t replace_fn )
 
   #-----------------------------------------------------------------------------
   # Equally partition the forest.
@@ -320,17 +345,10 @@ cdef extern from "p4est.h" nogil:
   #
   # On one process, the function noops and does not call the weight callback.
   # Otherwise, the weight callback is called once per quadrant in order.
-  void p4est_partition(
+  p4est_gloidx_t p4est_partition_ext(
     p4est_t * p4est,
     int allow_for_coarsening,
-    p4est_weight_t weight_fn)
-
-  void p4est_qcoord_to_vertex (
-    p4est_connectivity_t * connectivity,
-    p4est_topidx_t treeid,
-    p4est_qcoord_t x,
-    p4est_qcoord_t y,
-    double vxyz[3])
+    p4est_weight_t weight_fn )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef extern from "p4est_iterate.h" nogil:
@@ -410,7 +428,7 @@ cdef extern from "p4est_iterate.h" nogil:
     void *user_data )
 
   #.............................................................................
-  void p4est_iterate (
+  void p4est_iterate(
     p4est_t* p4est,
     p4est_ghost_t * ghost_layer,
     void *user_data,
@@ -434,11 +452,36 @@ cdef class P4est:
   cdef p4est_connectivity_t _connectivity
 
   #-----------------------------------------------------------------------------
-  cdef _init_c_data(
+  cdef _init(
     P4est self,
     p4est_locidx_t min_quadrants,
     int min_level,
     int fill_uniform )
+
+  #-----------------------------------------------------------------------------
+  cdef _update_iter(P4est self)
+
+  #-----------------------------------------------------------------------------
+  cdef _refine(
+    P4est self,
+    int recursive,
+    int maxlevel )
+
+  #-----------------------------------------------------------------------------
+  cdef _coarsen(
+    P4est self,
+    int recursive,
+    int orphans )
+
+  #-----------------------------------------------------------------------------
+  cdef _balance(
+    P4est self,
+    p4est_connect_type_t btype )
+
+  #-----------------------------------------------------------------------------
+  cdef _partition(
+    P4est self,
+    int allow_coarsening )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # NOTE: these are not class members because they need to match the callback sig.
@@ -448,6 +491,14 @@ cdef void _init_quadrant(
   p4est_t* p4est,
   p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant ) with gil
+
+cdef void _replace_quadrants(
+  p4est_t* p4est,
+  p4est_topidx_t cell_idx,
+  int num_outgoing,
+  p4est_quadrant_t* outgoing[],
+  int num_incoming,
+  p4est_quadrant_t* incoming[] ) with gil
 
 cdef int _refine_quadrant(
   p4est_t* p4est,
