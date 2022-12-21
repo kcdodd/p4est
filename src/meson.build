@@ -57,6 +57,8 @@ p4est_lib_sources = [
 config_file = configure_file(
   input: 'p4est_config.h.in',
   output: 'p4est_config.h',
+  install: true,
+  install_dir : get_option('includedir') + '/p4est',
   configuration : {
     'package' : meson.project_name(),
     'version' : meson.project_version(),
