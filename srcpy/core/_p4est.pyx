@@ -22,75 +22,6 @@ cdef extern from "Python.h":
 cdef LEAF_REFINE = 1 << 31
 cdef LEAF_COARSEN = 1 << 32
 
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef void _init_quadrant(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant ) with gil:
-  """
-  .. note::
-
-    Only an intermediate callback from p4est, forwards call to bound method
-    P4est._init_quadrant to actually handle the action.
-  """
-  self = <P4est>p4est.user_pointer
-
-  if self._leaf_count == len(self._leaf_info):
-    self._leaf_info = np.concatenate([
-      self._leaf_info,
-      np.zeros_like(self._leaf_info) ])
-
-    self._leaf_info['cell'][self._leaf_count:] = -1
-
-  # set where the quadrant data is going to be in the contiguous array
-  quadrant.p.user_long = self._leaf_count
-
-  q = self._leaf_info[self._leaf_count]
-  q['cell'] = cell_idx
-  q['lvl'] = quadrant.level
-  q['i'] = quadrant.x
-  q['j'] = quadrant.y
-  self._leaf_count += 1
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef int _refine_quadrant(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant ) with gil:
-
-  self = <P4est>p4est.user_pointer
-  return LEAF_REFINE & self._leaf_info[quadrant.p.user_long]['flags']
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef int _coarsen_quadrants(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrants[] ) with gil:
-
-  self = <P4est>p4est.user_pointer
-  return LEAF_COARSEN & (
-    self._leaf_info[quadrants[0].p.user_long]['flags']
-    & self._leaf_info[quadrants[1].p.user_long]['flags']
-    & self._leaf_info[quadrants[2].p.user_long]['flags']
-    & self._leaf_info[quadrants[3].p.user_long]['flags'] )
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef int _weight_quadrant(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant ) with gil:
-
-  self = <P4est>p4est.user_pointer
-  return self._leaf_info[quadrant.p.user_long]['weight']
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef void _iter_volume(
-  p4est_iter_volume_info_t* info,
-  void *user_data ) with gil:
-
-  pass
-
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
   """
@@ -180,8 +111,7 @@ cdef class P4est:
     self._leaf_dtype = np.dtype([
       ('cell', np.int32),
       ('lvl', np.int8),
-      ('i', np.int32),
-      ('j', np.int32),
+      ('ij', np.int32, (2,)),
       ('weight', np.int32),
       ('flags', np.int32) ])
 
@@ -209,9 +139,9 @@ cdef class P4est:
     memset(&self._connectivity, 0, sizeof(p4est_connectivity_t));
 
     cdef np.ndarray[double, ndim=2] verts = self._mesh.verts
-    cdef np.ndarray[np.npy_int32, ndim=2] cells = self._mesh.cells
-    cdef np.ndarray[np.npy_int32, ndim=2] cell_adj = self._mesh.cell_adj
-    cdef np.ndarray[np.npy_int8, ndim=2] cell_adj_face = self._mesh.cell_adj_face
+    cdef np.ndarray[np.npy_int32, ndim=3] cells = self._mesh.cells
+    cdef np.ndarray[np.npy_int32, ndim=3] cell_adj = self._mesh.cell_adj
+    cdef np.ndarray[np.npy_int8, ndim=3] cell_adj_face = self._mesh.cell_adj_face
     cdef np.ndarray[np.npy_int32, ndim=1] corner_to_cell_offset = self._mesh.corner_to_cell_offset
 
     self._connectivity.num_vertices = len(verts)
@@ -304,60 +234,106 @@ cdef class P4est:
   #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   def leaf_coord(self,
     leaf_info = None,
-    offset = None ):
+    uv = None ):
 
     if leaf_info is None:
       leaf_info = self._leaf_info
 
-    if offset is None:
-      offset = np.zeros((2,), dtype = np.float64)
+    if uv is None:
+      uv = np.zeros((2,), dtype = np.float64)
 
     else:
-      offset = np.asarray(offset, dtype = np.float64)
+      uv = np.asarray(uv, dtype = np.float64)
 
-    qwidth = 1 << (P4EST_MAXLEVEL - leaf_info['lvl'])
 
-    verts = self.mesh.verts[ self.mesh.cells[ leaf_info['cell'] ] ]
+    qwidth = np.left_shift(1, P4EST_MAXLEVEL - leaf_info['lvl'].astype(np.int32))
 
-    wx = np.zeros((2, len(leaf_info)), dtype = np.float64)
-    np.clip(
-      ( leaf_info['i'] + offset[0] * qwidth ) / P4EST_ROOT_LEN,
-      0.0, 1.0,
-      out = wx[1])
+    cell_verts = self.mesh.verts[ self.mesh.cells[ leaf_info['cell'] ] ]
 
-    wx[0] = 1.0 - wx[1]
+    UV = np.clip(
+      ( leaf_info['ij'] + uv[None,:] * qwidth[:,None] ) / P4EST_ROOT_LEN,
+      0.0, 1.0)
 
-    wy = np.zeros((2, len(leaf_info)), dtype = np.float64)
-    np.clip(
-      ( leaf_info['j'] + offset[1] * qwidth ) / P4EST_ROOT_LEN,
-      0.0, 1.0,
-      out = wy[1])
+    _UV = 1.0 - UV
 
-    wy[0] = 1.0 - wy[1]
+    W = np.empty_like(cell_verts)
+    W[:,0,0] = _UV[:,0]*_UV[:,1]
+    W[:,0,1] = UV[:,0]*_UV[:,1]
+    W[:,1,0] = _UV[:,0]*UV[:,1]
+    W[:,1,1] = UV[:,0]*UV[:,1]
 
-    xyz = np.zeros((len(leaf_info),3), dtype = np.float64)
-
-    for j in range(2):
-      yfactor = wy[j]
-
-      for i in range(2):
-        xfactor = yfactor * wx[i]
-        xyz += xfactor[:,None] * verts[:,2*j+i]
+    xyz = np.sum(W * cell_verts, axis = (1,2))
 
     return xyz
 
-    # P4EST_ROOT_LEN
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef void _init_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t cell_idx,
+  p4est_quadrant_t* quadrant ) with gil:
+  """
+  .. note::
 
-    # qwidth = 1 << (P4EST_MAXLEVEL - leaf_info['lvl'])
+    Only an intermediate callback from p4est, forwards call to bound method
+    P4est._init_quadrant to actually handle the action.
+  """
+  self = <P4est>p4est.user_pointer
 
-    # for i in range(2):
-    #   for j in range(2):
-    #     _vcoord = vcoord[i,j]
+  lc = self._leaf_count
 
-    #     p4est_qcoord_to_vertex(
-    #       &p4est._connectivity,
-    #       cell_idx,
-    #       quadrant.x + i*qwidth,
-    #       quadrant.y + j*qwidth,
-    #       <double*>&_vcoord[0] )
+  if lc == len(self._leaf_info):
+    # resize array to make room for more leaves as quadrants are refined
+    _leaf_info = self._leaf_info
+    self._leaf_info = np.zeros((2*len(_leaf_info),), dtype = self._leaf_info.dtype)
+    self._leaf_info[lc:] = _leaf_info
+    self._leaf_info['cell'][lc:] = -1
 
+  # set where the quadrant data is going to be in the contiguous array
+  quadrant.p.user_long = lc
+
+  q = self._leaf_info[lc]
+  q['cell'] = cell_idx
+  q['lvl'] = quadrant.level
+  q['ij'] = (quadrant.x, quadrant.y)
+  self._leaf_count += 1
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# NOTE: these are not class members because they need to match the callback sig.
+# but are implemented as though they were by casting the user pointer to be 'self'
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef int _refine_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t cell_idx,
+  p4est_quadrant_t* quadrant ) with gil:
+
+  self = <P4est>p4est.user_pointer
+  return LEAF_REFINE & self._leaf_info[quadrant.p.user_long]['flags']
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef int _coarsen_quadrants(
+  p4est_t* p4est,
+  p4est_topidx_t cell_idx,
+  p4est_quadrant_t* quadrants[] ) with gil:
+
+  self = <P4est>p4est.user_pointer
+  return LEAF_COARSEN & (
+    self._leaf_info[quadrants[0].p.user_long]['flags']
+    & self._leaf_info[quadrants[1].p.user_long]['flags']
+    & self._leaf_info[quadrants[2].p.user_long]['flags']
+    & self._leaf_info[quadrants[3].p.user_long]['flags'] )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef int _weight_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t cell_idx,
+  p4est_quadrant_t* quadrant ) with gil:
+
+  self = <P4est>p4est.user_pointer
+  return self._leaf_info[quadrant.p.user_long]['weight']
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef void _iter_volume(
+  p4est_iter_volume_info_t* info,
+  void *user_data ) with gil:
+
+  pass

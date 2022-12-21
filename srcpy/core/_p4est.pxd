@@ -419,10 +419,30 @@ cdef extern from "p4est_iterate.h" nogil:
     p4est_iter_corner_t iter_corner)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef void _iter_volume(
-  p4est_iter_volume_info_t* info,
-  void *user_data ) with gil
+cdef class P4est:
+  cdef _comm
+  cdef _mesh
+  cdef _shape
+  cdef _dtype
 
+  cdef _leaf_count
+  cdef _leaf_dtype
+  cdef _leaf_info
+  cdef _leaf_data
+
+  cdef p4est_t* _p4est
+  cdef p4est_connectivity_t _connectivity
+
+  #-----------------------------------------------------------------------------
+  cdef _init_c_data(
+    P4est self,
+    p4est_locidx_t min_quadrants,
+    int min_level,
+    int fill_uniform )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# NOTE: these are not class members because they need to match the callback sig.
+# but are implemented as though they were by casting the user pointer to be 'self'
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _init_quadrant(
   p4est_t* p4est,
@@ -444,24 +464,6 @@ cdef int _weight_quadrant(
   p4est_topidx_t cell_idx,
   p4est_quadrant_t* quadrant ) with gil
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class P4est:
-  cdef _comm
-  cdef _mesh
-  cdef _shape
-  cdef _dtype
-
-  cdef _leaf_count
-  cdef _leaf_dtype
-  cdef _leaf_info
-  cdef _leaf_data
-
-  cdef p4est_t* _p4est
-  cdef p4est_connectivity_t _connectivity
-
-  #-----------------------------------------------------------------------------
-  cdef _init_c_data(
-    P4est self,
-    p4est_locidx_t min_quadrants,
-    int min_level,
-    int fill_uniform )
+cdef void _iter_volume(
+  p4est_iter_volume_info_t* info,
+  void *user_data ) with gil

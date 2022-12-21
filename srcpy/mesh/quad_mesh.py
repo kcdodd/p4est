@@ -8,19 +8,19 @@ class QuadMesh:
   ----------
   verts : np.ndarray with shape = (NV, 2 or 3), dtype = np.float64
     Position of each vertex.
-  cells : np.ndarray with shape = (NC, 4), dtype = np.int32
+  cells : np.ndarray with shape = (NC, 2, 2), dtype = np.int32
     Quadrilateral cells, each defined by the indices of its 4 vertices.
 
     .. note::
 
-      The order of the vertices must follow the ordering [V00, V01, V10, V11]
-      for the desired geometry of the cell.
-      E.G For an aligned rectangle: [lower-left, lower-right, upper-left,
-      upper-right].
+      The order of the vertices must follow the ordering [[V00, V01], [V10, V11]],
+      or [[V0, V1], [V2, V3]], for the desired geometry of the cell.
+      E.G For an aligned rectangle: [[lower-left, lower-right], [upper-left,
+      upper-right]].
 
-  cell_adj : None | np.ndarray with shape (NC, 4) and dtype np.int32
+  cell_adj : None | np.ndarray with shape (NC, 2, 2) and dtype np.int32
     If not given, the adjacency is computed from the cells array.
-  cell_adj_face : None | np.ndarray with shape (NC, 4) and dtype np.int8
+  cell_adj_face : None | np.ndarray with shape (NC, 2, 2) and dtype np.int8
     If not given, the adjacency is computed from the cells array.
 
   """
@@ -50,10 +50,10 @@ class QuadMesh:
       dtype = np.int32 )
 
     if not (
-      cells.ndim == 2
-      and cells.shape[1] == 4 ):
+      cells.ndim == 3
+      and cells.shape[1:] == (2,2) ):
 
-      raise ValueError(f"'cells' must have shape (NC, 4): {cells.shape}")
+      raise ValueError(f"'cells' must have shape (NC, 2, 2): {cells.shape}")
 
     #...........................................................................
     if (cell_adj is None) != (cell_adj_face is None):
@@ -66,11 +66,11 @@ class QuadMesh:
       # faces defined as pairs vertices
       vfaces = np.array([
         # -/+ xfaces
-        cells[:,[0,2]],
-        cells[:,[1,3]],
+        cells[:,[0,1],0],
+        cells[:,[0,1],1],
         # -/+ yfaces
-        cells[:,[0,1]],
-        cells[:,[2,3]] ]).transpose((1,0,2))
+        cells[:,0,[0,1]],
+        cells[:,1,[0,1]] ]).transpose((1,0,2))
 
       # keep track where vertex order is changed to recover orientation
       isort = np.argsort(vfaces, axis = 2)
@@ -121,11 +121,13 @@ class QuadMesh:
       cell_adj = -np.ones((len(cells), 4), dtype = np.int32)
       cell_adj[c0,f0] = c1
       cell_adj[c1,f1] = c0
+      cell_adj = cell_adj.reshape(-1, 2, 2)
 
       # set the corresponding index of the face and relative orientation to adjacent cell
       cell_adj_face = -np.ones((len(cells), 4), dtype = np.int32)
       cell_adj_face[c0,f0] = f1 + 4*orientation
       cell_adj_face[c1,f1] = f0 + 4*orientation
+      cell_adj_face = cell_adj_face.reshape(-1, 2, 2)
 
     #...........................................................................
     cell_adj = np.ascontiguousarray(
@@ -133,11 +135,11 @@ class QuadMesh:
       dtype = np.int32 )
 
     if not (
-      cell_adj.ndim == 2
+      cell_adj.ndim == 3
       and cell_adj.shape[0] == len(cells)
-      and cell_adj.shape[1] == 4 ):
+      and cell_adj.shape[1:] == (2,2) ):
 
-      raise ValueError(f"'cell_adj' must have shape ({len(cells)}, 4): {cells.shape}")
+      raise ValueError(f"'cell_adj' must have shape ({len(cells)}, 2, 2): {cells.shape}")
 
     #...........................................................................
     cell_adj_face = np.ascontiguousarray(
@@ -145,11 +147,11 @@ class QuadMesh:
       dtype = np.int8 )
 
     if not (
-      cell_adj_face.ndim == 2
+      cell_adj_face.ndim == 3
       and cell_adj_face.shape[0] == len(cells)
-      and cell_adj_face.shape[1] == 4 ):
+      and cell_adj_face.shape[1:] == (2,2) ):
 
-      raise ValueError(f"'cell_adj_face' must have shape ({len(cells)}, 4): {cells.shape}")
+      raise ValueError(f"'cell_adj_face' must have shape ({len(cells)}, 2, 2): {cells.shape}")
 
     # TODO: figure out what are 'corners'
     corner_to_cell_offset = None
