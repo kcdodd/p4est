@@ -1,0 +1,17 @@
+option(
+  'mpi',
+  type : 'feature',
+  value : 'auto',
+  description : 'Build with support for MPI multi-processing' )
+
+option(
+  'zlib',
+  type : 'feature',
+  value : 'auto',
+  description : 'Build with support for zlib vectorization' )
+
+option(
+  'pypkg',
+  type : 'boolean',
+  value : false,
+  description : 'Build and install Python package.' )

@@ -123,7 +123,10 @@ compile_args = [
 
 #...............................................................................
 # p4est build options
-# [tool.pyproj.targets.options]
+[tool.pyproj.targets.options]
+pypkg = true
+# always build against MPI
+mpi = 'enabled'
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # binary distribution installed paths
