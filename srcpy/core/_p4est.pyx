@@ -61,21 +61,49 @@ cdef class P4est:
 
 
     #...........................................................................
+    self._max_level = P4EST_MAXLEVEL
     self._comm = comm
     self._mesh = mesh
 
     self._leaf_dtype = np.dtype([
-      ('cell', np.int32),
-      ('lvl', np.int8),
-      ('ij', np.int32, (2,)),
+      # the index of the original root level mesh.cellsW
+      ('root', np.int32),
+      # refinement level
+      ('level', np.int8),
+      # Normalized coordinate of the leaf's origin relative to the root cell
+      # stored as integer units to allow exact arithmetic:
+      # 0 -> 0.0
+      # 2**max_level -> 1.0
+      # To get positions from this origin, the relative width of the leaf can be
+      # computed from the refinement level:
+      # 2**(max_level - level) -> 1.0/2**level
+      # NOTE: This results in higher precision than a normalized 32bit float,
+      # since a single-precision float only has 24bits for the fraction.
+      # Floating point arithmetic involving the normalized coordinates should
+      # use 64bit (double) precision to avoid loss of precision.
+      ('origin', np.int32, (2,)),
+      # Computational weight of the leaf used for load partitioning among processors
       ('weight', np.int32),
-      ('refine', np.int8) ])
+      # A flag used to control refinement (>0) and coarsening (<0)
+      ('refine', np.int8),
+      # Indices of up to 6 unique adjacent leaves, ordered as:
+      #    |110|111|
+      # ---+---+---+---
+      # 001|       |011
+      # ---+       +---
+      # 000|       |010
+      # ---+---+---+---
+      #    |100|101|
+      # If the adjacent cell is at equal or lower refinement, the two indices
+      # accross that face will point to the same cell.
+      ('cell_adj', np.int32, (2,2,2)),
+      ('cell_adj_face', np.int8, (2,2,2)) ])
 
     self._leaf_info = np.zeros(
       self._mesh.cells.shape[:1],
       dtype = self._leaf_dtype )
 
-    self._leaf_info['cell'] = -1
+    self._leaf_info['root'] = -1
     self._leaf_count = 0
 
     self._init(min_quadrants, min_level, fill_uniform)
@@ -129,14 +157,28 @@ cdef class P4est:
 
   #-----------------------------------------------------------------------------
   cdef _update_iter(P4est self):
+    cdef p4est_ghost_t* ghost = NULL
+    cdef p4est_mesh_t* mesh = NULL
+
     with nogil:
-      p4est_iterate(
+      ghost = p4est_ghost_new(
         self._p4est,
-        NULL,
-        <void*>self,
-        <p4est_iter_volume_t>_iter_volume,
-        NULL,
-        NULL )
+        P4EST_CONNECT_FULL)
+
+      mesh = p4est_mesh_new_ext(
+        self._p4est,
+        ghost,
+        1,
+        0,
+        P4EST_CONNECT_FULL)
+
+      # p4est_iterate(
+      #   self._p4est,
+      #   NULL,
+      #   <void*>self,
+      #   <p4est_iter_volume_t>_iter_volume,
+      #   NULL,
+      #   NULL )
 
   #-----------------------------------------------------------------------------
   def __dealloc__(self):
@@ -164,6 +206,11 @@ cdef class P4est:
     self.free()
 
     return False
+
+  #-----------------------------------------------------------------------------
+  @property
+  def max_level( self ):
+    return self._max_level
 
   #-----------------------------------------------------------------------------
   @property
@@ -223,15 +270,15 @@ cdef class P4est:
     info = self._leaf_info[idx]
 
     # compute the local discrete width of the leaf within the root cell
-    # NOTE: the root lvl = 0 is 2**P4EST_MAXLEVEL wide, and all refinement
+    # NOTE: the root level = 0 is 2**P4EST_MAXLEVEL wide, and all refinement
     # levels are smaller by factors that are powers of 2.
-    qwidth = np.left_shift(1, P4EST_MAXLEVEL - info['lvl'].astype(np.int32))
+    qwidth = np.left_shift(1, P4EST_MAXLEVEL - info['level'].astype(np.int32))
 
-    cell_verts = self.mesh.verts[ self.mesh.cells[ info['cell'] ] ]
+    cell_verts = self.mesh.verts[ self.mesh.cells[ info['root'] ] ]
 
     # compute the relative position within the root cell
     UV = np.clip(
-      ( info['ij'] + uv[None,:] * qwidth[:,None] ) / P4EST_ROOT_LEN,
+      ( info['origin'] + uv[None,:] * qwidth[:,None] ) / P4EST_ROOT_LEN,
       0.0, 1.0)[:,:,None]
 
     # Compute the coefficients for bilinear interpolation of the root cells
@@ -404,7 +451,10 @@ cdef void _iter_volume(
   p4est_iter_volume_info_t* info,
   void *user_data ) with gil:
 
-  cdef p4est_topidx_t cell_idx = info.treeid
+  # index of root cell
+  cdef p4est_topidx_t treeid = info.treeid
+  # index of leaf cell within the root cell
+  cdef p4est_locidx_t leaf_idx = info.quadid
   cdef p4est_quadrant_t* quadrant = info.quad
   cdef p4est_ghost_t* ghost = info.ghost_layer
 
@@ -423,9 +473,9 @@ cdef void _iter_volume(
   quadrant.p.user_long = lc
 
   q = self._leaf_info[lc]
-  q['cell'] = cell_idx
-  q['lvl'] = quadrant.level
-  q['ij'] = (quadrant.x, quadrant.y)
+  q['root'] = treeid
+  q['level'] = quadrant.level
+  q['origin'] = (quadrant.x, quadrant.y)
   self._leaf_count += 1
 
-  print(f"+leaf {cell_idx}-{quadrant.level}-{quadrant.x/P4EST_ROOT_LEN:.3f}-{quadrant.y/P4EST_ROOT_LEN:.3f}")
+  print(f"+leaf {treeid}-{quadrant.level}-{quadrant.x/P4EST_ROOT_LEN:.3f}-{quadrant.y/P4EST_ROOT_LEN:.3f}")

@@ -250,6 +250,45 @@ cdef extern from "p4est_extended.h" nogil:
     # algorithmic switches
     p4est_inspect_t* inspect
 
+  #.............................................................................
+  ctypedef struct p4est_ghost_t:
+    # TODO
+    pass
+
+  #.............................................................................
+  ctypedef struct p4est_mesh_t:
+
+    p4est_locidx_t      local_num_quadrants
+    p4est_locidx_t      ghost_num_quadrants
+
+    p4est_topidx_t     *quad_to_tree
+    int                *ghost_to_proc
+
+    p4est_locidx_t     *quad_to_quad
+    np.npy_int8        *quad_to_face
+    sc_array_t         *quad_to_half
+    sc_array_t         *quad_level
+
+    p4est_locidx_t      local_num_corners
+    p4est_locidx_t     *quad_to_corner
+    sc_array_t         *corner_offset
+    sc_array_t         *corner_quad
+    sc_array_t         *corner_corner
+
+  #.............................................................................
+  ctypedef struct p4est_mesh_face_neighbor_t:
+    p4est_t            *p4est
+    p4est_ghost_t      *ghost
+    p4est_mesh_t       *mesh
+
+    p4est_topidx_t      which_tree
+    p4est_locidx_t      quadrant_id
+    p4est_locidx_t      quadrant_code
+
+    int                 face
+    int                 subface
+
+    p4est_locidx_t      current_qtq
 
   #-----------------------------------------------------------------------------
   # Callback function prototype to initialize the quadrant's user data.
@@ -300,10 +339,30 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_init_t init_fn,
     void* user_pointer )
 
-  #-----------------------------------------------------------------------------
+  #.............................................................................
   void p4est_destroy(p4est_t* p4est)
 
   #-----------------------------------------------------------------------------
+  p4est_ghost_t* p4est_ghost_new(
+    p4est_t* p4est,
+    p4est_connect_type_t btype)
+
+  #.............................................................................
+  void p4est_ghost_destroy(
+    p4est_ghost_t* ghost)
+
+  #.............................................................................
+  p4est_mesh_t* p4est_mesh_new_ext(
+    p4est_t* p4est,
+    p4est_ghost_t* ghost,
+    int compute_tree_index,
+    int compute_level_lists,
+    p4est_connect_type_t btype)
+
+  #.............................................................................
+  void p4est_mesh_destroy(p4est_mesh_t * mesh)
+
+  #.............................................................................
   void p4est_refine_ext(
     p4est_t * p4est,
     int refine_recursive,
@@ -312,7 +371,7 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_init_t init_fn,
     p4est_replace_t replace_fn )
 
-  #-----------------------------------------------------------------------------
+  #.............................................................................
   void p4est_coarsen_ext(
     p4est_t * p4est,
     int coarsen_recursive,
@@ -321,7 +380,7 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_init_t init_fn,
     p4est_replace_t replace_fn )
 
-  #-----------------------------------------------------------------------------
+  #.............................................................................
   # 2:1 balance the size differences of neighboring elements in a forest.
   void p4est_balance_ext(
     p4est_t * p4est,
@@ -336,7 +395,7 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_init_t init_fn,
     p4est_replace_t replace_fn )
 
-  #-----------------------------------------------------------------------------
+  #.............................................................................
   # Equally partition the forest.
   # The partition can be by element count or by a user-defined weight.
   #
@@ -382,7 +441,7 @@ cdef extern from "p4est_iterate.h" nogil:
     p4est_locidx_t *mirror_proc_fronts
     p4est_locidx_t *mirror_proc_front_offsets
 
-  #-----------------------------------------------------------------------------
+  #.............................................................................
   ctypedef struct p4est_iter_volume_info_t:
     p4est_t *p4est
     p4est_ghost_t *ghost_layer
@@ -438,6 +497,7 @@ cdef extern from "p4est_iterate.h" nogil:
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
+  cdef _max_level
   cdef _comm
   cdef _mesh
 
