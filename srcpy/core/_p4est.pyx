@@ -25,31 +25,6 @@ cdef class P4est:
   Parameters
   ----------
   mesh : QuadMesh
-
-  shape : None | tuple[int]
-    The shape of the data stored in each leaf (default: tuple()).
-
-    .. note::
-
-      The default shape = tuple() is interpreted as a single scalar value per leaf,
-      storing the same amount of data as shapes of (1,) or (1,1) etc.
-
-  dtype : None | np.dtype
-    The type of the data stored in each leaf quadrant. No data is allocated
-    unless this is specified.
-
-    .. note::
-
-      The top-level dtype may be a composition of other dtypes defined for
-      NumPy structured array (https:#numpy.org/doc/stable/user/basics.rec.html).
-      This gives some freedom to define either an array of structs (by setting
-      the above shape), a struct of arrays (by setting a shape in the dtype's
-      fields), or a combination.
-
-  cell_adj : None | np.ndarray with shape (NC, 4) and dtype np.int32
-    If not given, the adjacency is computed from the cells array.
-  cell_adj_face : None | np.ndarray with shape (NC, 4) and dtype np.int8
-    If not given, the adjacency is computed from the cells array.
   min_quadrants : None | int
     (default: 0)
   min_level : None | int
@@ -63,8 +38,6 @@ cdef class P4est:
   #-----------------------------------------------------------------------------
   def __init__(self,
     mesh,
-    shape = None,
-    dtype = None,
     min_quadrants = None,
     min_level = None,
     fill_uniform = None,
@@ -86,22 +59,10 @@ cdef class P4est:
     if comm is None:
       comm = MPI.COMM_WORLD
 
-    #...........................................................................
-    # define quadrant data
-
-    if shape is None:
-      shape = tuple()
-
-    shape = tuple(int(s) for s in shape)
-
-    if dtype is not None:
-      dtype = np.dtype(dtype)
 
     #...........................................................................
     self._comm = comm
     self._mesh = mesh
-    self._shape = shape
-    self._dtype = dtype
 
     self._leaf_dtype = np.dtype([
       ('cell', np.int32),
@@ -120,14 +81,6 @@ cdef class P4est:
     self._init(min_quadrants, min_level, fill_uniform)
 
     self._leaf_info = self._leaf_info[:self._leaf_count]
-
-    if self._dtype is not None:
-      self._leaf_data = np.zeros(
-        (self._leaf_count, *self._shape),
-        dtype = self._dtype)
-
-    else:
-      self._leaf_data = None
 
   #-----------------------------------------------------------------------------
   cdef _init(
@@ -200,7 +153,6 @@ cdef class P4est:
     self._p4est = NULL
 
     self._leaf_info = None
-    self._leaf_data = None
     self._mesh = None
 
   #-----------------------------------------------------------------------------
@@ -237,11 +189,6 @@ cdef class P4est:
   @property
   def leaf_info(self):
     return self._leaf_info
-
-  #-----------------------------------------------------------------------------
-  @property
-  def leaf_data(self):
-    return self._leaf_data
 
   #-----------------------------------------------------------------------------
   def leaf_coord(self,

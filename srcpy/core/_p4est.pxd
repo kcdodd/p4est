@@ -440,13 +440,10 @@ cdef extern from "p4est_iterate.h" nogil:
 cdef class P4est:
   cdef _comm
   cdef _mesh
-  cdef _shape
-  cdef _dtype
 
   cdef _leaf_count
   cdef _leaf_dtype
   cdef _leaf_info
-  cdef _leaf_data
 
   cdef p4est_t* _p4est
   cdef p4est_connectivity_t _connectivity
