@@ -14,7 +14,7 @@ AC_PREFIX_DEFAULT([$PWD/local])
 AX_PREFIX_CONFIG_H([config/p4est_config.h])
 AM_INIT_AUTOMAKE([parallel-tests subdir-objects])
 AM_SILENT_RULES
-AM_EXTRA_RECURSIVE_TARGETS([justlibs])
+AM_EXTRA_RECURSIVE_TARGETS([justlibs doxygen])
 PKG_INSTALLDIR
 SC_VERSION([P4EST])
 
@@ -39,12 +39,12 @@ echo "| Checking MPI and related programs"
 echo "o---------------------------------------"
 
 dnl A nonempty second/third argument causes to enable F77+F90/CXX, respectively.
-SC_MPI_CONFIG([P4EST], [yes], [yes])
+SC_MPI_CONFIG([P4EST], [], [])
 SC_MPI_ENGAGE([P4EST])
 # This is needed for compatibility with automake >= 1.12
 m4_ifdef([AM_PROG_AR],[AM_PROG_AR])
-SC_PROG_LINT
-SC_C_VERSION
+dnl SC_PROG_LINT
+dnl SC_C_VERSION
 LT_INIT
 
 echo "o---------------------------------------"
@@ -98,7 +98,7 @@ echo "| TESTS:       $P4EST_MPIRUN $P4EST_MPI_TEST_FLAGS"
 echo "o----------------------------------"
 
 # Create output files.
-AC_CONFIG_FILES([Makefile Doxyfile])
+AC_CONFIG_FILES([Makefile doc/Doxyfile])
 AC_CONFIG_FILES([config/Makefile.p4est.pre config/p4est_autotools.pc])
 AC_OUTPUT
 
