@@ -66,7 +66,7 @@ cdef class P4est:
     self._mesh = mesh
 
     self._leaf_dtype = np.dtype([
-      # the index of the original root level mesh.cellsW
+      # the index of the original root level mesh.cells
       ('root', np.int32),
       # refinement level
       ('level', np.int8),
@@ -99,16 +99,16 @@ cdef class P4est:
       ('cell_adj', np.int32, (2,2,2)),
       ('cell_adj_face', np.int8, (2,2,2)) ])
 
-    self._leaf_info = np.zeros(
-      self._mesh.cells.shape[:1],
-      dtype = self._leaf_dtype )
+    # self._leaf_info = np.zeros(
+    #   self._mesh.cells.shape[:1],
+    #   dtype = self._leaf_dtype )
 
-    self._leaf_info['root'] = -1
-    self._leaf_count = 0
+    # self._leaf_info['root'] = -1
+    # self._leaf_count = 0
 
     self._init(min_quadrants, min_level, fill_uniform)
 
-    self._leaf_info = self._leaf_info[:self._leaf_count]
+    # self._leaf_info = self._leaf_info[:self._leaf_count]
 
   #-----------------------------------------------------------------------------
   cdef _init(
@@ -156,21 +156,68 @@ cdef class P4est:
     self._update_iter()
 
   #-----------------------------------------------------------------------------
+  # @cython.boundscheck(False)
+  # @cython.wraparound(False)
   cdef _update_iter(P4est self):
     cdef p4est_ghost_t* ghost = NULL
     cdef p4est_mesh_t* mesh = NULL
 
-    with nogil:
-      ghost = p4est_ghost_new(
-        self._p4est,
-        P4EST_CONNECT_FULL)
 
-      mesh = p4est_mesh_new_ext(
-        self._p4est,
-        ghost,
-        1,
-        0,
-        P4EST_CONNECT_FULL)
+    cdef p4est_tree_t* trees = <p4est_tree_t*>self._p4est.trees.array
+    cdef p4est_tree_t* root = NULL
+
+    cdef p4est_quadrant_t* quads = NULL
+    cdef p4est_quadrant_t* cell = NULL
+    cdef cnp.npy_int32 cell_idx = 0
+
+
+    # cdef object buffer = None
+
+
+    ghost = p4est_ghost_new(
+      self._p4est,
+      P4EST_CONNECT_FULL)
+
+    mesh = p4est_mesh_new_ext(
+      self._p4est,
+      ghost,
+      # compute_tree_index
+      0,
+      # compute_level_lists
+      0,
+      P4EST_CONNECT_FULL)
+
+    self._leaf_info = np.zeros(
+      (mesh.local_num_quadrants + mesh.ghost_num_quadrants,),
+      dtype = self._leaf_dtype )
+
+    for r in range(self._p4est.first_local_tree, self._p4est.last_local_tree):
+      root = &trees[r]
+      quads = <p4est_quadrant_t*>root.quadrants.array
+
+      for q in range(root.quadrants.elem_count):
+        cell = &quads[q]
+        cell_idx = root.quadrants_offset + q
+
+        leaf = self._leaf_info[cell_idx]
+
+        leaf['root'] = r
+        leaf['level'] = cell.level
+        leaf['origin'] = (cell.x, cell.y)
+
+    # cdef np.ndarray[np.int32] root
+    # cdef np.ndarray[np.int32, ndim = 2] _cell_adj =
+
+    # buffer = <object>PyMemoryView_FromMemory(
+    #   <char*>mesh.quad_to_tree,
+    #   np.dtype(np.int32).itemsize * mesh.local_num_quadrants,
+    #   PyBUF_WRITE )
+
+    # self._leaf_info[:mesh.local_num_quadrants]['root'] = np.frombuffer(
+    #   buffer,
+    #   dtype = np.int32,
+    #   count = mesh.local_num_quadrants )
+
 
       # p4est_iterate(
       #   self._p4est,
@@ -179,6 +226,8 @@ cdef class P4est:
       #   <p4est_iter_volume_t>_iter_volume,
       #   NULL,
       #   NULL )
+
+    p4est_mesh_destroy(mesh)
 
   #-----------------------------------------------------------------------------
   def __dealloc__(self):

@@ -116,15 +116,17 @@ class QuadMesh:
       f1 = np.nonzero(ifaces[c1] == dual_fidx[:,None])[1]
 
       # relative orientation if one (but not both) are in reversed order
-      orientation = (reversed[c0,f0] ^ reversed[c1,f1]).astype(np.int32)
+      orientation = (reversed[c0,f0] ^ reversed[c1,f1]).astype(np.int8)
 
-      cell_adj = -np.ones((len(cells), 4), dtype = np.int32)
+      cell_adj = np.empty((len(cells), 4), dtype = np.int32)
+      cell_adj[:] = np.arange(len(cells))[:,None]
       cell_adj[c0,f0] = c1
       cell_adj[c1,f1] = c0
       cell_adj = cell_adj.reshape(-1, 2, 2)
 
       # set the corresponding index of the face and relative orientation to adjacent cell
-      cell_adj_face = -np.ones((len(cells), 4), dtype = np.int32)
+      cell_adj_face = np.empty((len(cells), 4), dtype = np.int8)
+      cell_adj_face[:] = np.arange(4)[None,:]
       cell_adj_face[c0,f0] = f1 + 4*orientation
       cell_adj_face[c1,f1] = f0 + 4*orientation
       cell_adj_face = cell_adj_face.reshape(-1, 2, 2)
