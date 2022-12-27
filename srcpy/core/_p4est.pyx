@@ -123,7 +123,11 @@ cdef class P4est:
     cdef np.ndarray[np.npy_int32, ndim=3] cells = self._mesh.cells
     cdef np.ndarray[np.npy_int32, ndim=3] cell_adj = self._mesh.cell_adj
     cdef np.ndarray[np.npy_int8, ndim=3] cell_adj_face = self._mesh.cell_adj_face
-    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_cell_offset = self._mesh.corner_to_cell_offset
+
+    cdef np.ndarray[np.npy_int32, ndim=1] tree_to_corner = self._mesh.cell_nodes
+    cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = self._mesh.node_cells_offset
+    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = self._mesh.node_cells
+    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = self._mesh.node_cell_verts
 
     self._connectivity.num_vertices = len(verts)
     self._connectivity.vertices = <double*>verts.data
@@ -133,9 +137,12 @@ cdef class P4est:
     self._connectivity.tree_to_tree = <np.npy_int32*>(cell_adj.data)
     self._connectivity.tree_to_face = <np.npy_int8*>(cell_adj_face.data)
 
-    # self._connectivity.num_corners = 0
-    # self._connectivity.corner_to_tree = &self._corner_to_tree[0]
-    self._connectivity.ctt_offset = <np.npy_int32*>(corner_to_cell_offset.data)
+    self._connectivity.num_corners = self._mesh.num_nodes_active
+    self._connectivity.tree_to_corner = <np.npy_int32*>(tree_to_corner.data)
+    self._connectivity.ctt_offset = <np.npy_int32*>(ctt_offset.data)
+    self._connectivity.corner_to_tree = <np.npy_int32*>(corner_to_tree.data)
+    self._connectivity.corner_to_corner = <np.npy_int8*>(corner_to_corner.data)
+
 
     cdef p4est_t* p4est = NULL
     cdef sc_MPI_Comm comm = <sc_MPI_Comm> (<Comm>self.comm).ob_mpi

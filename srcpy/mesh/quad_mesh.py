@@ -18,15 +18,21 @@ class QuadMesh:
       E.G For an aligned rectangle: [[lower-left, lower-right], [upper-left,
       upper-right]].
 
+  nodes : None | np.ndarray with shape = (NV,), dtype = np.int32
+    The topological node associated with each vertex. If not given this
+    defaults to ``arange(NV)`` giving a 1:1 association of vertices to nodes.
   cell_adj : None | np.ndarray with shape (NC, 2, 2) and dtype np.int32
+    Topological connectivity to other cells accross each face.
     If not given, the adjacency is computed from the cells array.
   cell_adj_face : None | np.ndarray with shape (NC, 2, 2) and dtype np.int8
+    Topological order of the faces of each connected cell.
     If not given, the adjacency is computed from the cells array.
 
   """
   def __init__(self,
     verts,
     cells,
+    nodes = None,
     cell_adj = None,
     cell_adj_face = None ):
 
@@ -45,7 +51,7 @@ class QuadMesh:
       verts = np.append(verts, np.zeros_like(verts[:,:1]), axis = 1)
 
     #...........................................................................
-    cells = cells = np.ascontiguousarray(
+    cells = np.ascontiguousarray(
       cells,
       dtype = np.int32 )
 
@@ -55,13 +61,40 @@ class QuadMesh:
 
       raise ValueError(f"'cells' must have shape (NC, 2, 2): {cells.shape}")
 
+    _min = np.amin(cells)
+    _max = np.amax(cells)
+
+    if _min < 0 or _max >= len(verts):
+      raise ValueError(f"'cells' values must be in the range [0,{len(verts)-1}]: [{_min},{_max}]")
+
+    #...........................................................................
+    if nodes is None:
+      nodes = np.arange(len(verts))
+
+    nodes = np.ascontiguousarray(
+      nodes,
+      dtype = np.int32 )
+
+    if not (
+      nodes.ndim == 1
+      and nodes.shape[0] == len(verts) ):
+
+      raise ValueError(f"'nodes' must have shape ({len(verts)},): {nodes.shape}")
+
+    _min = np.amin(nodes)
+    _max = np.amax(nodes)
+
+    if _min < 0 or _max >= len(verts):
+      raise ValueError(f"'nodes' values must be in the range [0,{len(verts)-1}]: [{_min},{_max}]")
+
     #...........................................................................
     if (cell_adj is None) != (cell_adj_face is None):
       raise ValueError(f"'cell_adj' and 'cell_adj_face' must be specified together")
 
+    cidx = np.arange(len(cells))
+
     if cell_adj is None:
       # build adjacency from per-cell vertex list
-      cidx = np.arange(len(cells))
 
       # faces defined as pairs vertices
       vfaces = np.array([
@@ -155,23 +188,108 @@ class QuadMesh:
 
       raise ValueError(f"'cell_adj_face' must have shape ({len(cells)}, 2, 2): {cells.shape}")
 
-    # TODO: figure out what are 'corners'
-    corner_to_cell_offset = None
 
-    if corner_to_cell_offset is None:
-      corner_to_cell_offset = [0]
-
-    corner_to_cell_offset = np.ascontiguousarray(
-      corner_to_cell_offset,
+    #...........................................................................
+    # aka. tree_to_corner, but as a (NC,2,2) array
+    cell_nodes = np.ascontiguousarray(
+      nodes[cells],
       dtype = np.int32 )
+
+    _cell_nodes = cell_nodes.ravel()
+
+    print('cell_nodes')
+    print(cell_nodes)
+    print(_cell_nodes)
+
+    node_idx = np.argsort(_cell_nodes)
+    print('node_idx')
+    print(node_idx)
+
+    node_cells_count = np.zeros((len(nodes),), dtype = np.int32)
+    _nodes, counts = np.unique(
+      _cell_nodes,
+      return_counts = True)
+
+    node_cells_count[_nodes] = counts
+
+    print('node_cells_count')
+    print(node_cells_count)
+    print()
+
+    # aka. corner_to_tree
+    node_cells = node_idx // 4
+    print('node_cells')
+    print(node_cells)
+
+    # aka. corner_to_corner
+    node_cell_verts = (node_idx % 4).astype(np.int8)
+    print('node_cell_verts')
+    print(node_cell_verts)
+
+    # aka. ctt_offset
+    node_cells_offset = np.empty((len(nodes)+1,), dtype = np.int32)
+    node_cells_offset[0] = 0
+    node_cells_offset[1:] = np.cumsum(node_cells_count)
+    print('node_cells_offset')
+    print(node_cells_offset)
+    print()
+
+    # Only store nodes shared by vertices that connect two or more cells
+    # node_verts_active = np.zeros((len(nodes),), dtype = bool)
+    _nodes, idx_inv, vert_counts = np.unique(
+      nodes,
+      return_inverse = True,
+      return_counts = True)
+
+    print('idx_inv')
+    print(idx_inv)
+
+    print('vert_counts')
+    print(vert_counts)
+
+    # node_verts_active[idx_inv] = np.repeat(vert_counts > 1, vert_counts)
+    node_multi = node_cells_count > 1
+    # node_multi[_nodes[vert_counts <= 1]] = False
+
+    # print('node_verts_active')
+    # print(node_verts_active)
+
+    print('node_multi')
+    print(node_multi)
+
+    # aka num_corners
+    num_nodes_active = np.count_nonzero(node_multi)
+    print('num_nodes_active', num_nodes_active)
+
+    _node_multi = np.repeat( node_multi, node_cells_count )
+
+    node_cells_count = node_cells_count[node_multi]
+    node_cells = node_cells[_node_multi]
+    node_cell_verts = node_cell_verts[_node_multi]
+
+    _cell_nodes[node_idx[~_node_multi]] = -1
+
+    print('m -> cell_nodes')
+    print(cell_nodes)
+
+    print('m -> node_cells')
+    print(node_cells)
 
 
     #...........................................................................
     self._verts = verts
     self._cells = cells
+    self._nodes = nodes
+
     self._cell_adj = cell_adj
     self._cell_adj_face = cell_adj_face
-    self._corner_to_cell_offset = corner_to_cell_offset
+
+    self._num_nodes_active = num_nodes_active
+    self._cell_nodes = cell_nodes
+    self._node_cells = node_cells
+    self._node_cell_verts = node_cell_verts
+    self._node_cells_offset = node_cells_offset
+    # self._node_verts_active = node_verts_active
 
   #-----------------------------------------------------------------------------
   @property
@@ -195,5 +313,25 @@ class QuadMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def corner_to_cell_offset(self):
-    return self._corner_to_cell_offset
+  def num_nodes_active(self):
+    return self._num_nodes_active
+
+  #-----------------------------------------------------------------------------
+  # @property
+  # def node_verts_active(self):
+  #   return self._node_verts_active
+
+  #-----------------------------------------------------------------------------
+  @property
+  def node_cells_offset(self):
+    return self._node_cells_offset
+
+  #-----------------------------------------------------------------------------
+  @property
+  def node_cells(self):
+    return self._node_cells
+
+  #-----------------------------------------------------------------------------
+  @property
+  def node_cell_verts(self):
+    return self._node_cell_verts
