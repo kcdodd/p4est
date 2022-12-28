@@ -86,12 +86,12 @@ class QuadMesh:
     #...........................................................................
     self._verts = verts
     self._cells = cells
-    self._vert_nodes = vert_nodes
 
     ( self._cell_adj,
       self._cell_adj_face ) = quad_cell_adjacency(cells)
 
-    ( self._cell_nodes,
+    ( self._vert_nodes,
+      self._cell_nodes,
       self._node_cells,
       self._node_cell_verts,
       self._node_cells_offset ) = quad_cell_nodes(cells, vert_nodes)
@@ -262,6 +262,24 @@ def quad_cell_nodes(cells, vert_nodes):
 
   """
 
+  # count number of cells sharing each vertex to find if there are any singularities
+  # that haven't been added to a 'node'
+  # NOTE: assumes a vertex is in a cell at most 1 time
+  _verts, _count = np.unique(
+    cells.ravel(),
+    return_counts = True )
+
+  vert_cells_count = np.zeros((len(vert_nodes),), dtype = np.int32)
+  vert_cells_count[_verts] = _count
+  naked_singularities = (vert_cells_count > 4) & (vert_nodes == -1)
+  ns = np.count_nonzero(naked_singularities)
+
+  if ns > 0:
+    # add new nodes for any that need them
+    vert_nodes = np.copy(vert_nodes)
+    new_nodes = np.arange(ns) + np.amax(vert_nodes) + 1
+    vert_nodes[naked_singularities] = new_nodes
+
   # get unique nodes, and the number of vertices associated with each one
   nodes, node_verts_count = np.unique(
     vert_nodes,
@@ -341,6 +359,7 @@ def quad_cell_nodes(cells, vert_nodes):
   _cell_nodes[sort_idx[~_node_keep]] = -1
 
   return (
+    vert_nodes,
     cell_nodes,
     node_cells,
     node_cell_verts,
