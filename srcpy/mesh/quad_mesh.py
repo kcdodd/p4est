@@ -18,15 +18,19 @@ class QuadMesh:
       E.G For an aligned rectangle: [[lower-left, lower-right], [upper-left,
       upper-right]].
 
-  nodes : None | np.ndarray with shape = (NV,), dtype = np.int32
-    The topological node associated with each vertex. If not given this
-    defaults to ``arange(NV)`` giving a 1:1 association of vertices to nodes.
+  vert_nodes : None | np.ndarray with shape = (NV,), dtype = np.int32
+    The topological node associated with each vertex, causing cells to be connected
+    by having vertices associated with the same node in addition to directly
+    sharing vertices.
+    A value of ``-1`` is used to indicate independent vertices.
+    If not given, each vertex is assumed to be independent, and cells are only
+    connected by shared vertices.
 
   """
   def __init__(self,
     verts,
     cells,
-    nodes = None ):
+    vert_nodes = None ):
 
     #...........................................................................
     verts = np.ascontiguousarray(
@@ -60,38 +64,37 @@ class QuadMesh:
       raise ValueError(f"'cells' values must be in the range [0,{len(verts)-1}]: [{_min},{_max}]")
 
     #...........................................................................
-    if nodes is None:
-      nodes = np.arange(len(verts))
+    if vert_nodes is None:
+      vert_nodes = -np.ones(len(verts), dtype = np.int32)
 
-    nodes = np.ascontiguousarray(
-      nodes,
+    vert_nodes = np.ascontiguousarray(
+      vert_nodes,
       dtype = np.int32 )
 
     if not (
-      nodes.ndim == 1
-      and nodes.shape[0] == len(verts) ):
+      vert_nodes.ndim == 1
+      and vert_nodes.shape[0] == len(verts) ):
 
-      raise ValueError(f"'nodes' must have shape ({len(verts)},): {nodes.shape}")
+      raise ValueError(f"'vert_nodes' must have shape ({len(verts)},): {vert_nodes.shape}")
 
-    _min = np.amin(nodes)
-    _max = np.amax(nodes)
+    _min = np.amin(vert_nodes)
+    _max = np.amax(vert_nodes)
 
-    if _min < 0 or _max >= len(verts):
-      raise ValueError(f"'nodes' values must be in the range [0,{len(verts)-1}]: [{_min},{_max}]")
+    if _min < -1 or _max >= len(verts):
+      raise ValueError(f"'vert_nodes' values must be in the range [-1,{len(verts)-1}]: [{_min},{_max}]")
 
     #...........................................................................
     self._verts = verts
     self._cells = cells
-    self._nodes = nodes
+    self._vert_nodes = vert_nodes
 
     ( self._cell_adj,
       self._cell_adj_face ) = quad_cell_adjacency(cells)
 
-    ( self._num_nodes,
-     self._cell_nodes,
-     self._node_cells,
-     self._node_cell_verts,
-     self._node_cells_offset ) = quad_cell_nodes(cells, nodes)
+    ( self._cell_nodes,
+      self._node_cells,
+      self._node_cell_verts,
+      self._node_cells_offset ) = quad_cell_nodes(cells, vert_nodes)
 
     #...........................................................................
 
@@ -115,6 +118,7 @@ class QuadMesh:
   def cells(self):
     return self._cells
 
+
   #-----------------------------------------------------------------------------
   @property
   def cell_adj(self):
@@ -127,13 +131,13 @@ class QuadMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def num_nodes(self):
-    return self._num_nodes
+  def cell_nodes(self):
+    return self._cell_nodes
 
   #-----------------------------------------------------------------------------
-  # @property
-  # def node_verts_active(self):
-  #   return self._node_verts_active
+  @property
+  def vert_nodes(self):
+    return self._vert_nodes
 
   #-----------------------------------------------------------------------------
   @property
@@ -243,14 +247,14 @@ def quad_cell_adjacency(cells):
   return cell_adj, cell_adj_face
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def quad_cell_nodes(cells, nodes):
+def quad_cell_nodes(cells, vert_nodes):
   """Computes topological nodes between quad. cells
 
   Parameters
   ----------
   cells : np.ndarray with shape = (NC, 2, 2), dtype = np.int32
     Quadrilateral cells, each defined by the indices of its 4 vertices.
-  nodes : None | np.ndarray with shape = (NV,), dtype = np.int32
+  vert_nodes : None | np.ndarray with shape = (NV,), dtype = np.int32
     The topological node associated with each vertex.
 
   Returns
@@ -258,28 +262,22 @@ def quad_cell_nodes(cells, nodes):
 
   """
 
-  nidx = np.arange(len(nodes))
-  direct = nidx[nodes] == nodes[nodes]
+  # get unique nodes, and the number of vertices associated with each one
+  nodes, node_verts_count = np.unique(
+    vert_nodes,
+    return_counts = True )
 
-  if not np.all(direct):
-    raise ValueError(f"'nodes' may only be direct references (single level deep)")
-
-
-  node_verts_count = np.zeros((len(nodes),), dtype = np.int32)
-  _nodes, _count = np.unique( nodes, return_counts = True )
-  node_verts_count[_nodes] = _count
-
+  if nodes[0] == -1:
+    # put independent (-1) nodes at the end for proper indexing
+    nodes = np.roll(nodes, -1)
+    node_verts_count = np.roll(node_verts_count, -1)
 
   # aka. tree_to_corner, but as a (NC,2,2) array
   cell_nodes = np.ascontiguousarray(
-    nodes[cells],
+    vert_nodes[cells],
     dtype = np.int32 )
 
   _cell_nodes = cell_nodes.ravel()
-
-  print('cell_nodes')
-  print(cell_nodes)
-  print(_cell_nodes)
 
   # sorting the nodes (in raveled array) would put repeated entries into
   # contiguous groups.
@@ -287,23 +285,20 @@ def quad_cell_nodes(cells, nodes):
   # NOTE: the default is 'quicksort', but made explicit in case at some point
   # a stable sort is needed to preserve the relative order of the cell indices
   sort_idx = np.argsort(_cell_nodes, kind = 'quicksort')
-  print('sort_idx')
-  print(sort_idx)
+
+  # put independent (-1) nodes at the end for proper indexing
+  sort_idx = np.roll(sort_idx, -np.count_nonzero(_cell_nodes == -1))
 
   # map the indices back to the cell with which the nodes were associated
   # gives a (raveled) jagged array of all the cells associated with
   # each node
 
   # aka. corner_to_tree
-  node_cells = sort_idx // 4
-  print('node_cells')
-  print(node_cells)
+  node_cells = (sort_idx // 4).astype(np.int32)
 
   # also, map which vertex (within the cell)
   # aka. corner_to_corner
   node_cell_verts = (sort_idx % 4).astype(np.int8)
-  print('node_cell_verts')
-  print(node_cell_verts)
 
   # Since these are raveled, the offset for each node is needed
   # to reconstruct the individual 'rows' of the jagged array
@@ -313,6 +308,7 @@ def quad_cell_nodes(cells, nodes):
   # - node_cells_offset is computed directly from intermediate step,
   #   instead of using cumsum to undo the diff
   _nodes = _cell_nodes[sort_idx]
+
   _mask = np.empty(_nodes.shape, dtype = bool)
   _mask[0] = True
   _mask[1:] = _nodes[1:] != _nodes[:-1]
@@ -320,68 +316,31 @@ def quad_cell_nodes(cells, nodes):
   # get the indices of the first occurence of each value
   # aka. ctt_offset
   # NOTE: 0 < len(node_cells_offset) <= len(nodes)+1
-  node_cells_offset = np.concatenate(np.nonzero(_mask) + ([_mask.size],))
-
-  print('node_cells_offset')
-  print(node_cells_offset)
-  print()
+  node_cells_offset = np.concatenate(np.nonzero(_mask) + ([_mask.size],)).astype(np.int32)
 
   # the difference between these indices is the count of repeats of the node
   _counts = np.diff(node_cells_offset)
+  _nodes = _nodes[_mask]
+
 
   # NOTE: this is back to len(nodes), with all 'unused' node counts set to zero
   node_cells_count = np.zeros((len(nodes),), dtype = np.int32)
-  node_cells_count[_nodes[_mask]] = _counts
-
-  print('node_cells_count')
-  print(node_cells_count)
-  print()
-
-  # Using the counts, compute the offsets into node_cells and node_cell_verts
-  # aka. ctt_offset
-  # node_cells_offset = np.empty((len(nodes)+1,), dtype = np.int32)
-  # node_cells_offset[0] = 0
-  # node_cells_offset[1:] = np.cumsum(node_cells_count)
-  # print('node_cells_offset')
-  # print(node_cells_offset)
-  # print()
+  node_cells_count[_nodes] = _counts
 
   # Only store nodes that:
   # Are associated with 2 or more vertices ("non-local" connections),
   # or connect 5 or more cells (mesh singularities )
-  node_multi = (node_cells_count > 4) | (node_verts_count > 1)
+  node_keep = (nodes != -1) & ((node_cells_count > 4) | (node_verts_count > 1))
 
-  # print('node_verts_active')
-  # print(node_verts_active)
+  _node_keep = np.repeat( node_keep, node_cells_count )
 
-  print('node_multi')
-  print(node_multi)
+  node_cells_count = node_cells_count[node_keep]
+  node_cells = node_cells[_node_keep]
+  node_cell_verts = node_cell_verts[_node_keep]
 
-  # aka num_corners
-  num_nodes = np.count_nonzero(node_multi)
-  print('num_nodes', num_nodes)
-
-  _node_multi = np.repeat( node_multi, node_cells_count )
-
-  node_cells_count = node_cells_count[node_multi]
-  node_cells = node_cells[_node_multi]
-  node_cell_verts = node_cell_verts[_node_multi]
-
-  _cell_nodes[sort_idx[~_node_multi]] = -1
-
-  print('m -> cell_nodes')
-  print(cell_nodes)
-
-  print('m -> node_cells')
-  print(node_cells)
-
-  for i, n in enumerate(node_cells_count):
-    a = node_cells[:n]
-    node_cells = node_cells[n:]
-    print(f"node {i}: {a}")
+  _cell_nodes[sort_idx[~_node_keep]] = -1
 
   return (
-    num_nodes,
     cell_nodes,
     node_cells,
     node_cell_verts,

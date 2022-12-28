@@ -124,7 +124,7 @@ cdef class P4est:
     cdef np.ndarray[np.npy_int32, ndim=3] cell_adj = self._mesh.cell_adj
     cdef np.ndarray[np.npy_int8, ndim=3] cell_adj_face = self._mesh.cell_adj_face
 
-    cdef np.ndarray[np.npy_int32, ndim=1] tree_to_corner = self._mesh.cell_nodes
+    cdef np.ndarray[np.npy_int32, ndim=1] tree_to_corner = self._mesh.cell_nodes.ravel()
     cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = self._mesh.node_cells_offset
     cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = self._mesh.node_cells
     cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = self._mesh.node_cell_verts
