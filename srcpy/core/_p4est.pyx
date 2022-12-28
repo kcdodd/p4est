@@ -1,14 +1,6 @@
-import os
-import sys
-import time
-import ruamel.yaml
-import shutil
-import os.path as osp
-from pathlib import Path
-from collections.abc import (
-  Mapping,
-  Sequence,
-  Iterable )
+
+
+
 
 cimport numpy as cnp
 import numpy as np
@@ -19,133 +11,41 @@ from mpi4py.MPI cimport MPI_Comm, Comm
 from libc.stdlib cimport malloc, free
 from libc.string cimport memset
 
+from p4est.mesh.quad_mesh import QuadMesh
+
 cdef extern from "Python.h":
   const int PyBUF_READ
   const int PyBUF_WRITE
   PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef _init_quadrant(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant ):
-  """
-  .. note::
-
-    Only an intermediate callback from p4est, forwards call to bound method
-    P4est._init_quadrant to actually handle the action.
-  """
-  self = <P4est>p4est.user_pointer
-
-  cdef object buffer = <object>PyMemoryView_FromMemory(
-    <char*>quadrant.p.user_data,
-    self._data_size,
-    PyBUF_WRITE )
-
-  data = np.frombuffer(
-    buffer,
-    dtype = self._dtype,
-    count = self._data_count )
-
-  cdef cnp.ndarray[double, ndim = 1] vxyz = np.array([0., 0., 0.], dtype = np._double)
-
-  p4est_qcoord_to_vertex(
-    p4est.connectivity,
-    cell_idx,
-    quadrant.x,
-    quadrant.y,
-    <double*> vxyz.data )
-
-  # (<P4est>p4est.user_pointer)._init_quadrant(cell_idx, quadrant)
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef _refine_quadrant(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant ):
-
-  (<P4est>p4est.user_pointer)._refine_quadrant(cell_idx, quadrant)
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef _coarsen_quadrants(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrants[] ):
-
-  (<P4est>p4est.user_pointer)._coarsen_quadrants(cell_idx, quadrants)
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef _weight_quadrant(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant ):
-
-  (<P4est>p4est.user_pointer)._weight_quadrant(cell_idx, quadrant)
-
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
+  """
+
+  Parameters
+  ----------
+  mesh : QuadMesh
+  min_quadrants : None | int
+    (default: 0)
+  min_level : None | int
+    (default: 0)
+  fill_uniform : bool
+  comm : None | mpi4py.MPI.Comm
+    (default: mpi4py.MPI.COMM_WORLD)
+
+  """
+
   #-----------------------------------------------------------------------------
   def __init__(self,
-    verts,
-    cells,
-    shape = None,
-    dtype = None,
-    cell_adj = None,
-    cell_adj_face = None,
+    mesh,
     min_quadrants = None,
     min_level = None,
     fill_uniform = None,
     comm = None ):
-    """
 
-    Parameters
-    ----------
-    verts : np.ndarray with shape = (NV, 2 or 3), dtype = np.float64
-      Position of each vertex.
-    cells : np.ndarray with shape = (NC, 4), dtype = np.int32
-      Quadrilateral cells, each defined by the indices of its 4 vertices.
-
-      .. note::
-
-        The order of the vertices must follow the ordering [V00, V01, V10, V11]
-        for the desired geometry of the cell.
-        E.G For an aligned rectangle: [lower-left, lower-right, upper-left,
-        upper-right].
-
-    shape : None | tuple[int]
-      The shape of the data stored in each leaf quadrant (default: tuple()).
-
-      .. note::
-
-        A shape = (1,1) result in the same amount of data being stored per-quadrant
-        as the default shape = tuple() because an empty shape is also interpreted
-        as a single value.
-
-    dtype : None | np.dtype
-      The type of the data stored in each leaf quadrant (default: np.float64).
-
-      .. note::
-
-        The top-level dtype may be a composition of other dtypes defined for
-        NumPy structured arrasy (https://numpy.org/doc/stable/user/basics.rec.html).
-        This gives some freedom to define either an array of structs (by setting
-        the above shape), a struct of arrays (by setting a shape in the dtype's
-        fields), or a combination.
-
-    cell_adj : None | np.ndarray with shape (NC, 4) and dtype np.int32
-      If not given, the adjacency is computed from the cells array.
-    cell_adj_face : None | np.ndarray with shape (NC, 4) and dtype np.int8
-      If not given, the adjacency is computed from the cells array.
-    min_quadrants : None | int
-      (default: 0)
-    min_level : None | int
-      (default: 0)
-    fill_uniform : bool
-    comm : None | mpi4py.MPI.Comm
-      (default: mpi4py.MPI.COMM_WORLD)
-
-    """
+    #...........................................................................
+    if not isinstance(mesh, QuadMesh):
+      raise ValueError(f"mesh must be a QuadMesh: {type(mesh)}")
 
     if min_quadrants is None:
       min_quadrants = 0
@@ -159,193 +59,182 @@ cdef class P4est:
     if comm is None:
       comm = MPI.COMM_WORLD
 
-    #...........................................................................
-    # define quadrant data
-
-    if shape is None:
-      shape = tuple()
-
-    shape = tuple(int(s) for s in shape)
-
-    if dtype is None:
-      dtype = np.float64
-
-    dtype = np.dtype(dtype)
 
     #...........................................................................
-    verts = np.ascontiguousarray(
-      verts,
-      dtype = np.float64 )
-
-    if not (
-      verts.ndim == 2
-      and verts.shape[1] in [2, 3] ):
-      raise ValueError(f"'verts' must have shape (NV, 2 or 3): {verts.shape}")
-
-    if verts.shape[1] == 2:
-      # set z coordinates all to zero to get the right shape
-      verts = np.append(verts, np.zeros_like(verts[:,:1]), axis = 1)
-
-    #...........................................................................
-    cells = cells = np.ascontiguousarray(
-      cells,
-      dtype = np.int32 )
-
-    if not (
-      cells.ndim == 2
-      and cells.shape[1] == 4 ):
-
-      raise ValueError(f"'cells' must have shape (NC, 4): {cells.shape}")
-
-    #...........................................................................
-    if (cell_adj is None) != (cell_adj_face is None):
-      raise ValueError(f"'cell_adj' and 'cell_adj_face' must be specified together")
-
-    if cell_adj is None:
-      # build adjacency from per-cell vertex list
-      cidx = np.arange(len(cells))
-
-      # faces defined as pairs vertices
-      vfaces = np.array([
-        # -/+ xfaces
-        cells[:,[0,2]],
-        cells[:,[1,3]],
-        # -/+ yfaces
-        cells[:,[0,1]],
-        cells[:,[2,3]] ]).transpose((1,0,2))
-
-      # keep track where vertex order is changed to recover orientation
-      isort = np.argsort(vfaces, axis = 2)
-      reversed = isort[:,:,0] != 0
-      vfaces = np.take_along_axis(vfaces, isort, axis = 2)
-
-      # reduce faces down to unique pairs of vertices
-      faces, idx, idx_inv = np.unique(
-        vfaces.reshape(-1, 2),
-        return_index = True,
-        return_inverse = True,
-        axis = 0 )
-
-      fidx = np.arange(len(faces))
-
-      # indices of unique faces for each cell, according to the vertex order above
-      ifaces = idx_inv.reshape(len(cells), 4)
-
-      # reconstructed the 'edges' passing through faces connecting cells
-      # i.e. the 'edge list' representation of a graph where cells are the nodes
-      dual_edges = -np.ones((len(faces), 2), dtype = np.int32)
-
-      for i in range(4):
-        # set cell indices for adjacent pairs
-        # FIFO conditional
-        j = np.where(dual_edges[ifaces[:,i],0] == -1, 0, 1)
-        dual_edges[ifaces[:,i], j] = cidx
-
-      # filter out all faces that don't connect a pair of cells
-      # TODO: some kind of default boundary condition?
-      m = ~np.any(dual_edges == -1, axis = 1)
-      dual_edges = dual_edges[m]
-      dual_fidx = fidx[m]
-
-      # indices of first cell
-      c0 = dual_edges[:,0]
-      # local indices of shared face in first cells
-      f0 = np.nonzero(ifaces[c0] == dual_fidx[:,None])[1]
-
-      # indices of second cell
-      c1 = dual_edges[:,1]
-      # local indices of shared face in second cells
-      f1 = np.nonzero(ifaces[c1] == dual_fidx[:,None])[1]
-
-      # relative orientation if one (but not both) are in reversed order
-      orientation = (reversed[c0,f0] ^ reversed[c1,f1]).astype(np.int32)
-
-      cell_adj = -np.ones((len(cells), 4), dtype = np.int32)
-      cell_adj[c0,f0] = c1
-      cell_adj[c1,f1] = c0
-
-      # set the corresponding index of the face and relative orientation to adjacent cell
-      cell_adj_face = -np.ones((len(cells), 4), dtype = np.int32)
-      cell_adj_face[c0,f0] = f1 + 4*orientation
-      cell_adj_face[c1,f1] = f0 + 4*orientation
-
-    #...........................................................................
-    cell_adj = np.ascontiguousarray(
-      cell_adj,
-      dtype = np.int32 )
-
-    if not (
-      cell_adj.ndim == 2
-      and cell_adj.shape[0] == len(cells)
-      and cell_adj.shape[1] == 4 ):
-
-      raise ValueError(f"'cell_adj' must have shape ({len(cells)}, 4): {cells.shape}")
-
-    #...........................................................................
-    cell_adj_face = np.ascontiguousarray(
-      cell_adj_face,
-      dtype = np.int8 )
-
-    if not (
-      cell_adj_face.ndim == 2
-      and cell_adj_face.shape[0] == len(cells)
-      and cell_adj_face.shape[1] == 4 ):
-
-      raise ValueError(f"'cell_adj_face' must have shape ({len(cells)}, 4): {cells.shape}")
-
-    corner_to_tree_offset = [0]
-
-    self._shape = shape
-    self._dtype = dtype
-    self._data_count = int(np.prod(shape))
-    self._data_size = self._data_count * dtype.itemsize
-
-
-    self._verts = verts
-    self._cells = cells
-    self._cell_adj = cell_adj
-    self._cell_adj_face = cell_adj_face
-
-    # TODO: figure out what are 'corners'
-    self._corner_to_tree_offset = np.ascontiguousarray(
-      corner_to_tree_offset,
-      dtype = np.int32 )
-
+    self._max_level = P4EST_MAXLEVEL
     self._comm = comm
+    self._mesh = mesh
 
-    self._init_c_data(min_quadrants, min_level, fill_uniform)
+    self._leaf_dtype = np.dtype([
+      # the index of the original root level mesh.cells
+      ('root', np.int32),
+      # refinement level
+      ('level', np.int8),
+      # Normalized coordinate of the leaf's origin relative to the root cell
+      # stored as integer units to allow exact arithmetic:
+      # 0 -> 0.0
+      # 2**max_level -> 1.0
+      # To get positions from this origin, the relative width of the leaf can be
+      # computed from the refinement level:
+      # 2**(max_level - level) -> 1.0/2**level
+      # NOTE: This results in higher precision than a normalized 32bit float,
+      # since a single-precision float only has 24bits for the fraction.
+      # Floating point arithmetic involving the normalized coordinates should
+      # use 64bit (double) precision to avoid loss of precision.
+      ('origin', np.int32, (2,)),
+      # Computational weight of the leaf used for load partitioning among processors
+      ('weight', np.int32),
+      # A flag used to control refinement (>0) and coarsening (<0)
+      ('refine', np.int8),
+      # Indices of up to 6 unique adjacent leaves, ordered as:
+      #    |110|111|
+      # ---+---+---+---
+      # 001|       |011
+      # ---+       +---
+      # 000|       |010
+      # ---+---+---+---
+      #    |100|101|
+      # If the adjacent cell is at equal or lower refinement, the two indices
+      # accross that face will point to the same cell.
+      ('cell_adj', np.int32, (2,2,2)),
+      ('cell_adj_face', np.int8, (2,2,2)) ])
+
+    # self._leaf_info = np.zeros(
+    #   self._mesh.cells.shape[:1],
+    #   dtype = self._leaf_dtype )
+
+    # self._leaf_info['root'] = -1
+    # self._leaf_count = 0
+
+    self._init(min_quadrants, min_level, fill_uniform)
+
+    # self._leaf_info = self._leaf_info[:self._leaf_count]
 
   #-----------------------------------------------------------------------------
-  cdef _init_c_data(
+  cdef _init(
     P4est self,
     p4est_locidx_t min_quadrants,
     int min_level,
     int fill_uniform ):
 
-    memset(&self._tmap, 0, sizeof(p4est_connectivity_t));
+    memset(&self._connectivity, 0, sizeof(p4est_connectivity_t));
 
-    self._tmap.num_vertices = len(self._verts)
-    self._tmap.vertices = <double*>self._verts.data
+    cdef np.ndarray[double, ndim=2] verts = self._mesh.verts
+    cdef np.ndarray[np.npy_int32, ndim=3] cells = self._mesh.cells
+    cdef np.ndarray[np.npy_int32, ndim=3] cell_adj = self._mesh.cell_adj
+    cdef np.ndarray[np.npy_int8, ndim=3] cell_adj_face = self._mesh.cell_adj_face
 
-    self._tmap.num_trees = len(self._cells)
-    self._tmap.tree_to_vertex = <np.npy_int32*>self._cells.data
-    self._tmap.tree_to_tree = <np.npy_int32*>self._cell_adj.data
-    self._tmap.tree_to_face = <np.npy_int8*>self._cell_adj_face.data
+    cdef np.ndarray[np.npy_int32, ndim=1] tree_to_corner = self._mesh.cell_nodes
+    cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = self._mesh.node_cells_offset
+    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = self._mesh.node_cells
+    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = self._mesh.node_cell_verts
 
-    # self._tmap.num_corners = 0
-    # self._tmap.corner_to_tree = &self._corner_to_tree[0]
-    self._tmap.ctt_offset = <np.npy_int32*>self._corner_to_tree_offset.data
+    self._connectivity.num_vertices = len(verts)
+    self._connectivity.vertices = <double*>verts.data
 
-    self._p4est = p4est_new_ext(
-      <sc_MPI_Comm> (<Comm>self.comm).ob_mpi,
-      &(self._tmap),
-      min_quadrants,
-      min_level,
-      fill_uniform,
-      # data_size per quadrant (managed by p4est)
-      self._data_size,
-      <p4est_init_t>_init_quadrant,
-      <void*>self )
+    self._connectivity.num_trees = len(cells)
+    self._connectivity.tree_to_vertex = <np.npy_int32*>(cells.data)
+    self._connectivity.tree_to_tree = <np.npy_int32*>(cell_adj.data)
+    self._connectivity.tree_to_face = <np.npy_int8*>(cell_adj_face.data)
+
+    self._connectivity.num_corners = self._mesh.num_nodes_active
+    self._connectivity.tree_to_corner = <np.npy_int32*>(tree_to_corner.data)
+    self._connectivity.ctt_offset = <np.npy_int32*>(ctt_offset.data)
+    self._connectivity.corner_to_tree = <np.npy_int32*>(corner_to_tree.data)
+    self._connectivity.corner_to_corner = <np.npy_int8*>(corner_to_corner.data)
+
+
+    cdef p4est_t* p4est = NULL
+    cdef sc_MPI_Comm comm = <sc_MPI_Comm> (<Comm>self.comm).ob_mpi
+    cdef p4est_connectivity_t* connectivity = &(self._connectivity)
+
+    with nogil:
+      p4est = p4est_new_ext(
+        comm,
+        connectivity,
+        min_quadrants,
+        min_level,
+        fill_uniform,
+        0,
+        <p4est_init_t>_init_quadrant,
+        <void*>self )
+
+    self._p4est = p4est
+    self._update_iter()
+
+  #-----------------------------------------------------------------------------
+  # @cython.boundscheck(False)
+  # @cython.wraparound(False)
+  cdef _update_iter(P4est self):
+    cdef p4est_ghost_t* ghost = NULL
+    cdef p4est_mesh_t* mesh = NULL
+
+
+    cdef p4est_tree_t* trees = <p4est_tree_t*>self._p4est.trees.array
+    cdef p4est_tree_t* root = NULL
+
+    cdef p4est_quadrant_t* quads = NULL
+    cdef p4est_quadrant_t* cell = NULL
+    cdef cnp.npy_int32 cell_idx = 0
+
+
+    # cdef object buffer = None
+
+
+    ghost = p4est_ghost_new(
+      self._p4est,
+      P4EST_CONNECT_FULL)
+
+    mesh = p4est_mesh_new_ext(
+      self._p4est,
+      ghost,
+      # compute_tree_index
+      0,
+      # compute_level_lists
+      0,
+      P4EST_CONNECT_FULL)
+
+    self._leaf_info = np.zeros(
+      (mesh.local_num_quadrants + mesh.ghost_num_quadrants,),
+      dtype = self._leaf_dtype )
+
+    for r in range(self._p4est.first_local_tree, self._p4est.last_local_tree):
+      root = &trees[r]
+      quads = <p4est_quadrant_t*>root.quadrants.array
+
+      for q in range(root.quadrants.elem_count):
+        cell = &quads[q]
+        cell_idx = root.quadrants_offset + q
+
+        leaf = self._leaf_info[cell_idx]
+
+        leaf['root'] = r
+        leaf['level'] = cell.level
+        leaf['origin'] = (cell.x, cell.y)
+
+    # cdef np.ndarray[np.int32] root
+    # cdef np.ndarray[np.int32, ndim = 2] _cell_adj =
+
+    # buffer = <object>PyMemoryView_FromMemory(
+    #   <char*>mesh.quad_to_tree,
+    #   np.dtype(np.int32).itemsize * mesh.local_num_quadrants,
+    #   PyBUF_WRITE )
+
+    # self._leaf_info[:mesh.local_num_quadrants]['root'] = np.frombuffer(
+    #   buffer,
+    #   dtype = np.int32,
+    #   count = mesh.local_num_quadrants )
+
+
+      # p4est_iterate(
+      #   self._p4est,
+      #   NULL,
+      #   <void*>self,
+      #   <p4est_iter_volume_t>_iter_volume,
+      #   NULL,
+      #   NULL )
+
+    p4est_mesh_destroy(mesh)
 
   #-----------------------------------------------------------------------------
   def __dealloc__(self):
@@ -361,6 +250,9 @@ cdef class P4est:
     p4est_destroy(self._p4est)
     self._p4est = NULL
 
+    self._leaf_info = None
+    self._mesh = None
+
   #-----------------------------------------------------------------------------
   def __enter__(self):
     return self
@@ -373,34 +265,273 @@ cdef class P4est:
 
   #-----------------------------------------------------------------------------
   @property
+  def max_level( self ):
+    return self._max_level
+
+  #-----------------------------------------------------------------------------
+  @property
   def comm( self ):
     return self._comm
 
   #-----------------------------------------------------------------------------
-  cdef _init_quadrant(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant ):
-
-    pass
+  @property
+  def mesh( self ):
+    return self._mesh
 
   #-----------------------------------------------------------------------------
-  cdef _refine_quadrant(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant ):
-    pass
+  @property
+  def shape( self ):
+    return self._shape
 
   #-----------------------------------------------------------------------------
-  cdef _coarsen_quadrants(
-    P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant[] ):
-    pass
+  @property
+  def dtype( self ):
+    return self._dtype
 
   #-----------------------------------------------------------------------------
-  cdef _weight_quadrant(
+  @property
+  def leaf_info(self):
+    return self._leaf_info
+
+  #-----------------------------------------------------------------------------
+  def leaf_coord(self,
+    uv = None,
+    idx = None ):
+    r"""
+
+    Parameters
+    ----------
+    uv : None | array of shape = (2,)
+      Relative position within each leaf to compute the coordinates, normalized
+      to the range [0.0, 1.0] along each edge of the leaf.
+      (default: (0.0, 0.0))
+    idx : None | any single-dimension ndarray index
+      Computes coordinates only for this subset of leaves. (default: slice(None))
+
+    Returns
+    -------
+    coords: array of shape = (len(leaf_info), 3)
+      Absolute coordinates of the given relative position in each leaf
+    """
+
+    if uv is None:
+      uv = np.zeros((2,), dtype = np.float64)
+
+    else:
+      uv = np.asarray(uv, dtype = np.float64)
+
+    if idx is None:
+      idx = slice(None)
+
+    info = self._leaf_info[idx]
+
+    # compute the local discrete width of the leaf within the root cell
+    # NOTE: the root level = 0 is 2**P4EST_MAXLEVEL wide, and all refinement
+    # levels are smaller by factors that are powers of 2.
+    qwidth = np.left_shift(1, P4EST_MAXLEVEL - info['level'].astype(np.int32))
+
+    cell_verts = self.mesh.verts[ self.mesh.cells[ info['root'] ] ]
+
+    # compute the relative position within the root cell
+    UV = np.clip(
+      ( info['origin'] + uv[None,:] * qwidth[:,None] ) / P4EST_ROOT_LEN,
+      0.0, 1.0)[:,:,None]
+
+    # Compute the coefficients for bilinear interpolation of the root cells
+    # vertices absolute position onto the desired position relative to the leaf.
+    _UV = 1.0 - UV
+
+    c = np.empty_like(cell_verts)
+    c[:,0,0] = _UV[:,0]*_UV[:,1]
+    c[:,0,1] = UV[:,0]*_UV[:,1]
+    c[:,1,0] = _UV[:,0]*UV[:,1]
+    c[:,1,1] = UV[:,0]*UV[:,1]
+
+    # Perform the interpolation
+    return np.sum(c * cell_verts, axis = (1,2))
+
+  #-----------------------------------------------------------------------------
+  def refine(self,
+    recursive = False,
+    maxlevel = -1 ):
+
+    # leaf_info = np.copy(self._leaf_info)
+    # self._leaf_count = 0
+
+    self._refine(int(recursive), int(maxlevel))
+    self._update_iter()
+
+    # self._leaf_info = self._leaf_info[:self._leaf_count]
+
+  #-----------------------------------------------------------------------------
+  cdef _refine(
     P4est self,
-    p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant ):
-    pass
+    int recursive,
+    int maxlevel ):
+
+    with nogil:
+      p4est_refine_ext(
+        self._p4est,
+        recursive,
+        maxlevel,
+        <p4est_refine_t>_refine_quadrant,
+        <p4est_init_t>_init_quadrant,
+        <p4est_replace_t> _replace_quadrants )
+
+  #-----------------------------------------------------------------------------
+  def coarsen(self,
+    recursive = False,
+    orphans = False ):
+
+    self._coarsen(int(recursive), int(orphans))
+    self._update_iter()
+
+  #-----------------------------------------------------------------------------
+  cdef _coarsen(
+    P4est self,
+    int recursive,
+    int orphans ):
+
+    with nogil:
+      p4est_coarsen_ext(
+        self._p4est,
+        recursive,
+        orphans,
+        <p4est_coarsen_t>_coarsen_quadrants,
+        <p4est_init_t>_init_quadrant,
+        <p4est_replace_t> _replace_quadrants )
+
+  #-----------------------------------------------------------------------------
+  def balance(self,
+    connections = None ):
+
+    if connections is None:
+      connections = 'full'
+
+    connections = {
+      'face': P4EST_CONNECT_FACE,
+      'corner': P4EST_CONNECT_CORNER,
+      'full': P4EST_CONNECT_FULL }[connections]
+
+    self._balance(<p4est_connect_type_t>connections)
+
+  #-----------------------------------------------------------------------------
+  cdef _balance(
+    P4est self,
+    p4est_connect_type_t btype ):
+
+    with nogil:
+      p4est_balance_ext(
+        self._p4est,
+        btype,
+        <p4est_init_t>_init_quadrant,
+        <p4est_replace_t> _replace_quadrants )
+
+  #-----------------------------------------------------------------------------
+  def partition(self,
+    allow_coarsening = False):
+
+    self._partition(int(allow_coarsening))
+
+  #-----------------------------------------------------------------------------
+  cdef _partition(
+    P4est self,
+    int allow_coarsening ):
+
+    with nogil:
+      p4est_partition_ext(
+        self._p4est,
+        allow_coarsening,
+        <p4est_weight_t>_weight_quadrant )
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef void _init_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t cell_idx,
+  p4est_quadrant_t* quadrant ) with gil:
+  pass
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef void _replace_quadrants(
+  p4est_t* p4est,
+  p4est_topidx_t cell_idx,
+  int num_outgoing,
+  p4est_quadrant_t* outgoing[],
+  int num_incoming,
+  p4est_quadrant_t* incoming[] ) with gil:
+
+  if num_incoming == 1:
+    print(f"coarsening: {cell_idx}")
+
+  else:
+
+    print(f"refining: {cell_idx}")
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# NOTE: these are not class members because they need to match the callback sig.
+# but are implemented as though they were by casting the user pointer to be 'self'
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef int _refine_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t cell_idx,
+  p4est_quadrant_t* quadrant ) with gil:
+
+  self = <P4est>p4est.user_pointer
+  return 0 < self._leaf_info[quadrant.p.user_long]['refine']
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef int _coarsen_quadrants(
+  p4est_t* p4est,
+  p4est_topidx_t cell_idx,
+  p4est_quadrant_t* quadrants[] ) with gil:
+
+  self = <P4est>p4est.user_pointer
+  return 0 > (
+    self._leaf_info[quadrants[0].p.user_long]['refine']
+    + self._leaf_info[quadrants[1].p.user_long]['refine']
+    + self._leaf_info[quadrants[2].p.user_long]['refine']
+    + self._leaf_info[quadrants[3].p.user_long]['refine'] )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef int _weight_quadrant(
+  p4est_t* p4est,
+  p4est_topidx_t cell_idx,
+  p4est_quadrant_t* quadrant ) with gil:
+
+  self = <P4est>p4est.user_pointer
+  return self._leaf_info[quadrant.p.user_long]['weight']
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef void _iter_volume(
+  p4est_iter_volume_info_t* info,
+  void *user_data ) with gil:
+
+  # index of root cell
+  cdef p4est_topidx_t treeid = info.treeid
+  # index of leaf cell within the root cell
+  cdef p4est_locidx_t leaf_idx = info.quadid
+  cdef p4est_quadrant_t* quadrant = info.quad
+  cdef p4est_ghost_t* ghost = info.ghost_layer
+
+  self = <P4est>user_data
+
+  lc = self._leaf_count
+
+  if lc == len(self._leaf_info):
+    # resize array to make room for more leaves as quadrants are refined
+    _leaf_info = self._leaf_info
+    self._leaf_info = np.zeros((2*len(_leaf_info),), dtype = self._leaf_info.dtype)
+    self._leaf_info[lc:] = _leaf_info
+    self._leaf_info['cell'][lc:] = -1
+
+  # set where the quadrant data is going to be in the contiguous array
+  quadrant.p.user_long = lc
+
+  q = self._leaf_info[lc]
+  q['root'] = treeid
+  q['level'] = quadrant.level
+  q['origin'] = (quadrant.x, quadrant.y)
+  self._leaf_count += 1
+
+  print(f"+leaf {treeid}-{quadrant.level}-{quadrant.x/P4EST_ROOT_LEN:.3f}-{quadrant.y/P4EST_ROOT_LEN:.3f}")

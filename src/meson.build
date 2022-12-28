@@ -55,28 +55,22 @@ p4est_lib_sources = [
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 config_file = configure_file(
-  input: 'p4est_config.h.in',
+  input: '../cmake/p4est_config.h.in',
   output: 'p4est_config.h',
   install: true,
   install_dir : get_option('includedir') + '/p4est',
-  configuration : {
-    'package' : meson.project_name(),
-    'version' : meson.project_version(),
-    'version_major' : meson.project_version().split('.')[0],
-    'version_minor' : meson.project_version().split('.')[1],
-    'version_revision' : meson.project_version().split('.')[2],
-    'cc' : '',
-    'cflags' : '',
-    'cpp' : '',
-    'cppflags' : '',
-    'ldflags' : '',
-    'libs' : '' })
+  format: 'cmake@',
+  configuration : p4est_config )
+
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 install_subdir(
   '.',
   install_dir : get_option('includedir') + '/p4est',
-  exclude_files : p4est_lib_sources + [ 'meson.build' ] )
+  exclude_files : p4est_lib_sources + [
+    'CMakeLists.txt',
+    'Makefile.am',
+    'meson.build' ] )
 
 p4est_shared_lib = shared_library(
   'p4est',

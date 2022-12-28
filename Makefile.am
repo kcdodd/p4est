@@ -46,10 +46,8 @@ dist_p4estaclocal_DATA = \
 p4estdatadir = $(datadir)/data
 
 # setup test environment
-if P4EST_MPIRUN
-LOG_COMPILER = @P4EST_MPIRUN@
-AM_LOG_FLAGS = @P4EST_MPI_TEST_FLAGS@
-endif
+LOG_COMPILER = @P4EST_MPIRUN@ @P4EST_MPI_TEST_FLAGS@ \
+               @P4EST_VALGRIND@ @P4EST_VALGRIND_FLAGS@
 
 # recurse only into subpackages
 SUBDIRS = @P4EST_SC_SUBDIR@
@@ -57,11 +55,13 @@ DIST_SUBDIRS = $(SUBDIRS)
 
 # handle toplevel directory
 EXTRA_DIST += \
-        bootstrap p4estindent build-aux/git-version-gen build-aux/git2cl bugs doc
+        bootstrap p4estindent build-aux/git-version-gen build-aux/git2cl doc \
+        cmake CMakeLists.txt src/CMakeLists.txt \
+        example/CMakeLists.txt test/CMakeLists.txt CMakePresets.json
+
 DISTCLEANFILES += @P4EST_DISTCLEAN@ \
         _configs.sed config/p4est_config.h config/p4est_autotools.pc
-
-.PHONY: lint ChangeLog
+.PHONY: ChangeLog
 
 # non-recursive build
 include src/Makefile.am
@@ -76,23 +76,26 @@ include example/tetgen/Makefile.am
 include example/timings/Makefile.am
 include example/balance_seeds/Makefile.am
 
-# lint static syntax checker
-ALL_LINT_FLAGS = $(LINT_FLAGS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-                 $(MPI_INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) \
-                 $(src_libp4est_a_CPPFLAGS)
-lint:
-if LINT
-	@for subdir in $(SUBDIRS) ; do \
-		echo "Making $@ in $$subdir"; \
-		(cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) lint) ; \
-	done
-	for f in $(LINT_CSOURCES) ; do \
-		$(LINT) $(ALL_LINT_FLAGS) $(top_srcdir)/$$f || \
-		echo "Lint check failed for $$f" ; \
-	done
-else
-	@echo "Static source code check disabled by configure"
-endif
+## This was only used for our lint code, which needs to be replaced.
+##
+## # lint static syntax checker
+## ALL_LINT_FLAGS = $(LINT_FLAGS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+##                  $(MPI_INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) \
+##                  $(src_libp4est_a_CPPFLAGS)
+## lint:
+## if LINT
+## 	@for subdir in $(SUBDIRS) ; do \
+## 		echo "Making $@ in $$subdir"; \
+## 		(cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) lint) ; \
+## 	done
+## 	for f in $(LINT_CSOURCES) ; do \
+## 		$(LINT) $(ALL_LINT_FLAGS) $(top_srcdir)/$$f || \
+## 		echo "Lint check failed for $$f" ; \
+## 	done
+## else
+## 	@echo "Static source code check disabled by configure"
+## endif
+## .PHONY: lint
 
 # revision control and ChangeLog
 ChangeLog:
@@ -124,13 +127,25 @@ install-data-hook:
 uninstall-hook:
 	cd $(DESTDIR)$(pkgconfigdir) && rm -f "p4est-$(VERSION).pc"
 
+## From the GNU automake documentation "What gets Cleaned"
+## -------------------------------------------------------
+
+## If make built it, and it is commonly something that one would want to rebuild
+## (for instance, a .o file), then mostlyclean should delete it.
+## Otherwise, if make built it, then clean should delete it.
 clean-local:
-	rm -f ChangeLog *vtu *.visit *.p4c *.p4p *.p8c *.p8p
+	rm -f ChangeLog *vtu *.visit *.p4c *.p4p *.p8c *.p8p *.p4d *.p8d
 
+## If configure built it, then distclean should delete it.
+distclean-local:
+
+## If the maintainer built it (for instance, a .info file), then
+## maintainer-clean should delete it. However maintainer-clean should not delete
+## anything that needs to exist in order to run ‘./configure && make’.
 maintainer-clean-local:
-	rm -rf doxygen
+	rm -rf doc/{html,latex,man,*.doxygen.tags}
 
-doxygen: Doxyfile
-	doxygen
+doxygen-local: doc/Doxyfile
+	cd doc && doxygen Doxyfile
 
 .PHONY: doxygen

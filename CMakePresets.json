@@ -1,0 +1,29 @@
+{
+  "version": 3,
+
+"configurePresets": [
+{
+  "name": "default",
+  "cacheVariables": {
+    "mpi": true,
+    "openmp": false
+    }
+}
+],
+"testPresets": [
+{
+  "name": "default",
+  "configurePreset": "default",
+  "output": {
+    "outputOnFailure": true,
+    "verbosity": "default"
+  },
+  "execution": {
+    "noTestsAction": "error",
+    "scheduleRandom": true,
+    "stopOnFailure": false,
+    "timeout": 10
+  }
+}
+]
+}

@@ -13,6 +13,9 @@ project( 'p4est',
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cc = meson.get_compiler('c')
 
+mpi_enabled = true
+target_pypkg = get_option('pypkg')
+
 compiler_options = [
   '-Wno-unknown-warning-option',
   '-Wno-unused-variable',
@@ -47,13 +50,13 @@ py3 = py_mod.find_installation('python3', required: true)
 
 message('Python: ' + py3.language_version())
 
-py3_dep = py3.dependency( required: true )
+py3_dep = py3.dependency( required: target_pypkg )
 
 cython = find_program(
   'cython',
-  required : true )
+  required : target_pypkg )
 
-if not py3.language_version().version_compare('>= 3.6')
+if target_pypkg and not py3.language_version().version_compare('>= 3.6')
   error('Python 3.6 or newer is required')
 endif
 
@@ -64,25 +67,49 @@ build_number = run_command(py3,
     'import time; print(str(int(time.time())))' ],
   check: true ).stdout().strip()
 
+p4est_config = {
+  'PROJECT_VERSION' : meson.project_version(),
+  'PROJECT_MAJOR' : meson.project_version().split('.')[0],
+  'PROJECT_MINOR' : meson.project_version().split('.')[1],
+  'PROJECT_PATCH' : meson.project_version().split('.')[2],
+  'P4EST_CC' : '"' + cc.get_id() + '-' + cc.version() + '"',
+  'P4EST_CFLAGS' : '""',
+  'P4EST_CPP' : '""',
+  'P4EST_CPPFLAGS' : '""',
+  'P4EST_LDFLAGS' : '""',
+  'P4EST_LIBS' : '""' }
+
 check_functions = {
-  'adler32_combine' : 'P4EST_HAVE_ZLIB' }
+  'P4EST_HAVE_FSYNC' : 'fsync',
+  'HAVE_LPTHREAD' : 'pthread_create',
+  'HAVE_LUA' : 'lua_createtable',
+  'P4EST_HAVE_POSIX_MEMALIGN' : 'posix_memalign' }
 
 check_headers = {
-  'netinet/in.h' : 'P4EST_HAVE_NETINET_IN_H',
-  # TODO: P4EST_HAVE_ARPA_INET_H ???
-  'arpa/inet.h' : 'P4EST_HAVE_ARPA_NET_H',
-  'winsock2.h' : 'P4EST_HAVE_WINSOCK2_H',
-  'unistd.h' : 'P4EST_HAVE_UNISTD_H' }
+  'P4EST_HAVE_DLFCN_H' : 'dlfcn.h',
+  'P4EST_HAVE_INTTYPES_H' : 'inttypes.h',
+  'P4EST_HAVE_MEMORY_H' : 'memory.h',
+  'P4EST_HAVE_STDINT_H' : 'stdint.h',
+  'P4EST_HAVE_STDLIB_H' : 'stdlib.h',
+  'P4EST_HAVE_STRINGS_H' : 'strings.h',
+  'P4EST_HAVE_STRING_H' : 'string.h',
+  'P4EST_HAVE_SYS_STAT_H' : 'sys/stat.h',
+  'P4EST_HAVE_SYS_TYPES_H' : 'sys/types.h',
+  'P4EST_HAVE_UNISTD_H' : 'unistd.h',
+  'P4EST_HAVE_NETINET_IN_H' : 'netinet/in.h',
+  'P4EST_HAVE_ARPA_INET_H' : 'arpa/inet.h',
+  'P4EST_HAVE_ARPA_NET_H' : 'arpa/inet.h', # ??
+  'P4EST_HAVE_WINSOCK2_H' : 'winsock2.h' }
 
-foreach func, macro : check_functions
+foreach macro, func : check_functions
   if cc.has_function(func)
-    c_args += [ '-D@0@=1'.format(macro) ]
+    p4est_config += { macro : 1 }
   endif
 endforeach
 
-foreach header, macro : check_headers
+foreach macro, header : check_headers
   if cc.has_header(header)
-    c_args += [ '-D@0@=1'.format(macro) ]
+    p4est_config += { macro : 1 }
   endif
 endforeach
 
@@ -95,8 +122,6 @@ endforeach
 # P4EST_VTK_COMPRESSION
 # P4EST_VTK_DOUBLES
 
-c_args += ['-DSC_ENABLE_MPI=1', '-DP4EST_ENABLE_MPI=1']
-
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # External library dependencies
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -104,6 +129,12 @@ c_args += ['-DSC_ENABLE_MPI=1', '-DP4EST_ENABLE_MPI=1']
 m_deps = [
   cc.find_library('m', required : false ) ]
 
+zlib_deps = [
+  dependency('Zlib', required : get_option('zlib') ) ]
+
+if zlib_deps[0].found()
+  p4est_config += { 'SC_HAVE_ZLIB' : 1 }
+endif
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Check for enabling MPI
@@ -120,10 +151,10 @@ m_deps = [
 
 mpi_deps = [
   cc.find_library('mpi',
-    required : true ) ]
+    required : get_option('mpi') ) ]
 
 mpi_h = cc.has_header('mpi.h',
-  required : true )
+  required : get_option('mpi') )
 
 mpi_cc_code = '''
 #include <mpi.h>
@@ -143,42 +174,55 @@ mpi_run = cc.run(
   dependencies: mpi_deps,
   name : 'MPI program' )
 
+mpi_enabled = (
+  not get_option('mpi').disabled()
+  and mpi_h
+  and mpi_deps[0].found()
+  and mpi_run.compiled() and mpi_run.returncode() == 0 )
+
+if mpi_enabled
+  p4est_config += { 'P4EST_ENABLE_MPI' : 1 }
+endif
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # check/prepare for building the python extension
 # https://mesonbuild.com/Python-module.html
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-# ensure mpi4py python package is available
-py3_mpi = py_mod.find_installation(
-  'python3',
-  modules : ['mpi4py'],
-  required: true )
+if target_pypkg
 
-# NOTE: Strangely, NumPy's pxd file directly referenced the deprecated API,
-# which means that 'cdef ndarray' variables cause compilation errors if
-# 'NPY_NO_DEPRECATED_API' is set.
-# disable NumPy deprecated API
-# numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_16_API_VERSION'
-# c_args += [numpy_nodepr_api]
+  # ensure mpi4py python package is available
+  py3_mpi = py_mod.find_installation(
+    'python3',
+    modules : ['mpi4py'],
+    required: true )
 
-# Python include directory
-incdir_py3 = run_command(py3,
-  [ '-c',
-    'from sysconfig import get_paths; print(get_paths()["include"])' ],
-  check: true ).stdout().strip()
+  # NOTE: Strangely, NumPy's pxd file directly referenced the deprecated API,
+  # which means that 'cdef ndarray' variables cause compilation errors if
+  # 'NPY_NO_DEPRECATED_API' is set.
+  # disable NumPy deprecated API
+  # numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_16_API_VERSION'
+  # c_args += [numpy_nodepr_api]
 
-message('Python includes: ' + incdir_py3)
-py3_inc = include_directories(incdir_py3)
+  # Python include directory
+  incdir_py3 = run_command(py3,
+    [ '-c',
+      'from sysconfig import get_paths; print(get_paths()["include"])' ],
+    check: true ).stdout().strip()
 
-# NumPy include directory
-incdir_numpy = run_command(py3,
-  [ '-c',
-    'import numpy; print(numpy.get_include())' ],
-  check: true ).stdout().strip()
+  message('Python includes: ' + incdir_py3)
+  py3_inc = include_directories(incdir_py3)
 
-message('NumPy includes: ' + incdir_numpy)
-np_inc = include_directories(incdir_numpy)
+  # NumPy include directory
+  incdir_numpy = run_command(py3,
+    [ '-c',
+      'import numpy; print(numpy.get_include())' ],
+    check: true ).stdout().strip()
 
+  message('NumPy includes: ' + incdir_numpy)
+  np_inc = include_directories(incdir_numpy)
+
+endif
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Build SC
@@ -204,4 +248,7 @@ build_number_file = configure_file(
     'buildnumber' : build_number })
 
 subdir('src')
-subdir('srcpy/core')
+
+if target_pypkg
+  subdir('srcpy/core')
+endif

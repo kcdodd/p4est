@@ -89,6 +89,7 @@ SC_EXTERN_C_BEGIN;
 typedef enum
 {
   /* make sure to have different values 2D and 3D */
+  P8EST_CONNECT_SELF = 30,
   P8EST_CONNECT_FACE = 31,
   P8EST_CONNECT_EDGE = 32,
   P8EST_CONNECT_CORNER = 33,
@@ -245,6 +246,61 @@ typedef struct
 }
 p8est_corner_info_t;
 
+/** Generic interface for transformations beteen a tree and any of its neighbors */
+typedef struct
+{
+  p8est_connect_type_t neighbor_type; /**< type of connection to neighbor*/
+  p4est_topidx_t      neighbor;   /**< neighbor tree index */
+  int8_t              index_self; /**< index of interface from self's
+                                       perspective */
+  int8_t              index_neighbor; /**< index of interface from neighbor's
+                                           perspective */
+  int8_t              perm[P8EST_DIM]; /**< permutation of dimensions when
+                                            transforming self coords to
+                                            neighbor coords */
+  int8_t              sign[P8EST_DIM]; /**< sign changes when transforming self
+                                            coords to neighbor coords */
+  p4est_qcoord_t      origin_self[P8EST_DIM]; /** point on the interface from
+                                                  self's perspective */
+  p4est_qcoord_t      origin_neighbor[P8EST_DIM]; /** point on the interface
+                                                      from neighbor's
+                                                      perspective */
+}
+p8est_neighbor_transform_t;
+
+/* *INDENT-OFF* */
+
+/** Transform from self's coordinate system to neighbor's coordinate system.
+ *
+ * \param [in]  nt            A neighbor transform.
+ * \param [in]  self_coords   Input quadrant coordinates in self coordinates.
+ * \param [out] neigh_coords  Coordinates transformed into neighbor coordinates.
+ */
+void                p8est_neighbor_transform_coordinates
+                      (const p8est_neighbor_transform_t * nt,
+                       const p4est_qcoord_t self_coords[P8EST_DIM],
+                       p4est_qcoord_t neigh_coords[P8EST_DIM]);
+
+/** Transform from neighbor's coordinate system to self's coordinate system.
+ *
+ * \param [in]  nt            A neighbor transform.
+ * \param [in]  neigh_coords  Input quadrant coordinates in self coordinates.
+ * \param [out] self_coords   Coordinates transformed into neighbor coordinates.
+ */
+void                p8est_neighbor_transform_coordinates_reverse
+                      (const p8est_neighbor_transform_t * nt,
+                       const p4est_qcoord_t neigh_coords[P8EST_DIM],
+                       p4est_qcoord_t self_coords[P8EST_DIM]);
+
+void                p8est_connectivity_get_neighbor_transforms
+                      (p8est_connectivity_t *conn,
+                       p4est_topidx_t tree_id,
+                       p8est_connect_type_t boundary_type,
+                       int boundary_index,
+                       sc_array_t *neighbor_transform_array);
+
+/* *INDENT-ON* */
+
 /** Store the corner numbers 0..7 for each tree face. */
 extern const int    p8est_face_corners[6][4];
 
@@ -319,7 +375,7 @@ extern const int    p8est_child_corner_edges[8][8];
  * It expects a face permutation index that has been precomputed.
  * \param [in] c    A corner number in 0..7.
  * \param [in] f    A face number that touches the corner \a c.
- * \param [in] nf   A neighbor face that is on the other side of \f.
+ * \param [in] nf   A neighbor face that is on the other side of \a f.
  * \param [in] set  A value from \a p8est_face_permutation_sets that is
  *                  obtained using \a f, \a nf, and a valid orientation:
  *                  ref = p8est_face_permutation_refs[f][nf];
@@ -333,8 +389,8 @@ int                 p8est_connectivity_face_neighbor_corner_set
  * This version expects the neighbor face and orientation separately.
  * \param [in] fc   A face corner number in 0..3.
  * \param [in] f    A face that the face corner \a fc is relative to.
- * \param [in] nf   A neighbor face that is on the other side of \f.
- * \param [in] o    The orientation between tree boundary faces \a f and \nf.
+ * \param [in] nf   A neighbor face that is on the other side of \a f.
+ * \param [in] o    The orientation between tree boundary faces \a f and \a nf.
  * \return          The face corner number relative to the neighbor's face.
  */
 int                 p8est_connectivity_face_neighbor_face_corner
@@ -344,8 +400,8 @@ int                 p8est_connectivity_face_neighbor_face_corner
  * This version expects the neighbor face and orientation separately.
  * \param [in] c    A corner number in 0..7.
  * \param [in] f    A face number that touches the corner \a c.
- * \param [in] nf   A neighbor face that is on the other side of \f.
- * \param [in] o    The orientation between tree boundary faces \a f and \nf.
+ * \param [in] nf   A neighbor face that is on the other side of \a f.
+ * \param [in] o    The orientation between tree boundary faces \a f and \a nf.
  * \return          The number of the corner seen from the neighbor tree.
  */
 int                 p8est_connectivity_face_neighbor_corner
@@ -355,8 +411,8 @@ int                 p8est_connectivity_face_neighbor_corner
  * This version expects the neighbor face and orientation separately.
  * \param [in] fe   A face edge number in 0..3.
  * \param [in] f    A face number that touches the edge \a e.
- * \param [in] nf   A neighbor face that is on the other side of \f.
- * \param [in] o    The orientation between tree boundary faces \a f and \nf.
+ * \param [in] nf   A neighbor face that is on the other side of \a f.
+ * \param [in] o    The orientation between tree boundary faces \a f and \a nf.
  * \return          The face edge number seen from the neighbor tree.
  */
 int                 p8est_connectivity_face_neighbor_face_edge
@@ -366,8 +422,8 @@ int                 p8est_connectivity_face_neighbor_face_edge
  * This version expects the neighbor face and orientation separately.
  * \param [in] e    A edge number in 0..11.
  * \param [in] f    A face 0..5 that touches the edge \a e.
- * \param [in] nf   A neighbor face that is on the other side of \f.
- * \param [in] o    The orientation between tree boundary faces \a f and \nf.
+ * \param [in] nf   A neighbor face that is on the other side of \a f.
+ * \param [in] o    The orientation between tree boundary faces \a f and \a nf.
  * \return          The edge's number seen from the neighbor.
  */
 int                 p8est_connectivity_face_neighbor_edge
@@ -386,7 +442,7 @@ int                 p8est_connectivity_edge_neighbor_edge_corner
  * \param [in] c    A corner number in 0..7.
  * \param [in] e    An edge 0..11 that touches the corner \a c.
  * \param [in] ne   A neighbor edge that is on the other side of \e.
- * \param [in] o    The orientation between tree boundary edges \a e and \ne.
+ * \param [in] o    The orientation between tree boundary edges \a e and \a ne.
  * \return          Corner number seen from the neighbor.
  */
 int                 p8est_connectivity_edge_neighbor_corner
@@ -518,8 +574,10 @@ int                 p8est_connectivity_save (const char *filename,
 p8est_connectivity_t *p8est_connectivity_source (sc_io_source_t * source);
 
 /** Create new connectivity from a memory buffer.
+ * This function aborts on malloc errors.
  * \param [in] buffer   The connectivity is created from this memory buffer.
- * \return              The newly created connectivity, or NULL on error.
+ * \return              The newly created connectivity, or NULL on format
+ *                      error of the buffered connectivity data.
  */
 p8est_connectivity_t *p8est_connectivity_inflate (sc_array_t * buffer);
 
