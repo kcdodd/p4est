@@ -254,7 +254,7 @@ def quad_cell_nodes(cells, vert_nodes):
   ----------
   cells : np.ndarray with shape = (NC, 2, 2), dtype = np.int32
     Quadrilateral cells, each defined by the indices of its 4 vertices.
-  vert_nodes : None | np.ndarray with shape = (NV,), dtype = np.int32
+  vert_nodes : np.ndarray with shape = (NV,), dtype = np.int32
     The topological node associated with each vertex.
 
   Returns
@@ -356,6 +356,7 @@ def quad_cell_nodes(cells, vert_nodes):
   node_cells = node_cells[_node_keep]
   node_cell_verts = node_cell_verts[_node_keep]
 
+  # NOTE: this still points to the memoryview of un-raveled cell_nodes
   _cell_nodes[sort_idx[~_node_keep]] = -1
 
   return (

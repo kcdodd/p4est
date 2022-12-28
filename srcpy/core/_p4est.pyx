@@ -201,7 +201,7 @@ cdef class P4est:
       (mesh.local_num_quadrants + mesh.ghost_num_quadrants,),
       dtype = self._leaf_dtype )
 
-    for r in range(self._p4est.first_local_tree, self._p4est.last_local_tree):
+    for r in range(self._p4est.first_local_tree, self._p4est.last_local_tree+1):
       root = &trees[r]
       quads = <p4est_quadrant_t*>root.quadrants.array
 
@@ -299,7 +299,8 @@ cdef class P4est:
   #-----------------------------------------------------------------------------
   def leaf_coord(self,
     uv = None,
-    idx = None ):
+    idx = None,
+    interp = None ):
     r"""
 
     Parameters
@@ -310,6 +311,8 @@ cdef class P4est:
       (default: (0.0, 0.0))
     idx : None | any single-dimension ndarray index
       Computes coordinates only for this subset of leaves. (default: slice(None))
+    interp : None | callable
+      Interpolation function ()
 
     Returns
     -------
@@ -338,20 +341,26 @@ cdef class P4est:
     # compute the relative position within the root cell
     UV = np.clip(
       ( info['origin'] + uv[None,:] * qwidth[:,None] ) / P4EST_ROOT_LEN,
-      0.0, 1.0)[:,:,None]
+      0.0, 1.0)
 
     # Compute the coefficients for bilinear interpolation of the root cells
     # vertices absolute position onto the desired position relative to the leaf.
-    _UV = 1.0 - UV
 
-    c = np.empty_like(cell_verts)
-    c[:,0,0] = _UV[:,0]*_UV[:,1]
-    c[:,0,1] = UV[:,0]*_UV[:,1]
-    c[:,1,0] = _UV[:,0]*UV[:,1]
-    c[:,1,1] = UV[:,0]*UV[:,1]
+    if interp is None:
+      _UV = 1.0 - UV
 
-    # Perform the interpolation
-    return np.sum(c * cell_verts, axis = (1,2))
+      # bi-linear interpolation
+      c = np.empty(cell_verts.shape[:3])
+      c[:,0,0] = _UV[:,0]*_UV[:,1]
+      c[:,0,1] = UV[:,0]*_UV[:,1]
+      c[:,1,0] = _UV[:,0]*UV[:,1]
+      c[:,1,1] = UV[:,0]*UV[:,1]
+
+      # Perform the interpolation
+      return np.sum(c[:,:,:,None] * cell_verts, axis = (1,2))
+
+    else:
+      return interp(cell_verts, UV)
 
   #-----------------------------------------------------------------------------
   def refine(self,
