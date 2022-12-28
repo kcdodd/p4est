@@ -137,11 +137,14 @@ cdef class P4est:
     self._connectivity.tree_to_tree = <np.npy_int32*>(cell_adj.data)
     self._connectivity.tree_to_face = <np.npy_int8*>(cell_adj_face.data)
 
-    self._connectivity.num_corners = self._mesh.num_nodes_active
-    self._connectivity.tree_to_corner = <np.npy_int32*>(tree_to_corner.data)
+    self._connectivity.num_corners = len(ctt_offset)-1
     self._connectivity.ctt_offset = <np.npy_int32*>(ctt_offset.data)
-    self._connectivity.corner_to_tree = <np.npy_int32*>(corner_to_tree.data)
-    self._connectivity.corner_to_corner = <np.npy_int8*>(corner_to_corner.data)
+
+    if self._connectivity.num_corners > 0:
+      # NOTE: intially NULL from memset
+      self._connectivity.tree_to_corner = <np.npy_int32*>(tree_to_corner.data)
+      self._connectivity.corner_to_tree = <np.npy_int32*>(corner_to_tree.data)
+      self._connectivity.corner_to_corner = <np.npy_int8*>(corner_to_corner.data)
 
 
     cdef p4est_t* p4est = NULL
