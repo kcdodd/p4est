@@ -90,7 +90,7 @@ cdef class P4est:
       ('weight', np.int32),
       # A flag used to control refinement (>0) and coarsening (<0)
       ('adapt', np.int8),
-      # Indices of up to 6 unique adjacent leaves, ordered as:
+      # Indices of up to 6 unique adjacent cells, ordered as:
       #    |110|111|
       # ---+---+---+---
       # 001|       |011
@@ -98,10 +98,18 @@ cdef class P4est:
       # 000|       |010
       # ---+---+---+---
       #    |100|101|
-      # If the adjacent cell is at equal or lower refinement, the two indices
-      # accross that face will point to the same cell.
+      #
+      # Indexing: [(x-normal, y-normal), (-face, +face), (-half, +half)]
+      # If cell_adj[i,j,0] == cell_adj[i,j,1], then both halfs are shared with
+      # the same cell (of equal or greater size).
+      # Otherwise each half is shared with different cells of 1/2 size.
       ('cell_adj', np.int32, (2,2,2)),
-      ('cell_adj_face', np.int8, (2,2,2)) ])
+      # If the neighbor is larger, then the value of cell_adj_face may be in the
+      # range 0..15 (instead of 0..7), where the additional bit indicates the
+      # sub-face. E.G.
+      # sub_face, face_orientation = divmod(cell_adj_face, 8)
+      # orientation, face = divmod(face_orientation, 4)
+      ('cell_adj_face', np.int8, (2,2)) ])
 
     self._leaf_info = np.zeros((0,), dtype = self._leaf_dtype)
 
@@ -184,7 +192,10 @@ cdef class P4est:
     cdef p4est_quadrant_t* cell = NULL
     cdef aux_quadrant_data_t* cell_aux
 
-    cdef size_t cell_idx = 0
+    cdef cnp.npy_intp cell_idx = 0
+    cdef cnp.npy_intp face_idx = 0
+    cdef cnp.npy_intp cell_adj_idx = 0
+    cdef cnp.npy_intp cell_adj_face = 0
 
     # cdef object buffer = None
 
@@ -205,7 +216,7 @@ cdef class P4est:
     prev_leaf_info = self._leaf_info
 
     self._leaf_info = np.zeros(
-      (mesh.local_num_quadrants + mesh.ghost_num_quadrants,),
+      (mesh.local_num_quadrants,),
       dtype = self._leaf_dtype )
 
     from_mask = np.ones(prev_leaf_info.shape[0], dtype = bool)
@@ -224,10 +235,8 @@ cdef class P4est:
 
         leaf = self._leaf_info[cell_idx]
 
-        leaf['root'] = root_idx
-        leaf['level'] = cell.level
-        leaf['origin'] = (cell.x, cell.y)
-
+        # finish tracking of changes due to refine/coarsen operation
+        # now that the indices are known, and thus able to map previous quadrants
         if cell_aux.adapted == 1:
           adapt_idx, k = divmod(cell_aux.adapt_idx, 4)
           i, j = divmod(k, 2)
@@ -252,9 +261,39 @@ cdef class P4est:
           #??
           pass
 
+        # reset auxiliary information
         cell_aux.idx = cell_idx
         cell_aux.adapt_idx = -1
         cell_aux.adapted = 0
+
+        leaf['root'] = root_idx
+        leaf['level'] = cell.level
+        leaf['origin'] = (cell.x, cell.y)
+
+        # get adjacency information from the mesh
+        for k in range(4):
+          i, j = divmod(k, 2)
+
+          face_idx = 4*cell_idx + k
+          cell_adj_idx = mesh.quad_to_quad[face_idx]
+          cell_adj_face = mesh.quad_to_face[face_idx]
+
+          if cell_adj_face >= 0:
+            leaf['cell_adj'][i,j] = cell_adj_idx
+
+            if cell_adj_face < 8:
+              # A value of v = 0..7 indicates one same-size neighbor.
+              leaf['cell_adj_face'][i,j] = cell_adj_face
+
+            else:
+              # A value of v = 8..23 indicates a double-size neighbor.
+              leaf['cell_adj_face'][i,j] = cell_adj_face - 8
+
+          else:
+            # A value of v = -8..-1 indicates two half-size neighbors.
+            leaf['cell_adj'][i,j,0] = mesh.quad_to_half[cell_adj_idx]
+            leaf['cell_adj'][i,j,1] = mesh.quad_to_half[cell_adj_idx+1]
+            leaf['cell_adj_face'][i,j] = cell_adj_face + 8
 
     if len(prev_leaf_info) > 0:
       # copy data that should not change

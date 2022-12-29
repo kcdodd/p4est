@@ -230,10 +230,13 @@ endif
 
 sc_proj = subproject('sc')
 sc_dep = sc_proj.get_variable('sc_shared_dep')
+sc_log_priorities = sc_proj.get_variable('sc_log_priorities')
 
 py3_deps = [py3_dep,] + mpi_deps + m_deps + sc_dep
 sc_deps = [ sc_dep ]
 
+c_args += [
+  '-DSC_LOG_PRIORITY=@0@'.format(sc_log_priorities[get_option('log_priority')]) ]
 
 p4est_inc = include_directories('src')
 

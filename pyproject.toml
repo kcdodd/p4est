@@ -128,6 +128,8 @@ pypkg = true
 # always build against MPI
 mpi = 'enabled'
 
+log_priority = 'error'
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # binary distribution installed paths
 
