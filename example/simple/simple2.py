@@ -359,12 +359,11 @@ print(grid.leaf_info)
 print("centers")
 print(grid.leaf_coord(uv = (0.5, 0.5)))
 
-plot_mesh(mesh)
+# plot_mesh(mesh)
 
-for r in range(3):
-  grid.leaf_info['refine'] = 1
+for r in range(4):
+  grid.leaf_info['adapt'] = 1
   grid.refine()
-
 
 plot_grid(grid, interp = interp_sphere_to_cart_slerp)
 

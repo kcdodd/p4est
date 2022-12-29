@@ -496,17 +496,29 @@ cdef extern from "p4est_iterate.h" nogil:
     p4est_iter_corner_t iter_corner)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ctypedef struct aux_quadrant_data_t:
+  np.npy_intp idx
+  np.npy_intp adapt_idx
+  np.npy_int8 adapted
+  np.npy_int8 _future_flag1
+  np.npy_int8 _future_flag2
+  np.npy_int8 _future_flag3
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
   cdef _max_level
   cdef _comm
   cdef _mesh
 
-  cdef _leaf_count
   cdef _leaf_dtype
   cdef _leaf_info
 
-  cdef p4est_t* _p4est
+  cdef _leaf_adapt_idx
+  cdef _leaf_adapt_coarse
+  cdef _leaf_adapt_fine
+
   cdef p4est_connectivity_t _connectivity
+  cdef p4est_t* _p4est
 
   #-----------------------------------------------------------------------------
   cdef _init(
