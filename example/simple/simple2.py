@@ -22,6 +22,27 @@ def unit_square():
     cells = cells )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def cube(length = 1.0):
+  half = 0.5*length
+
+  verts = np.stack(
+    np.meshgrid(
+      [-half, half],
+      [-half, half],
+      [-half, half],
+      indexing = 'ij'),
+    axis = -1).transpose().reshape(-1, 3)
+
+  print(verts)
+
+  cells = np.array([
+    [[0, 1], [2, 3]] ])
+
+  return QuadMesh(
+    verts = verts,
+    cells = cells )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def stack_o_squares():
   verts = np.array([
     [0, 0, 0],
@@ -106,36 +127,13 @@ def periodic_stack():
     vert_nodes = vert_nodes )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosphere():
+def icosahedron_spherical(radius = 1.0):
 
   c3 = np.cos(np.pi/3)
   s3 = np.sin(np.pi/3)
 
-  # verts = np.array([
-  #   [ 0.0 + c3,    s3,  0.0 ],
-  #   [ 1.0 + c3,    s3,  0.0 ],
-  #   [ 2.0 + c3,    s3,  0.0 ],
-  #   [ 3.0 + c3,    s3,  0.0 ],
-  #   [ 4.0 + c3,    s3,  0.0 ],
-  #   [ 0.0,  0.0,  0.0 ],
-  #   [ 1.0,  0.0,  0.0 ],
-  #   [ 2.0,  0.0,  0.0 ],
-  #   [ 3.0,  0.0,  0.0 ],
-  #   [ 4.0,  0.0,  0.0 ],
-  #   [ 5.0,  0.0,  0.0 ],
-  #   [ 0.0 + c3, -  s3,  0.0 ],
-  #   [ 1.0 + c3, -  s3,  0.0 ],
-  #   [ 2.0 + c3, -  s3,  0.0 ],
-  #   [ 3.0 + c3, -  s3,  0.0 ],
-  #   [ 4.0 + c3, -  s3,  0.0 ],
-  #   [ 5.0 + c3, -  s3,  0.0 ],
-  #   [ 0.0 + 2*c3, -2*s3,  0.0 ],
-  #   [ 1.0 + 2*c3, -2*s3,  0.0 ],
-  #   [ 2.0 + 2*c3, -2*s3,  0.0 ],
-  #   [ 3.0 + 2*c3, -2*s3,  0.0 ],
-  #   [ 4.0 + 2*c3, -2*s3,  0.0 ] ])
-
-  theta = (2*np.pi/10)*np.arange(12)
+  theta = np.linspace(-np.pi, np.pi, 6)
+  dtheta = theta[1] - theta[0]
 
   phi = np.array([
     -0.5*np.pi,
@@ -144,46 +142,22 @@ def icosphere():
     0.5*np.pi ])
 
   verts = np.zeros((22,3))
-  verts[:,2] = 1.0
 
-
-  verts[:5,0] = theta[1:10:2]
+  verts[:5,0] = theta[:5]
   verts[:5,1] = phi[0]
 
-  verts[5:11,0] = theta[:11:2]
+  verts[5:11,0] = theta - 0.5*dtheta
   verts[5:11,1] = phi[1]
 
-  verts[11:17,0] = theta[1:12:2]
+  verts[11:17,0] = theta
   verts[11:17,1] = phi[2]
 
-  verts[17:,0] = theta[2:11:2]
+  verts[17:,0] = theta[:5] + 0.5*dtheta
   verts[17:,1] = phi[3]
 
-  verts = trans_sphere_to_cart(verts)
+  verts[:,2] = radius
 
-  # verts = np.array([
-  #   [ 0.0 + c3,    s3,  0.0 ],
-  #   [ 1.0 + c3,    s3,  0.0 ],
-  #   [ 2.0 + c3,    s3,  0.0 ],
-  #   [ 3.0 + c3,    s3,  0.0 ],
-  #   [ 4.0 + c3,    s3,  0.0 ],
-  #   [ 0.0,  0.0,  0.0 ],
-  #   [ 1.0,  0.0,  0.0 ],
-  #   [ 2.0,  0.0,  0.0 ],
-  #   [ 3.0,  0.0,  0.0 ],
-  #   [ 4.0,  0.0,  0.0 ],
-  #   [ 5.0,  0.0,  0.0 ],
-  #   [ 0.0 + c3, -  s3,  0.0 ],
-  #   [ 1.0 + c3, -  s3,  0.0 ],
-  #   [ 2.0 + c3, -  s3,  0.0 ],
-  #   [ 3.0 + c3, -  s3,  0.0 ],
-  #   [ 4.0 + c3, -  s3,  0.0 ],
-  #   [ 5.0 + c3, -  s3,  0.0 ],
-  #   [ 0.0 + 2*c3, -2*s3,  0.0 ],
-  #   [ 1.0 + 2*c3, -2*s3,  0.0 ],
-  #   [ 2.0 + 2*c3, -2*s3,  0.0 ],
-  #   [ 3.0 + 2*c3, -2*s3,  0.0 ],
-  #   [ 4.0 + 2*c3, -2*s3,  0.0 ] ])
+  # verts = trans_sphere_to_cart(verts)
 
   vert_nodes = -np.ones(len(verts), dtype = np.int32)
   vert_nodes[[0,1,2,3,4]] = 0
@@ -210,47 +184,77 @@ def icosphere():
     vert_nodes = vert_nodes)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def icosahedron(radius = 1.0):
+  mesh = icosahedron_spherical(radius = radius)
+
+  return QuadMesh(
+    verts = trans_sphere_to_cart(mesh.verts),
+    cells = mesh.cells,
+    vert_nodes = mesh.vert_nodes)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def trans_sphere_to_cart(coords):
+  """Transforms coordinates from spherical to cartesian
+
+  Parameters
+  ----------
+  coords : array with shape = (NV, 3)
+
+    The coordinates are assumed to be (in order):
+    * azimuthal angle [-pi, pi]
+    * polar angle [-pi/2, pi/2]
+    * radius
+
+
+  """
+
+  theta = coords[...,0]
+  phi = coords[...,1]
+  r = coords[...,2]
+
   xyz = np.zeros_like(coords)
-  xyz[:,0] = coords[:,2]*np.cos(coords[:,0])*np.cos(coords[:,1])
-  xyz[:,1] = coords[:,2]*np.sin(coords[:,0])*np.cos(coords[:,1])
-  xyz[:,2] = coords[:,2]*np.sin(coords[:,1])
+  xyz[...,0] = r*np.cos(theta)*np.cos(phi)
+  xyz[...,1] = r*np.sin(theta)*np.cos(phi)
+  xyz[...,2] = r*np.sin(phi)
 
   return xyz
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_quad_slerp(verts, uv):
+def interp_slerp(eta, x0, x1):
+  """Spherical linear interpolation
+  """
+  _x0 = np.linalg.norm(x0, axis = -1)
+  _x1 = np.linalg.norm(x1, axis = -1)
 
-  # adapted from p4est_geometry_icosahedron_X
-  n0 = verts[:,0,0]
-  n1 = verts[:,0,1]
-  n2 = verts[:,1,0]
-  n3 = verts[:,1,1]
+  cos_theta = np.sum(x0*x1, axis = -1) / (_x0 * _x1)
+  sin_theta = np.sqrt(1.0 - cos_theta**2)
+  theta = np.arccos(cos_theta)
 
-  eta_x = uv[:,0]
-  eta_y = uv[:,1]
+  c0 = np.sin((1.0 - eta) * theta) / sin_theta
+  c1 = np.sin(eta * theta) / sin_theta
 
-  # apply slerp
-  # - between n0 and n1
-  # - between n2 and n3
-  #
-  norme2 = np.sum(n0*n0, axis = 1)
-  theta1 = np.arccos(np.sum(n0 * n1, axis = 1) / norme2)
+  return c0[...,None] * x0 + c1[...,None] * x1
 
-  c0 = np.sin((1.0 - eta_x) * theta1) / np.sin(theta1)
-  c1 = np.sin(eta_x * theta1) / np.sin(theta1)
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def interp_slerp_quad(verts, uv):
+  """Spherical linear interpolation of quadrilateral vertices
+  """
+  return interp_slerp(
+    eta = uv[:,1],
+    x0 = interp_slerp(
+      eta = uv[:,0],
+      x0 = verts[:,0,0],
+      x1 = verts[:,0,1]),
+    x1 = interp_slerp(
+      eta = uv[:,0],
+      x0 = verts[:,1,0],
+      x1 = verts[:,1,1]) )
 
-  xyz01 = c0[:,None] * n0 + c1[:,None] * n1
-  xyz23 = c0[:,None] * n2 + c1[:,None] * n3
-
-  # apply slerp
-  # - between xyz01 and xyz23
-  theta2 = np.arccos(np.sum(xyz01 * xyz23, axis = 1) / norme2 )
-
-  a0 = np.sin((1.0 - eta_y) * theta2) / np.sin(theta2)
-  a1 = np.sin(eta_y * theta2) / np.sin(theta2)
-
-  return a0[:,None] * xyz01 + a1[:,None] * xyz23
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def interp_sphere_to_cart_slerp(verts, uv):
+  return interp_slerp_quad(
+    verts = trans_sphere_to_cart(verts),
+    uv = uv )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def plot_mesh(mesh):
@@ -317,7 +321,7 @@ def plot_grid(grid, interp = None):
 
   idx = np.arange(nc)
 
-  faces = np.empty((nc, 5), dtype = mesh.cells.dtype)
+  faces = np.empty((nc, 5), dtype = np.int32)
   faces[:,0] = 4
   faces[:nc,1] = idx
   faces[:nc,2] = idx + nc
@@ -326,8 +330,7 @@ def plot_grid(grid, interp = None):
 
   p.add_mesh(
     pv.PolyData(verts, faces = faces.ravel()),
-    # scalars = np.arange(len(mesh.verts)),
-    # scalars = np.arange(len(mesh.cells)),
+    scalars = grid.leaf_info['root'],
     show_edges = True,
     line_width = 1,
     point_size = 3 )
@@ -341,7 +344,9 @@ def plot_grid(grid, interp = None):
 
 # mesh = star()
 # mesh = periodic_stack()
-mesh = icosphere()
+# mesh = icosahedron()
+mesh = icosahedron_spherical()
+# mesh = cube()
 
 
 grid = P4est(
@@ -361,7 +366,7 @@ for r in range(3):
   grid.refine()
 
 
-plot_grid(grid, interp = interp_quad_slerp)
+plot_grid(grid, interp = interp_sphere_to_cart_slerp)
 
 # print('rank', grid.comm.rank, len(grid.leaf_info))
 # print('rank', grid.comm.rank, grid.leaf_info)
