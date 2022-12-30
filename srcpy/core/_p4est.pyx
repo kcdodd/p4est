@@ -11,7 +11,9 @@ from mpi4py.MPI cimport MPI_Comm, Comm
 from libc.stdlib cimport malloc, free
 from libc.string cimport memset
 
-from p4est.mesh.quad_mesh import QuadMesh
+from p4est.mesh.quad_mesh import (
+  QuadMeshBase,
+  QuadMesh )
 
 cdef extern from "Python.h":
   const int PyBUF_READ
@@ -48,8 +50,8 @@ cdef class P4est:
     comm = None ):
 
     #...........................................................................
-    if not isinstance(mesh, QuadMesh):
-      raise ValueError(f"mesh must be a QuadMesh: {type(mesh)}")
+    if not isinstance(mesh, QuadMeshBase):
+      raise ValueError(f"mesh must be a QuadMeshBase: {type(mesh)}")
 
     if min_quadrants is None:
       min_quadrants = 0
@@ -137,9 +139,9 @@ cdef class P4est:
     cdef np.ndarray[np.npy_int8, ndim=3] cell_adj_face = self._mesh.cell_adj_face
 
     cdef np.ndarray[np.npy_int32, ndim=1] tree_to_corner = self._mesh.cell_nodes.ravel()
-    cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = self._mesh.node_cells_offset
-    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = self._mesh.node_cells
-    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = self._mesh.node_cell_verts
+    cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = self._mesh.node_cells.row_idx
+    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = self._mesh.node_cells.data
+    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = self._mesh.node_cells_vert.data
 
     self._connectivity.num_vertices = len(verts)
     self._connectivity.vertices = <double*>verts.data
