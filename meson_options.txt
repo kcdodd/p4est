@@ -15,3 +15,9 @@ option(
   type : 'boolean',
   value : false,
   description : 'Build and install Python package.' )
+
+option(
+  'log_priority',
+  type : 'combo',
+  choices : ['trace', 'debug', 'verbose', 'info', 'warning', 'error'],
+  value : 'info')

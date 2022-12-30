@@ -1,14 +1,131 @@
 import numpy as np
+from .utils import jagged_array
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-class QuadMesh:
-  """
+class QuadMeshBase:
+  """Base container for quadrilateral mesh
 
   Parameters
   ----------
-  verts : np.ndarray with shape = (NV, 2 or 3), dtype = np.float64
+  verts : ndarray with shape = (NV, 2 or 3), dtype = np.float64
     Position of each vertex.
-  cells : np.ndarray with shape = (NC, 2, 2), dtype = np.int32
+    (AKA :c:var:`p4est_connectivity_t.vertices`)
+  cells : ndarray with shape = (NC, 2, 2), dtype = np.int32
+    Mapping of quadrilateral cells to the indices of their 4 vertices.
+    (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
+
+    .. note::
+
+      The order of the vertices must follow the ordering [[V00, V01], [V10, V11]],
+      or [[V0, V1], [V2, V3]], for the desired geometry of the cell.
+      E.G For an aligned rectangle: [[lower-left, lower-right], [upper-left,
+      upper-right]].
+
+  cell_adj : ndarray with shape = (NC, 2, 2), dtype = np.int32
+    Topological connectivity to other cells accross each face.
+    (AKA :c:var:`p4est_connectivity_t.tree_to_tree`)
+  cell_adj_face : ndarray with shape = (NC, 2, 2), dtype = np.int8
+    Topological order of the faces of each connected cell.
+    (AKA :c:var:`p4est_connectivity_t.tree_to_face`)
+  cell_nodes : ndarray with shape = (NC, 2, 2), dtype = np.int32
+    Mapping of quadrilateral cells to the indices of their (up to) 4 nodes,
+    ``-1`` used where nodes are not specified.
+    (AKA :c:var:`p4est_connectivity_t.tree_to_corner`)
+  node_cells : jagged_array with shape = (NN, *, 1), dtype = np.int32
+    Mapping to cells sharing each node, all ``len(node_cells[i]) > 1``.
+    (AKA :c:var:`p4est_connectivity_t.corner_to_tree`)
+  node_cells_vert : jagged_array with shape = (NN, *, 1), dtype = np.int32
+    Mapping to the cell's vertex {0,1,2,3} associated with the node
+    (AKA :c:var:`p4est_connectivity_t.corner_to_corner`)
+
+  """
+  def __init__(self,
+    verts,
+    cells,
+    cell_adj,
+    cell_adj_face,
+    cell_nodes,
+    node_cells,
+    node_cells_vert ):
+
+    if not (
+      isinstance(node_cells, jagged_array)
+      and isinstance(node_cells_vert, jagged_array)
+      and node_cells.shape == node_cells_vert.shape
+      and (
+        node_cells.row_idx is node_cells_vert.row_idx
+        or np.all(node_cells.row_idx == node_cells_vert.row_idx) ) ):
+
+      raise ValueError(f"node_cells and node_cells_vert must have the same structure")
+
+    self._verts = np.ascontiguousarray(
+      verts,
+      dtype = np.float64 )
+
+    self._cells = np.ascontiguousarray(
+      cells,
+      dtype = np.int32 )
+
+    self._cell_adj = np.ascontiguousarray(
+      cell_adj,
+      dtype = np.int32 )
+
+    self._cell_adj_face = np.ascontiguousarray(
+      cell_adj_face,
+      dtype = np.int8 )
+
+    self._cell_nodes = np.ascontiguousarray(
+      cell_nodes,
+      dtype = np.int32 )
+
+    # TODO: ensure proper dtype of the jagged_array?
+    self._node_cells = node_cells
+    self._node_cells_vert = node_cells_vert
+
+  #-----------------------------------------------------------------------------
+  @property
+  def verts(self):
+    return self._verts
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cells(self):
+    return self._cells
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cell_adj(self):
+    return self._cell_adj
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cell_adj_face(self):
+    return self._cell_adj_face
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cell_nodes(self):
+    return self._cell_nodes
+
+  #-----------------------------------------------------------------------------
+  @property
+  def node_cells(self):
+    return self._node_cells
+
+  #-----------------------------------------------------------------------------
+  @property
+  def node_cells_vert(self):
+    return self._node_cells_vert
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class QuadMesh(QuadMeshBase):
+  """Conveience constructor for quadrilateral mesh
+
+  Parameters
+  ----------
+  verts : ndarray with shape = (NV, 2 or 3), dtype = np.float64
+    Position of each vertex.
+  cells : ndarray with shape = (NC, 2, 2), dtype = np.int32
     Quadrilateral cells, each defined by the indices of its 4 vertices.
 
     .. note::
@@ -18,7 +135,7 @@ class QuadMesh:
       E.G For an aligned rectangle: [[lower-left, lower-right], [upper-left,
       upper-right]].
 
-  vert_nodes : None | np.ndarray with shape = (NV,), dtype = np.int32
+  vert_nodes : None | ndarray with shape = (NV,), dtype = np.int32
     The topological node associated with each vertex, causing cells to be connected
     by having vertices associated with the same node in addition to directly
     sharing vertices.
@@ -32,36 +149,6 @@ class QuadMesh:
     cells,
     vert_nodes = None ):
 
-    #...........................................................................
-    verts = np.ascontiguousarray(
-      verts,
-      dtype = np.float64 )
-
-    if not (
-      verts.ndim == 2
-      and verts.shape[1] in [2, 3] ):
-      raise ValueError(f"'verts' must have shape (NV, 2 or 3): {verts.shape}")
-
-    if verts.shape[1] == 2:
-      # set z coordinates all to zero to get the right shape
-      verts = np.append(verts, np.zeros_like(verts[:,:1]), axis = 1)
-
-    #...........................................................................
-    cells = np.ascontiguousarray(
-      cells,
-      dtype = np.int32 )
-
-    if not (
-      cells.ndim == 3
-      and cells.shape[1:] == (2,2) ):
-
-      raise ValueError(f"'cells' must have shape (NC, 2, 2): {cells.shape}")
-
-    _min = np.amin(cells)
-    _max = np.amax(cells)
-
-    if _min < 0 or _max >= len(verts):
-      raise ValueError(f"'cells' values must be in the range [0,{len(verts)-1}]: [{_min},{_max}]")
 
     #...........................................................................
     if vert_nodes is None:
@@ -84,90 +171,42 @@ class QuadMesh:
       raise ValueError(f"'vert_nodes' values must be in the range [-1,{len(verts)-1}]: [{_min},{_max}]")
 
     #...........................................................................
-    self._verts = verts
-    self._cells = cells
-
-    ( self._cell_adj,
-      self._cell_adj_face ) = quad_cell_adjacency(cells)
+    ( cell_adj,
+      cell_adj_face ) = quad_cell_adjacency(cells)
 
     ( self._vert_nodes,
-      self._cell_nodes,
-      self._node_cells,
-      self._node_cell_verts,
-      self._node_cells_offset ) = quad_cell_nodes(cells, vert_nodes)
+      cell_nodes,
+      node_cells,
+      node_cells_vert ) = quad_cell_nodes(cells, vert_nodes)
 
-    #...........................................................................
-
-    # self._cell_adj = cell_adj
-    # self._cell_adj_face = cell_adj_face
-
-    # self._num_nodes_active = num_nodes_active
-    # self._cell_nodes = cell_nodes
-    # self._node_cells = node_cells
-    # self._node_cell_verts = node_cell_verts
-    # self._node_cells_offset = node_cells_offset
-    # self._node_verts_active = node_verts_active
-
-  #-----------------------------------------------------------------------------
-  @property
-  def verts(self):
-    return self._verts
-
-  #-----------------------------------------------------------------------------
-  @property
-  def cells(self):
-    return self._cells
-
-
-  #-----------------------------------------------------------------------------
-  @property
-  def cell_adj(self):
-    return self._cell_adj
-
-  #-----------------------------------------------------------------------------
-  @property
-  def cell_adj_face(self):
-    return self._cell_adj_face
-
-  #-----------------------------------------------------------------------------
-  @property
-  def cell_nodes(self):
-    return self._cell_nodes
+    super().__init__(
+      verts = verts,
+      cells = cells,
+      cell_adj = cell_adj,
+      cell_adj_face = cell_adj_face,
+      cell_nodes = cell_nodes,
+      node_cells = node_cells,
+      node_cells_vert = node_cells_vert )
 
   #-----------------------------------------------------------------------------
   @property
   def vert_nodes(self):
     return self._vert_nodes
 
-  #-----------------------------------------------------------------------------
-  @property
-  def node_cells_offset(self):
-    return self._node_cells_offset
-
-  #-----------------------------------------------------------------------------
-  @property
-  def node_cells(self):
-    return self._node_cells
-
-  #-----------------------------------------------------------------------------
-  @property
-  def node_cell_verts(self):
-    return self._node_cell_verts
-
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def quad_cell_adjacency(cells):
-  """Computes topological adjacency between quad. cells accross shared faces
+  """Derives topological adjacency between quad. cells accross shared faces
 
   Parameters
   ----------
-  cells : np.ndarray with shape = (NC, 2, 2), dtype = np.int32
+  cells : ndarray with shape = (NC, 2, 2), dtype = np.int32
     Quadrilateral cells, each defined by the indices of its 4 vertices.
 
   Returns
   -------
-  cell_adj : np.ndarray with shape (NC, 2, 2) and dtype np.int32
+  cell_adj : ndarray with shape (NC, 2, 2) and dtype np.int32
     Topological connectivity to other cells accross each face.
-  cell_adj_face : np.ndarray with shape (NC, 2, 2) and dtype np.int8
+  cell_adj_face : ndarray with shape (NC, 2, 2) and dtype np.int8
     Topological order of the faces of each connected cell.
 
   """
@@ -248,18 +287,25 @@ def quad_cell_adjacency(cells):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def quad_cell_nodes(cells, vert_nodes):
-  """Computes topological nodes between quad. cells
+  """Derives topological nodes between quad. cells
 
   Parameters
   ----------
-  cells : np.ndarray with shape = (NC, 2, 2), dtype = np.int32
+  cells : ndarray with shape = (NC, 2, 2), dtype = np.int32
     Quadrilateral cells, each defined by the indices of its 4 vertices.
-  vert_nodes : np.ndarray with shape = (NV,), dtype = np.int32
+  vert_nodes : ndarray with shape = (NV,), dtype = np.int32
     The topological node associated with each vertex.
 
   Returns
   -------
-
+  vert_nodes : ndarray with shape = (NV,), dtype = np.int32
+    Updated ``vert_nodes`` with additional nodes for any detected mesh
+    singularities.
+  cell_nodes : ndarray with shape = (NC, 2, 2), dtype = np.int32
+    Mapping of quadrilateral cells to the indices of their (up to) 4 nodes.
+  node_cells : jagged_array, dtype = np.int32
+  node_cells_vert : jagged_array, dtype = np.int32
+    node_cells_vert.row_idx == node_cells.row_idx
   """
 
   # count number of cells sharing each vertex to find if there are any singularities
@@ -316,14 +362,14 @@ def quad_cell_nodes(cells, vert_nodes):
 
   # also, map which vertex (within the cell)
   # aka. corner_to_corner
-  node_cell_verts = (sort_idx % 4).astype(np.int8)
+  node_cells_vert = (sort_idx % 4).astype(np.int8)
 
   # Since these are raveled, the offset for each node is needed
   # to reconstruct the individual 'rows' of the jagged array
 
   # NOTE: This should be equivalent to using np.unique, but..
   # - does not sort the array again.
-  # - node_cells_offset is computed directly from intermediate step,
+  # - node_cells_idx is computed directly from intermediate step,
   #   instead of using cumsum to undo the diff
   _nodes = _cell_nodes[sort_idx]
 
@@ -333,11 +379,11 @@ def quad_cell_nodes(cells, vert_nodes):
 
   # get the indices of the first occurence of each value
   # aka. ctt_offset
-  # NOTE: 0 < len(node_cells_offset) <= len(nodes)+1
-  node_cells_offset = np.concatenate(np.nonzero(_mask) + ([_mask.size],)).astype(np.int32)
+  # NOTE: 0 < len(node_cells_idx) <= len(nodes)+1
+  node_cells_idx = np.concatenate(np.nonzero(_mask) + ([_mask.size],)).astype(np.int32)
 
   # the difference between these indices is the count of repeats of the node
-  _counts = np.diff(node_cells_offset)
+  _counts = np.diff(node_cells_idx)
   _nodes = _nodes[_mask]
 
 
@@ -354,14 +400,19 @@ def quad_cell_nodes(cells, vert_nodes):
 
   node_cells_count = node_cells_count[node_keep]
   node_cells = node_cells[_node_keep]
-  node_cell_verts = node_cell_verts[_node_keep]
+  node_cells_vert = node_cells_vert[_node_keep]
 
   # NOTE: this still points to the memoryview of un-raveled cell_nodes
   _cell_nodes[sort_idx[~_node_keep]] = -1
+
+  # recompute the offsets after masking
+  node_cells_idx = np.concatenate(([0],np.cumsum(node_cells_count))).astype(np.int32)
+
+  node_cells = jagged_array(node_cells, node_cells_idx)
+  node_cells_vert = jagged_array(node_cells_vert, node_cells_idx)
 
   return (
     vert_nodes,
     cell_nodes,
     node_cells,
-    node_cell_verts,
-    node_cells_offset )
+    node_cells_vert )

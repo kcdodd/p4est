@@ -11,12 +11,18 @@ from mpi4py.MPI cimport MPI_Comm, Comm
 from libc.stdlib cimport malloc, free
 from libc.string cimport memset
 
-from p4est.mesh.quad_mesh import QuadMesh
+from p4est.mesh.quad_mesh import (
+  QuadMeshBase,
+  QuadMesh )
 
 cdef extern from "Python.h":
   const int PyBUF_READ
   const int PyBUF_WRITE
   PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+QUAD_ADAPTED_FINE = 0x10
+QUAD_ADAPTED_COARSE = 0x01
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
@@ -44,8 +50,8 @@ cdef class P4est:
     comm = None ):
 
     #...........................................................................
-    if not isinstance(mesh, QuadMesh):
-      raise ValueError(f"mesh must be a QuadMesh: {type(mesh)}")
+    if not isinstance(mesh, QuadMeshBase):
+      raise ValueError(f"mesh must be a QuadMeshBase: {type(mesh)}")
 
     if min_quadrants is None:
       min_quadrants = 0
@@ -85,8 +91,8 @@ cdef class P4est:
       # Computational weight of the leaf used for load partitioning among processors
       ('weight', np.int32),
       # A flag used to control refinement (>0) and coarsening (<0)
-      ('refine', np.int8),
-      # Indices of up to 6 unique adjacent leaves, ordered as:
+      ('adapt', np.int8),
+      # Indices of up to 6 unique adjacent cells, ordered as:
       #    |110|111|
       # ---+---+---+---
       # 001|       |011
@@ -94,17 +100,25 @@ cdef class P4est:
       # 000|       |010
       # ---+---+---+---
       #    |100|101|
-      # If the adjacent cell is at equal or lower refinement, the two indices
-      # accross that face will point to the same cell.
+      #
+      # Indexing: [(x-normal, y-normal), (-face, +face), (-half, +half)]
+      # If cell_adj[i,j,0] == cell_adj[i,j,1], then both halfs are shared with
+      # the same cell (of equal or greater size).
+      # Otherwise each half is shared with different cells of 1/2 size.
       ('cell_adj', np.int32, (2,2,2)),
-      ('cell_adj_face', np.int8, (2,2,2)) ])
+      # If the neighbor is larger, then the value of cell_adj_face may be in the
+      # range 0..15 (instead of 0..7), where the additional bit indicates the
+      # sub-face. E.G.
+      # sub_face, face_orientation = divmod(cell_adj_face, 8)
+      # orientation, face = divmod(face_orientation, 4)
+      ('cell_adj_face', np.int8, (2,2)) ])
 
-    # self._leaf_info = np.zeros(
-    #   self._mesh.cells.shape[:1],
-    #   dtype = self._leaf_dtype )
+    self._leaf_info = np.zeros((0,), dtype = self._leaf_dtype)
 
-    # self._leaf_info['root'] = -1
-    # self._leaf_count = 0
+    self._leaf_adapt_idx = 0
+    self._leaf_adapt_coarse = None
+    self._leaf_adapt_fine = None
+
 
     self._init(min_quadrants, min_level, fill_uniform)
 
@@ -125,9 +139,9 @@ cdef class P4est:
     cdef np.ndarray[np.npy_int8, ndim=3] cell_adj_face = self._mesh.cell_adj_face
 
     cdef np.ndarray[np.npy_int32, ndim=1] tree_to_corner = self._mesh.cell_nodes.ravel()
-    cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = self._mesh.node_cells_offset
-    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = self._mesh.node_cells
-    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = self._mesh.node_cell_verts
+    cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = self._mesh.node_cells.row_idx
+    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = self._mesh.node_cells.data
+    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = self._mesh.node_cells_vert.data
 
     self._connectivity.num_vertices = len(verts)
     self._connectivity.vertices = <double*>verts.data
@@ -158,7 +172,7 @@ cdef class P4est:
         min_quadrants,
         min_level,
         fill_uniform,
-        0,
+        sizeof(aux_quadrant_data_t),
         <p4est_init_t>_init_quadrant,
         <void*>self )
 
@@ -178,8 +192,12 @@ cdef class P4est:
 
     cdef p4est_quadrant_t* quads = NULL
     cdef p4est_quadrant_t* cell = NULL
-    cdef cnp.npy_int32 cell_idx = 0
+    cdef aux_quadrant_data_t* cell_aux
 
+    cdef cnp.npy_intp cell_idx = 0
+    cdef cnp.npy_intp face_idx = 0
+    cdef cnp.npy_intp cell_adj_idx = 0
+    cdef cnp.npy_intp cell_adj_face = 0
 
     # cdef object buffer = None
 
@@ -197,23 +215,91 @@ cdef class P4est:
       0,
       P4EST_CONNECT_FULL)
 
+    prev_leaf_info = self._leaf_info
+
     self._leaf_info = np.zeros(
-      (mesh.local_num_quadrants + mesh.ghost_num_quadrants,),
+      (mesh.local_num_quadrants,),
       dtype = self._leaf_dtype )
 
-    for r in range(self._p4est.first_local_tree, self._p4est.last_local_tree+1):
-      root = &trees[r]
+    from_mask = np.ones(prev_leaf_info.shape[0], dtype = bool)
+    to_mask = np.ones(self._leaf_info.shape[0], dtype = bool)
+
+    for root_idx in range(self._p4est.first_local_tree, self._p4est.last_local_tree+1):
+      root = &trees[root_idx]
       quads = <p4est_quadrant_t*>root.quadrants.array
 
       for q in range(root.quadrants.elem_count):
         cell = &quads[q]
+        cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+
         cell_idx = root.quadrants_offset + q
+        # print(f"idx= {cell_aux.idx}, adapted= {cell_aux.adapted}, adapt_idx= {cell_aux.adapt_idx}")
 
         leaf = self._leaf_info[cell_idx]
 
-        leaf['root'] = r
+        # finish tracking of changes due to refine/coarsen operation
+        # now that the indices are known, and thus able to map previous quadrants
+        if cell_aux.adapted == 1:
+          adapt_idx, k = divmod(cell_aux.adapt_idx, 4)
+          i, j = divmod(k, 2)
+          self._leaf_adapt_fine[adapt_idx, i, j] = cell_idx
+
+          prev_cell_idx = self._leaf_adapt_coarse[adapt_idx]
+          leaf['adapt'] = prev_leaf_info[prev_cell_idx]['adapt'] - 1
+
+          from_mask[prev_cell_idx] = False
+          to_mask[cell_idx] = False
+
+        elif cell_aux.adapted == -1:
+          self._leaf_adapt_coarse[cell_aux.adapt_idx] = cell_idx
+
+          prev_cell_idx = self._leaf_adapt_fine[cell_aux.adapt_idx]
+          leaf['adapt'] = 1 + np.amax(prev_leaf_info[prev_cell_idx]['adapt'])
+
+          from_mask[prev_cell_idx] = False
+          to_mask[cell_idx] = False
+
+        else:
+          #??
+          pass
+
+        # reset auxiliary information
+        cell_aux.idx = cell_idx
+        cell_aux.adapt_idx = -1
+        cell_aux.adapted = 0
+
+        leaf['root'] = root_idx
         leaf['level'] = cell.level
         leaf['origin'] = (cell.x, cell.y)
+
+        # get adjacency information from the mesh
+        for k in range(4):
+          i, j = divmod(k, 2)
+
+          face_idx = 4*cell_idx + k
+          cell_adj_idx = mesh.quad_to_quad[face_idx]
+          cell_adj_face = mesh.quad_to_face[face_idx]
+
+          if cell_adj_face >= 0:
+            leaf['cell_adj'][i,j] = cell_adj_idx
+
+            if cell_adj_face < 8:
+              # A value of v = 0..7 indicates one same-size neighbor.
+              leaf['cell_adj_face'][i,j] = cell_adj_face
+
+            else:
+              # A value of v = 8..23 indicates a double-size neighbor.
+              leaf['cell_adj_face'][i,j] = cell_adj_face - 8
+
+          else:
+            # A value of v = -8..-1 indicates two half-size neighbors.
+            leaf['cell_adj'][i,j,0] = mesh.quad_to_half[cell_adj_idx]
+            leaf['cell_adj'][i,j,1] = mesh.quad_to_half[cell_adj_idx+1]
+            leaf['cell_adj_face'][i,j] = cell_adj_face + 8
+
+    if len(prev_leaf_info) > 0:
+      # copy data that should not change
+      self._leaf_info['adapt'][to_mask] = prev_leaf_info['adapt'][from_mask]
 
     # cdef np.ndarray[np.int32] root
     # cdef np.ndarray[np.int32, ndim = 2] _cell_adj =
@@ -254,6 +340,8 @@ cdef class P4est:
     self._p4est = NULL
 
     self._leaf_info = None
+    self._leaf_adapt_coarse = None
+    self._leaf_adapt_fine = None
     self._mesh = None
 
   #-----------------------------------------------------------------------------
@@ -367,13 +455,33 @@ cdef class P4est:
     recursive = False,
     maxlevel = -1 ):
 
-    # leaf_info = np.copy(self._leaf_info)
-    # self._leaf_count = 0
+    num_refine = np.count_nonzero(self._leaf_info['adapt'] > 0)
+
+    leaf_adapt_coarse = -np.ones(
+      (num_refine,),
+      dtype = np.intp)
+
+    leaf_adapt_fine = -np.ones(
+      (num_refine, 2, 2),
+      dtype = np.intp )
+
+    self._leaf_adapt_idx = 0
+    self._leaf_adapt_coarse = leaf_adapt_coarse
+    self._leaf_adapt_fine = leaf_adapt_fine
 
     self._refine(int(recursive), int(maxlevel))
+
+    # save the information of the quads being refined before it's lost
+    coarse_info = self._leaf_info[leaf_adapt_coarse]
+
     self._update_iter()
 
-    # self._leaf_info = self._leaf_info[:self._leaf_count]
+    self._leaf_adapt_idx = 0
+    self._leaf_adapt_coarse = None
+    self._leaf_adapt_fine = None
+
+
+    return coarse_info, leaf_adapt_coarse, leaf_adapt_fine
 
   #-----------------------------------------------------------------------------
   cdef _refine(
@@ -395,8 +503,39 @@ cdef class P4est:
     recursive = False,
     orphans = False ):
 
+    # NOTE: this should over-estimate the number of coarsened cells, since
+    # the condition for coarsening is more strict
+    num_coarse = np.count_nonzero(self._leaf_info['adapt'] < 0) // 4
+
+    leaf_adapt_coarse = -np.ones(
+      (num_coarse,),
+      dtype = np.intp)
+
+    leaf_adapt_fine = -np.ones(
+      (num_coarse, 2, 2),
+      dtype = np.intp )
+
+    self._leaf_adapt_idx = 0
+    self._leaf_adapt_coarse = leaf_adapt_coarse
+    self._leaf_adapt_fine = leaf_adapt_fine
+
     self._coarsen(int(recursive), int(orphans))
+
+    # save the information of the quads being coarsened before it's lost
+    fine_info = self._leaf_info[leaf_adapt_fine]
+
     self._update_iter()
+
+    # trim output arrays to actual length
+    fine_info = fine_info[:self._leaf_adapt_idx]
+    leaf_adapt_fine = leaf_adapt_fine[:self._leaf_adapt_idx]
+    leaf_adapt_coarse = leaf_adapt_coarse[:self._leaf_adapt_idx]
+
+    self._leaf_adapt_idx = 0
+    self._leaf_adapt_coarse = None
+    self._leaf_adapt_fine = None
+
+    return fine_info, leaf_adapt_fine, leaf_adapt_coarse
 
   #-----------------------------------------------------------------------------
   cdef _coarsen(
@@ -460,25 +599,80 @@ cdef class P4est:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _init_quadrant(
   p4est_t* p4est,
-  p4est_topidx_t cell_idx,
+  p4est_topidx_t root_idx,
   p4est_quadrant_t* quadrant ) with gil:
-  pass
+  # print(f"+ quadrant: root= {root_idx}, level= {quadrant.level}, x= {quadrant.x}, y=, {quadrant.y}, data= {<int>quadrant.p.user_data})")
+  cdef aux_quadrant_data_t* cell_aux = <aux_quadrant_data_t*>quadrant.p.user_data
+  cell_aux.idx = -1
+  cell_aux.adapt_idx = -1
+  cell_aux.adapted = 0
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _replace_quadrants(
   p4est_t* p4est,
-  p4est_topidx_t cell_idx,
+  p4est_topidx_t root_idx,
   int num_outgoing,
   p4est_quadrant_t* outgoing[],
   int num_incoming,
   p4est_quadrant_t* incoming[] ) with gil:
 
-  if num_incoming == 1:
-    print(f"coarsening: {cell_idx}")
+  self = <P4est>p4est.user_pointer
+  cdef p4est_quadrant_t* cell
+  cdef aux_quadrant_data_t* cell_aux
+
+  cdef size_t adapt_idx = self._leaf_adapt_idx
+  self._leaf_adapt_idx += 1
+
+  assert adapt_idx < len(self._leaf_adapt_coarse)
+
+  # NOTE: incoming means the 'added' quadrants, and outgoing means 'removed'
+  if num_outgoing == 4:
+    # Coarsening: remove 4 -> add 1
+    # assert num_outgoing == 4
+    assert num_incoming == 1
+
+    # print(f"Coarsening: root= {root_idx}, adapt_idx= {adapt_idx}")
+
+    cell = incoming[0]
+
+    # flag that this index currently refers to the adapt array
+    cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+    cell_aux.adapted = -1
+    cell_aux.adapt_idx = adapt_idx
+
+    for k in range(4):
+      cell = outgoing[k]
+      cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+
+      i, j = divmod(k, 2)
+      self._leaf_adapt_fine[adapt_idx, i, j] = cell_aux.idx
+      # print(f" - [{i,j}]: cell_idx= {cell_aux.idx}")
 
   else:
+    # Refining: remove 1 -> add 4
+    assert num_outgoing == 1
+    assert num_incoming == 4
 
-    print(f"refining: {cell_idx}")
+    # print(f"Refining: root= {root_idx}, adapt_idx= {adapt_idx}")
+
+    cell = outgoing[0]
+    cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+
+    # store index of cell being refined
+    self._leaf_adapt_coarse[adapt_idx] = cell_aux.idx
+
+    # print(f" - : cell_idx= {cell_aux.idx}")
+
+    for k in range(4):
+      cell = incoming[k]
+
+      # flag that this index currently refers to the adapt array
+      cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+      cell_aux.adapted = 1
+      cell_aux.adapt_idx = 4*adapt_idx + k
+
+      # i, j = divmod(k, 2)
+      # print(f" + [{i},{j}]: adapt_idx= {cell_aux.adapt_idx}")
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # NOTE: these are not class members because they need to match the callback sig.
@@ -486,64 +680,46 @@ cdef void _replace_quadrants(
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef int _refine_quadrant(
   p4est_t* p4est,
-  p4est_topidx_t cell_idx,
+  p4est_topidx_t root_idx,
   p4est_quadrant_t* quadrant ) with gil:
 
   self = <P4est>p4est.user_pointer
-  return 0 < self._leaf_info[quadrant.p.user_long]['refine']
+
+  cdef aux_quadrant_data_t* cell_aux = <aux_quadrant_data_t*>quadrant.p.user_data
+
+  return self._leaf_info[cell_aux.idx]['adapt'] > 0
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef int _coarsen_quadrants(
   p4est_t* p4est,
-  p4est_topidx_t cell_idx,
+  p4est_topidx_t root_idx,
   p4est_quadrant_t* quadrants[] ) with gil:
 
   self = <P4est>p4est.user_pointer
-  return 0 > (
-    self._leaf_info[quadrants[0].p.user_long]['refine']
-    + self._leaf_info[quadrants[1].p.user_long]['refine']
-    + self._leaf_info[quadrants[2].p.user_long]['refine']
-    + self._leaf_info[quadrants[3].p.user_long]['refine'] )
+  cdef aux_quadrant_data_t* cell_aux
+
+  for k in range(4):
+    cell_aux = <aux_quadrant_data_t*>quadrants[k].p.user_data
+
+    if self._leaf_info[cell_aux.idx]['adapt'] >= 0:
+      return 0
+
+  return 1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef int _weight_quadrant(
   p4est_t* p4est,
-  p4est_topidx_t cell_idx,
+  p4est_topidx_t root_idx,
   p4est_quadrant_t* quadrant ) with gil:
 
   self = <P4est>p4est.user_pointer
-  return self._leaf_info[quadrant.p.user_long]['weight']
+
+  cdef aux_quadrant_data_t* cell_aux = <aux_quadrant_data_t*>quadrant.p.user_data
+
+  return self._leaf_info[cell_aux.idx]['weight']
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _iter_volume(
   p4est_iter_volume_info_t* info,
   void *user_data ) with gil:
-
-  # index of root cell
-  cdef p4est_topidx_t treeid = info.treeid
-  # index of leaf cell within the root cell
-  cdef p4est_locidx_t leaf_idx = info.quadid
-  cdef p4est_quadrant_t* quadrant = info.quad
-  cdef p4est_ghost_t* ghost = info.ghost_layer
-
-  self = <P4est>user_data
-
-  lc = self._leaf_count
-
-  if lc == len(self._leaf_info):
-    # resize array to make room for more leaves as quadrants are refined
-    _leaf_info = self._leaf_info
-    self._leaf_info = np.zeros((2*len(_leaf_info),), dtype = self._leaf_info.dtype)
-    self._leaf_info[lc:] = _leaf_info
-    self._leaf_info['cell'][lc:] = -1
-
-  # set where the quadrant data is going to be in the contiguous array
-  quadrant.p.user_long = lc
-
-  q = self._leaf_info[lc]
-  q['root'] = treeid
-  q['level'] = quadrant.level
-  q['origin'] = (quadrant.x, quadrant.y)
-  self._leaf_count += 1
-
-  print(f"+leaf {treeid}-{quadrant.level}-{quadrant.x/P4EST_ROOT_LEN:.3f}-{quadrant.y/P4EST_ROOT_LEN:.3f}")
+  pass
