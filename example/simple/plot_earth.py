@@ -223,7 +223,7 @@ def interpgrid_2D_to_3D():
   v = np.linspace(-np.pi, np.pi, scaled_image.shape[1])
   r = scaled_image
 
-  f =  RectBivariateSpline(u , v , r)
+  f =  RectBivariateSpline(u , v , r, kx = 1, ky = 1 )
 
   return f
 
@@ -393,7 +393,7 @@ def plot_grid(grid, interp = None, scalars = None):
   p.add_mesh(
      pv.PolyData(verts, faces = faces.ravel()),
      scalars = grid.leaf_info['root'] if scalars is None else scalars,
-     show_edges = True,
+     show_edges = False,
      line_width = 1,
      point_size = 3 )
 
@@ -409,20 +409,30 @@ def plot_grid(grid, interp = None, scalars = None):
 # mesh = icosahedron_spherical()
 mesh = cube()
 f = interpgrid_2D_to_3D()
+tol = 0.05
+
 
 grid = P4est(
   mesh = mesh,
   min_level = 0)
+for p in range(4):
+  grid.leaf_info['adapt'] = 1
+  grid.refine()
 
-for r in range(9):
-   grid.leaf_info['refine'] = 1
-   grid.refine()
-
+for r in range(6):
+    points = trans_cart_to_sphere(grid.leaf_coord(uv = (0.5,0.5), interp = interp_slerp_quad))
+    points[...,1] = np.pi / 2 - points[...,1]
+    value = f(*points.transpose(1,0)[:2][::-1], grid = False)
+    value_adj = value[grid.leaf_info['cell_adj']]
+    d_value = np.abs(value[:,None,None,None] - value_adj).max(axis = (1,2,3))
+    refine = d_value > tol
+    grid.leaf_info['adapt'] = refine 
+    if not np.any(refine):
+      break
+    grid.refine()
 points = trans_cart_to_sphere(grid.leaf_coord(uv = (0.5,0.5), interp = interp_slerp_quad))
-print(points[...,1] )
 points[...,1] = np.pi / 2 - points[...,1]
 value = f(*points.transpose(1,0)[:2][::-1], grid = False)
-
 plot_grid(grid, interp = interp_slerp_quad, scalars = value)
 
 
