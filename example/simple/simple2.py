@@ -1,7 +1,12 @@
 import networkx as nx
 import numpy as np
+from scipy.interpolate import (
+  RectBivariateSpline)
 import sys
 import time
+from PIL import (
+  ImageOps,
+  Image )
 import pyvista as pv
 from p4est import (
   P4est,
@@ -205,6 +210,24 @@ def icosahedron(radius = 1.0):
     vert_nodes = mesh.vert_nodes)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def interpgrid_2D_to_3D():
+  im1 = Image.open(r'earth_no_clouds.jpg')
+  im2 = ImageOps.grayscale(im1)
+  gray_image = np.array(im2)
+  scaled_image = gray_image / 255
+  #d_u = np.pi / scaled_image.shape[0]
+  u = np.linspace(0 , np.pi, scaled_image.shape[0]) 
+
+  #d_v = 2*np.pi / scaled_image.shape[1]
+  print(max(u))
+  v = np.linspace(-np.pi, np.pi, scaled_image.shape[1])
+  r = scaled_image
+
+  f =  RectBivariateSpline(u , v , r)
+
+  return f
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def trans_sphere_to_cart(coords):
   """Transforms coordinates from spherical to cartesian
 
@@ -232,6 +255,35 @@ def trans_sphere_to_cart(coords):
   return xyz
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def trans_cart_to_sphere(xyz):
+  """Transforms coordinates from spherical to cartesian
+
+  Parameters
+  ----------
+  coords : array with shape = (NV, 3)
+
+    The coordinates are assumed to be (in order):
+    * azimuthal angle [-pi, pi]
+    * polar angle [-pi/2, pi/2]
+    * radius
+
+
+  """
+
+  x = xyz[...,0]
+  y = xyz[...,1]
+  z = xyz[...,2]
+  r = np.linalg.norm(xyz, axis = -1)
+  tpr = np.zeros_like(xyz)
+  tpr[...,0] = np.arctan2(y, x)
+  tpr[...,1] = np.arcsin(z / r)
+  tpr[...,2] = r
+
+  return tpr
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
 def interp_slerp(eta, x0, x1):
   """Spherical linear interpolation
   """
@@ -316,8 +368,8 @@ def plot_mesh(mesh):
   p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
   p.show()
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def plot_grid(grid, interp = None):
-  scale = 0.95
+def plot_grid(grid, interp = None, scalars = None):
+  scale = 0.99
   _scale = 1.0 - scale
 
 
@@ -336,8 +388,19 @@ def plot_grid(grid, interp = None):
   faces[:nc,2] = idx + nc
   faces[:nc,3] = idx + 2*nc
   faces[:nc,4] = idx + 3*nc
+  pv.set_plot_theme('paraview')
+  p = pv.Plotter()
+  p.add_mesh(
+     pv.PolyData(verts, faces = faces.ravel()),
+     scalars = grid.leaf_info['root'] if scalars is None else scalars,
+     show_edges = True,
+     line_width = 1,
+     point_size = 3 )
+
+  p.show()
 
   return verts,faces
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # mesh = star()
@@ -345,39 +408,51 @@ def plot_grid(grid, interp = None):
 # mesh = icosahedron()
 # mesh = icosahedron_spherical()
 mesh = cube()
-
+f = interpgrid_2D_to_3D()
 
 grid = P4est(
   mesh = mesh,
   min_level = 0)
 
-print("leaf_info")
-print(grid.leaf_info)
+for r in range(9):
+   grid.leaf_info['refine'] = 1
+   grid.refine()
 
-print("centers")
-print(grid.leaf_coord(uv = (0.5, 0.5)))
+points = trans_cart_to_sphere(grid.leaf_coord(uv = (0.5,0.5), interp = interp_slerp_quad))
+print(points[...,1] )
+points[...,1] = np.pi / 2 - points[...,1]
+value = f(*points.transpose(1,0)[:2][::-1], grid = False)
 
-plot_mesh(mesh)
-print(grid)
-pv.set_plot_theme('paraview')
-p = pv.Plotter()
-p.show(interactive_update = True, auto_close=False)
-p.camera.position = (3.1477774788672055, 3.1477774788672055, 3.1477774788672055)
-for r in range(7):
-  grid.leaf_info['refine'] = 1
-  grid.refine()
-  verts,faces = plot_grid(grid, interp = interp_slerp_quad)
-  p.add_mesh(
-    pv.PolyData(verts, faces = faces.ravel()),
-    scalars = grid.leaf_info['root'],
-    show_edges = True,
-    line_width = 1,
-    point_size = 3 )
+plot_grid(grid, interp = interp_slerp_quad, scalars = value)
 
 
-  p.add_axes()
-  p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
-  p.update()
+
+
+
+# print("centers")
+# print(grid.leaf_coord(uv = (0.5, 0.5)))
+
+# plot_mesh(mesh)
+# print(grid)
+# pv.set_plot_theme('paraview')
+# p = pv.Plotter()
+# p.show(interactive_update = True, auto_close=False)
+# p.camera.position = (3.1477774788672055, 3.1477774788672055, 3.1477774788672055)
+# for r in range(7):
+#   grid.leaf_info['refine'] = 1
+#   grid.refine()
+#   verts,faces = plot_grid(grid, interp = interp_slerp_quad)
+#   p.add_mesh(
+#     pv.PolyData(verts, faces = faces.ravel()),
+#     scalars = grid.leaf_info['root'],
+#     show_edges = True,
+#     line_width = 1,
+#     point_size = 3 )
+
+
+#   p.add_axes()
+#   p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
+#   p.update()
 
 
 
