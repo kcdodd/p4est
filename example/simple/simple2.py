@@ -1,6 +1,7 @@
 import networkx as nx
 import numpy as np
 import sys
+import time
 import pyvista as pv
 from p4est import (
   P4est,
@@ -31,13 +32,24 @@ def cube(length = 1.0):
       [-half, half],
       [-half, half],
       indexing = 'ij'),
-    axis = -1).transpose().reshape(-1, 3)
+    axis = -1).transpose(2,1,0,3).reshape(-1, 3)
 
   print(verts)
 
-  cells = np.array([
-    [[0, 1], [2, 3]] ])
 
+  #Cell with vertex ordering [V0, V1] , [V2, V3]
+  cells = np.array([
+    [[0, 1], [4, 5]], #Origin Cell
+
+    [[1, 3], [5, 7]],  #Right of Origin Cell
+
+    [[2, 0], [6, 4]],  #Left of Origin Cell
+
+    [[3, 2], [7, 6]],  #Opposite of Origin Cell
+
+    [[1, 3], [0, 2]],  #Bottom Cell 
+
+    [[5, 7], [4, 6]]])  #Top Cell
   return QuadMesh(
     verts = verts,
     cells = cells )
@@ -227,9 +239,9 @@ def interp_slerp(eta, x0, x1):
   _x1 = np.linalg.norm(x1, axis = -1)
 
   cos_theta = np.sum(x0*x1, axis = -1) / (_x0 * _x1)
-  sin_theta = np.sqrt(1.0 - cos_theta**2)
+ # sin_theta = np.sqrt(1.0 - cos_theta**2)
   theta = np.arccos(cos_theta)
-
+  sin_theta = np.sin(theta)
   c0 = np.sin((1.0 - eta) * theta) / sin_theta
   c1 = np.sin(eta * theta) / sin_theta
 
@@ -303,14 +315,11 @@ def plot_mesh(mesh):
   p.add_axes()
   p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
   p.show()
-
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def plot_grid(grid, interp = None):
-  scale = 0.99
+  scale = 0.95
   _scale = 1.0 - scale
 
-  pv.set_plot_theme('paraview')
-  p = pv.Plotter()
 
   nc = len(grid.leaf_info)
   verts = np.empty((4*nc, 3))
@@ -328,25 +337,14 @@ def plot_grid(grid, interp = None):
   faces[:nc,3] = idx + 2*nc
   faces[:nc,4] = idx + 3*nc
 
-  p.add_mesh(
-    pv.PolyData(verts, faces = faces.ravel()),
-    scalars = grid.leaf_info['root'],
-    show_edges = True,
-    line_width = 1,
-    point_size = 3 )
-
-
-  p.add_axes()
-  p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
-  p.show()
-
+  return verts,faces
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # mesh = star()
 # mesh = periodic_stack()
 # mesh = icosahedron()
-mesh = icosahedron_spherical()
-# mesh = cube()
+# mesh = icosahedron_spherical()
+mesh = cube()
 
 
 grid = P4est(
@@ -360,13 +358,28 @@ print("centers")
 print(grid.leaf_coord(uv = (0.5, 0.5)))
 
 plot_mesh(mesh)
-
-for r in range(3):
+print(grid)
+pv.set_plot_theme('paraview')
+p = pv.Plotter()
+p.show(interactive_update = True, auto_close=False)
+p.camera.position = (3.1477774788672055, 3.1477774788672055, 3.1477774788672055)
+for r in range(7):
   grid.leaf_info['refine'] = 1
   grid.refine()
+  verts,faces = plot_grid(grid, interp = interp_slerp_quad)
+  p.add_mesh(
+    pv.PolyData(verts, faces = faces.ravel()),
+    scalars = grid.leaf_info['root'],
+    show_edges = True,
+    line_width = 1,
+    point_size = 3 )
 
 
-plot_grid(grid, interp = interp_sphere_to_cart_slerp)
+  p.add_axes()
+  p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
+  p.update()
+
+
 
 # print('rank', grid.comm.rank, len(grid.leaf_info))
 # print('rank', grid.comm.rank, grid.leaf_info)
