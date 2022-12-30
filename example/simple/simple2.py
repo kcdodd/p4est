@@ -1,6 +1,4 @@
-import networkx as nx
 import numpy as np
-import sys
 import pyvista as pv
 from p4est import (
   P4est,
