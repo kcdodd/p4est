@@ -505,13 +505,22 @@ ctypedef struct aux_quadrant_data_t:
   np.npy_int8 _future_flag3
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class LeafInfo:
+  cdef np.ndarray _root
+  cdef np.ndarray _level
+  cdef np.ndarray _origin
+  cdef np.ndarray _weight
+  cdef np.ndarray _adapt
+  cdef np.ndarray _cell_adj
+  cdef np.ndarray _cell_adj_face
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
   cdef _max_level
   cdef _comm
   cdef _mesh
 
-  cdef _leaf_dtype
-  cdef _leaf_info
+  cdef LeafInfo _leaf_info
 
   cdef _leaf_adapt_idx
   cdef _leaf_adapt_coarse

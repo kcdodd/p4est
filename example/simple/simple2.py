@@ -336,7 +336,7 @@ def plot_grid(grid, interp = None):
 
   p.add_mesh(
     pv.PolyData(verts, faces = faces.ravel()),
-    scalars = grid.leaf_info['root'],
+    scalars = grid.leaf_info.root,
     show_edges = True,
     line_width = 1,
     point_size = 3 )
@@ -355,7 +355,7 @@ def run_icosahedron_spherical():
     min_level = 0)
 
   for r in range(3):
-    grid.leaf_info['adapt'] = 1
+    grid.leaf_info.adapt = 1
     grid.refine()
 
   plot_grid(grid, interp = interp_sphere_to_cart_slerp)
@@ -370,7 +370,7 @@ def run_icosahedron():
     min_level = 0)
 
   for r in range(4):
-    grid.leaf_info['adapt'] = 1
+    grid.leaf_info.adapt = 1
     grid.refine()
 
   plot_grid(grid, interp = interp_slerp_quad)
@@ -384,7 +384,7 @@ def run_cube():
     min_level = 0)
 
   for r in range(4):
-    grid.leaf_info['adapt'] = 1
+    grid.leaf_info.adapt = 1
     grid.refine()
 
   plot_grid(grid, interp = interp_slerp_quad)

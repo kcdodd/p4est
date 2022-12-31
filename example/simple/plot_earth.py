@@ -52,7 +52,7 @@ def cube(length = 1.0):
 
     [[3, 2], [7, 6]],  #Opposite of Origin Cell
 
-    [[1, 3], [0, 2]],  #Bottom Cell 
+    [[1, 3], [0, 2]],  #Bottom Cell
 
     [[5, 7], [4, 6]]])  #Top Cell
   return QuadMesh(
@@ -216,7 +216,7 @@ def interpgrid_2D_to_3D():
   gray_image = np.array(im2)
   scaled_image = gray_image / 255
   #d_u = np.pi / scaled_image.shape[0]
-  u = np.linspace(0 , np.pi, scaled_image.shape[0]) 
+  u = np.linspace(0 , np.pi, scaled_image.shape[0])
 
   #d_v = 2*np.pi / scaled_image.shape[1]
   print(max(u))
@@ -392,7 +392,7 @@ def plot_grid(grid, interp = None, scalars = None):
   p = pv.Plotter()
   p.add_mesh(
      pv.PolyData(verts, faces = faces.ravel()),
-     scalars = grid.leaf_info['root'] if scalars is None else scalars,
+     scalars = grid.leaf_info.root if scalars is None else scalars,
      show_edges = False,
      line_width = 1,
      point_size = 3 )
@@ -416,17 +416,17 @@ grid = P4est(
   mesh = mesh,
   min_level = 0)
 for p in range(4):
-  grid.leaf_info['adapt'] = 1
+  grid.leaf_info.adapt = 1
   grid.refine()
 
 for r in range(6):
     points = trans_cart_to_sphere(grid.leaf_coord(uv = (0.5,0.5), interp = interp_slerp_quad))
     points[...,1] = np.pi / 2 - points[...,1]
     value = f(*points.transpose(1,0)[:2][::-1], grid = False)
-    value_adj = value[grid.leaf_info['cell_adj']]
+    value_adj = value[grid.leaf_info.cell_adj]
     d_value = np.abs(value[:,None,None,None] - value_adj).max(axis = (1,2,3))
     refine = d_value > tol
-    grid.leaf_info['adapt'] = refine 
+    grid.leaf_info.adapt = refine
     if not np.any(refine):
       break
     grid.refine()
