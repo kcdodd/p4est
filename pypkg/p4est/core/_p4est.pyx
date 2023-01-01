@@ -20,227 +20,13 @@ from p4est.mesh.quad_mesh import (
   QuadMeshBase,
   QuadMesh )
 
+from p4est.core._leaf_info import QuadInfo
+
 cdef extern from "Python.h":
   const int PyBUF_READ
   const int PyBUF_WRITE
   PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-QUAD_ADAPTED_FINE = 0x10
-QUAD_ADAPTED_COARSE = 0x01
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class LeafInfo:
-  _spec = {
-    # the index of the original root level mesh.cells
-    'root' : (tuple(), np.int32),
-    # refinement level
-    'level' : (tuple(), np.int8),
-    # Normalized coordinate of the leaf's origin relative to the root cell
-    # stored as integer units to allow exact arithmetic:
-    # 0 -> 0.0
-    # 2**max_level -> 1.0
-    # To get positions from this origin, the relative width of the leaf can be
-    # computed from the refinement level:
-    # 2**(max_level - level) -> 1.0/2**level
-    # NOTE: This results in higher precision than a normalized 32bit float,
-    # since a single-precision float only has 24bits for the fraction.
-    # Floating point arithmetic involving the normalized coordinates should
-    # use 64bit (double) precision to avoid loss of precision.
-    'origin' : ((2,), np.int32),
-    # Computational weight of the leaf used for load partitioning among processors
-    'weight' : (tuple(), np.int32),
-    # A flag used to control refinement (>0) and coarsening (<0)
-    'adapt' : (tuple(), np.int8),
-    # Indices of up to 6 unique adjacent cells, ordered as:
-    #    |110|111|
-    # ---+---+---+---
-    # 001|       |011
-    # ---+       +---
-    # 000|       |010
-    # ---+---+---+---
-    #    |100|101|
-    #
-    # Indexing: [(y-normal, x-normal), (-face, +face), (-half, +half)]
-    # If cell_adj[i,j,0] == cell_adj[i,j,1], then both halfs are shared with
-    # the same cell (of equal or greater size).
-    # Otherwise each half is shared with different cells of 1/2 size.
-    'cell_adj' : ((2,2,2), np.int32),
-    # If the neighbor is larger, then the value of cell_adj_face may be in the
-    # range 0..15 (instead of 0..7), where the additional bit indicates the
-    # sub-face. E.G.
-    # sub_face, face_orientation = divmod(cell_adj_face, 8)
-    # orientation, face = divmod(face_orientation, 4)
-    'cell_adj_face' : ((2,2), np.int8) }
-
-  #-----------------------------------------------------------------------------
-  def __init__(self, *args, **kwargs):
-    if len(args) and len(kwargs):
-      raise ValueError(f"Arguments must be only size, or all info values")
-
-    if len(args):
-      if len(args) == 1:
-        if isinstance(args[0], int):
-          self.resize(args[0])
-        else:
-          self.set_from(args[0])
-      else:
-        self.set_from(args)
-    elif len(kwargs):
-      self.set_from(kwargs)
-
-    else:
-      self.resize(0)
-
-  #-----------------------------------------------------------------------------
-  def as_tuple(self):
-    return LeafInfoTuple(
-      root = self._root,
-      level = self._level,
-      origin = self._origin,
-      weight = self._weight,
-      adapt = self._adapt,
-      cell_adj = self._cell_adj,
-      cell_adj_face = self._cell_adj_face )
-
-  #-----------------------------------------------------------------------------
-  def set_from(self, info):
-    if not isinstance(info, LeafInfoTuple):
-      if isinstance(info, Mapping):
-        info = LeafInfoTuple(**info)
-      else:
-        info = LeafInfoTuple(*info)
-
-    size = None
-    for (k, (shape, dtype)), v in zip(self._spec.items(), info):
-      if v.shape[1:] != shape or v.dtype != dtype:
-        raise ValueError(f"'{k}' must have shape[1:] == {shape}, dtype == {dtype}: {v.shape[1:]}, {v.dtype}")
-
-      if size is None:
-        size = len(v)
-
-      elif len(v) != size:
-        raise ValueError(f"All arrays must have same length: {k} -> {len(v)}")
-
-    self._root = np.ascontiguousarray(info.root)
-    self._level = np.ascontiguousarray(info.level)
-    self._origin = np.ascontiguousarray(info.origin)
-    self._weight = np.ascontiguousarray(info.weight)
-    self._adapt = np.ascontiguousarray(info.adapt)
-    self._cell_adj = np.ascontiguousarray(info.cell_adj)
-    self._cell_adj_face = np.ascontiguousarray(info.cell_adj_face)
-
-  #-----------------------------------------------------------------------------
-  @property
-  def root(self):
-    return self._root
-
-  #-----------------------------------------------------------------------------
-  @root.setter
-  def root(self, val):
-    self._root[:] = val
-
-  #-----------------------------------------------------------------------------
-  @property
-  def level(self):
-    return self._level
-
-  #-----------------------------------------------------------------------------
-  @level.setter
-  def level(self, val):
-    self._level[:] = val
-
-  #-----------------------------------------------------------------------------
-  @property
-  def origin(self):
-    return self._origin
-
-  #-----------------------------------------------------------------------------
-  @origin.setter
-  def origin(self, val):
-    self._origin[:] = val
-
-  #-----------------------------------------------------------------------------
-  @property
-  def weight(self):
-    return self._weight
-
-  #-----------------------------------------------------------------------------
-  @weight.setter
-  def weight(self, val):
-    self._weight[:] = val
-
-  #-----------------------------------------------------------------------------
-  @property
-  def adapt(self):
-    return self._adapt
-
-  #-----------------------------------------------------------------------------
-  @adapt.setter
-  def adapt(self, val):
-    self._adapt[:] = val
-
-  #-----------------------------------------------------------------------------
-  @property
-  def cell_adj(self):
-    return self. _cell_adj
-
-  #-----------------------------------------------------------------------------
-  @cell_adj.setter
-  def cell_adj(self, val):
-    self._cell_adj[:] = val
-
-  #-----------------------------------------------------------------------------
-  @property
-  def cell_adj_face(self):
-    return self._cell_adj_face
-
-  #-----------------------------------------------------------------------------
-  @cell_adj_face.setter
-  def cell_adj_face(self, val):
-    self._cell_adj_face[:] = val
-
-  #-----------------------------------------------------------------------------
-  def resize(self, size):
-    if self._root is not None and size == len(self._root):
-      return
-
-    info = list()
-
-    for (k, (shape, dtype)), _arr in zip(self._spec.items(), self.as_tuple()):
-
-      arr = np.zeros((size, *shape), dtype = dtype)
-
-      if _arr is not None:
-        arr[:len(_arr)] = _arr[:size]
-
-      info.append(arr)
-
-    self.set_from(info)
-
-  #-----------------------------------------------------------------------------
-  def __len__(self):
-    return len(self._root)
-
-  #-----------------------------------------------------------------------------
-  def __getitem__( self, idx ):
-    return LeafInfo(
-      np.ascontiguousarray(arr[idx])
-      for arr in self.as_tuple() )
-
-  #-----------------------------------------------------------------------------
-  def __setitem__( self, idx, info ):
-    if not isinstance(info, (LeafInfo, LeafInfoTuple)):
-      raise ValueError(f"Expected LeafInfo: {type(info)}")
-
-    if isinstance(info, LeafInfo):
-      info = info.as_tuple()
-
-    for a, b in zip(self.as_tuple(), info):
-      a[idx] = b
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-LeafInfoTuple = namedtuple('LeafInfoTuple', list(LeafInfo._spec.keys()))
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
@@ -288,7 +74,7 @@ cdef class P4est:
     self._max_level = P4EST_MAXLEVEL
     self._comm = comm
     self._mesh = mesh
-    self._leaf_info = LeafInfo(0)
+    self._leaf_info = QuadInfo(0)
 
     self._leaf_adapt_idx = 0
     self._leaf_adapt_coarse = None
@@ -406,7 +192,7 @@ cdef class P4est:
     prev_leaf_info = self._leaf_info
     cdef np.ndarray[cnp.npy_int8, ndim = 1] prev_adapt = prev_leaf_info.adapt
 
-    self._leaf_info = LeafInfo(mesh.local_num_quadrants)
+    self._leaf_info = QuadInfo(mesh.local_num_quadrants)
     cdef np.ndarray[cnp.npy_int32, ndim = 1] root = self._leaf_info.root
     cdef np.ndarray[cnp.npy_int8, ndim = 1] level = self._leaf_info.level
     cdef np.ndarray[cnp.npy_int32, ndim = 2] origin = self._leaf_info.origin
@@ -775,6 +561,9 @@ cdef class P4est:
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# NOTE: these are not class members because they need to match the callback sig.
+# but are implemented as though they were by casting the user pointer to be 'self'
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _init_quadrant(
   p4est_t* p4est,
   p4est_topidx_t root_idx,
@@ -852,9 +641,6 @@ cdef void _replace_quadrants(
       # i, j = divmod(k, 2)
       # print(f" + [{i},{j}]: adapt_idx= {cell_aux.adapt_idx}")
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# NOTE: these are not class members because they need to match the callback sig.
-# but are implemented as though they were by casting the user pointer to be 'self'
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef int _refine_quadrant(
   p4est_t* p4est,

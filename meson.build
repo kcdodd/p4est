@@ -222,6 +222,13 @@ if target_pypkg
   message('NumPy includes: ' + incdir_numpy)
   np_inc = include_directories(incdir_numpy)
 
+
+  cython_args = []
+
+  if get_option('profile')
+    cython_args += ['-X profile=True', '-X linetrace=True', '-X binding=True']
+    c_args += ['-DCYTHON_TRACE=1', '-DCYTHON_TRACE_NOGIL=1']
+  endif
 endif
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -253,5 +260,5 @@ build_number_file = configure_file(
 subdir('src')
 
 if target_pypkg
-  subdir('srcpy/core')
+  subdir('pypkg/p4est/core')
 endif

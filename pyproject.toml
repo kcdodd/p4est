@@ -82,17 +82,32 @@ ignore = [
   '**/*.so' ]
 
 copy = [
+  'cmake',
+  'doc',
+  'example',
   'pkgaux',
+  'pypkg',
   'src',
-  'srcpy',
+  'subprojects/sc/cmake',
+  'subprojects/sc/doc',
+  'subprojects/sc/example',
+  'subprojects/sc/iniparser',
+  'subprojects/sc/libb64',
+  'subprojects/sc/src',
+  'subprojects/sc/test',
+  'subprojects/sc/AUTHORS',
+  'subprojects/sc/COPYING',
+  'subprojects/sc/meson_options.txt',
+  'subprojects/sc/meson.build',
+  'test',
   'pyproject.toml',
   'README',
   'COPYING',
   'VERSION',
   'BUILDNUMBER.in',
   'BUILDTAGS.in',
-  'meson.build',
   'meson_options.txt',
+  'meson.build',
   'build_requirements.txt']
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -124,17 +139,24 @@ compile_args = [
 #...............................................................................
 # p4est build options
 [tool.pyproj.targets.options]
+
+# Compiles the Python modules
 pypkg = true
+
 # always build against MPI
 mpi = 'enabled'
 
+# one of {'trace', 'debug', 'verbose', 'info', 'warning', 'error'}
 log_priority = 'error'
+
+# Compile with profiling code
+profile = true
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # binary distribution installed paths
 
 [[tool.pyproj.dist.binary.purelib.copy]]
-src = 'srcpy'
+src = 'pypkg/p4est'
 dst = 'p4est'
 ignore = 'core'
 

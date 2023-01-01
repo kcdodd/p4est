@@ -21,3 +21,9 @@ option(
   type : 'combo',
   choices : ['trace', 'debug', 'verbose', 'info', 'warning', 'error'],
   value : 'info')
+
+option(
+  'profile',
+  type : 'boolean',
+  value : false,
+  description : 'Compile with profiling code.'  )
