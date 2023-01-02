@@ -370,6 +370,9 @@ cdef class P4est:
       adapt = self._leaf_info.adapt,
       cell_adj = self._leaf_info.cell_adj,
       cell_adj_face = self._leaf_info.cell_adj_face,
+      cell_adj_subface = self._leaf_info.cell_adj_subface,
+      cell_adj_order = self._leaf_info.cell_adj_order,
+      cell_adj_level = self._leaf_info.cell_adj_level,
       leaf_adapted = leaf_adapted,
       leaf_adapted_fine = leaf_adapted_fine,
       leaf_adapted_coarse = leaf_adapted_coarse )
@@ -478,6 +481,9 @@ cdef void _sync_leaf_info(
   npy.npy_int8[:] adapt,
   npy.npy_int32[:,:,:,:] cell_adj,
   npy.npy_int8[:,:,:] cell_adj_face,
+  npy.npy_int8[:,:,:] cell_adj_subface,
+  npy.npy_int8[:,:,:] cell_adj_order,
+  npy.npy_int8[:,:,:] cell_adj_level,
   npy.npy_int8[:] leaf_adapted,
   npy.npy_int32[:,:,:] leaf_adapted_fine,
   npy.npy_int32[:] leaf_adapted_coarse ) nogil:
@@ -506,6 +512,7 @@ cdef void _sync_leaf_info(
 
     npy.npy_int32 cell_adj_idx = 0
     npy.npy_int8 cell_adj_face_idx = 0
+    npy.npy_int8 face_order = 0
 
   for root_idx in range(first_local_tree, last_local_tree+1):
     tree = &trees[root_idx]
@@ -577,29 +584,33 @@ cdef void _sync_leaf_info(
 
           # A value of v = 0..7 indicates one same-size neighbor.
           # A value of v = 8..23 indicates a double-size neighbor.
-          #   8 % 8 -> face 0
+          #   8 % 8 -> face_order 0
           #   8 // 16 -> subface 0
-          #   15 % 8 -> face 7
+          #   15 % 8 -> face_order 7
           #   15 // 16 -> subface 0
           # designates the subface of the large neighbor that the quadrant
           # touches (this is the same as the large neighbor's face corner).
-          #   16 % 8 -> face 0
+          #   16 % 8 -> face_order 0
           #   16 // 16 -> subface 1
-          #   23 % 8 -> face 7
+          #   23 % 8 -> face_order 7
           #   23 // 16 -> subface 1
           # A value of v = -8..-1 indicates two half-size neighbors.
           #   -8 % 8 -> 0
           #   -1 % 8 -> 7
-          # TODO: store face orientation separatly (r * 4 + nf)
-          # TODO: store double-size neighbor subface somewhere
-          cell_adj_face[cell_idx,i,j] = cell_adj_face_idx % 8
+          face_order = cell_adj_face_idx % 8
+
+          cell_adj_face[cell_idx,i,j] = face_order % 4
+          cell_adj_subface[cell_idx,i,j] = cell_adj_face_idx // 16
+          cell_adj_order[cell_idx,i,j] = 1 - 2*(face_order // 4)
 
           if cell_adj_face_idx >= 0:
             cell_adj[cell_idx,i,j] = cell_adj_idx
+            cell_adj_level[cell_idx,i,j] = 0 if (cell_adj_face_idx < 8) else -1
           else:
             # In this case the corresponding quad_to_quad index points into the
             # quad_to_half array that stores two quadrant numbers per index,
             cell_adj[cell_idx,i,j] = quad_to_half[cell_adj_idx]
+            cell_adj_level[cell_idx,i,j] = 1
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

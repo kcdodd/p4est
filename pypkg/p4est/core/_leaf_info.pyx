@@ -29,26 +29,37 @@ QUAD_FIELDS = {
   # A flag used to control refinement (>0) and coarsening (<0)
   'adapt' : (tuple(), np.int8),
   # Indices of up to 6 unique adjacent cells, ordered as:
-  #    |110|111|
-  # ---+---+---+---
-  # 001|       |011
-  # ---+       +---
-  # 000|       |010
-  # ---+---+---+---
-  #    |100|101|
+  #    |110 | 111|
+  # ---+----+----+---
+  # 001|         |011
+  # ---+         +---
+  # 000|         |010
+  # ---+----+----+---
+  #    |100 | 101|
   #
   # Indexing: [(y-normal, x-normal), (-face, +face), (-half, +half)]
   # If cell_adj[i,j,0] == cell_adj[i,j,1], then both halfs are shared with
   # the same cell (of equal or greater size).
   # Otherwise each half is shared with different cells of 1/2 size.
   'cell_adj' : ((2,2,2), np.int32),
-  # If the neighbor is larger, then the value of cell_adj_face may be in the
-  # range 0..15 (instead of 0..7), where the additional bit indicates the
-  # sub-face. E.G.
-  # sub_face, face_orientation = divmod(cell_adj_face, 8)
-  # orientation, face = divmod(face_orientation, 4)
+  # connecting face {0..7} of the adjacent cell
+  #    |   11   |
+  # ---+--------+---
+  #    |        |
+  #  00|        |01
+  #    |        |
+  # ---+--------+---
+  #    |   10   |
+  # NOTE: These do not have to be specified for each half like cell_adj, since
+  # the adjacent face is the same for both halves since both neighbors must be
+  # part of the same tree
   'cell_adj_face' : ((2,2), np.int8),
-  'cell_adj_subface' : ((2,2), np.int8) }
+  # connect sub-face, {0,1} in the case where the adjacent cell is twice the size
+  'cell_adj_subface' : ((2,2), np.int8),
+  # relative ordering {-1, 1} of the adjacent cell
+  'cell_adj_order' : ((2,2), np.int8),
+  # relative level {-1, 0, 1} of the adjacent cell
+  'cell_adj_level' : ((2,2), np.int8) }
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 QuadInfoTuple = namedtuple('QuadInfoTuple', list(QUAD_FIELDS.keys()))
@@ -84,7 +95,9 @@ cdef class QuadInfo:
       adapt = self._adapt,
       cell_adj = self._cell_adj,
       cell_adj_face = self._cell_adj_face,
-      cell_adj_subface = self._cell_adj_subface )
+      cell_adj_subface = self._cell_adj_subface,
+      cell_adj_order = self._cell_adj_order,
+      cell_adj_level = self._cell_adj_level )
 
   #-----------------------------------------------------------------------------
   def set_from(self, info):
@@ -116,6 +129,8 @@ cdef class QuadInfo:
     self._cell_adj = np.ascontiguousarray(info.cell_adj)
     self._cell_adj_face = np.ascontiguousarray(info.cell_adj_face)
     self._cell_adj_subface = np.ascontiguousarray(info.cell_adj_subface)
+    self._cell_adj_order = np.ascontiguousarray(info.cell_adj_order)
+    self._cell_adj_level = np.ascontiguousarray(info.cell_adj_level)
 
   #-----------------------------------------------------------------------------
   @property
@@ -196,6 +211,26 @@ cdef class QuadInfo:
   @cell_adj_subface.setter
   def cell_adj_subface(self, val):
     self._cell_adj_subface[:] = val
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cell_adj_order(self):
+    return self._cell_adj_order
+
+  #-----------------------------------------------------------------------------
+  @cell_adj_order.setter
+  def cell_adj_order(self, val):
+    self._cell_adj_order[:] = val
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cell_adj_level(self):
+    return self._cell_adj_level
+
+  #-----------------------------------------------------------------------------
+  @cell_adj_level.setter
+  def cell_adj_level(self, val):
+    self._cell_adj_level[:] = val
 
   #-----------------------------------------------------------------------------
   def resize(self, size):
