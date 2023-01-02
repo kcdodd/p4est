@@ -498,92 +498,37 @@ cdef extern from "p4est_iterate.h" nogil:
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ctypedef struct aux_quadrant_data_t:
-  np.npy_intp idx
-  np.npy_intp adapt_idx
+  np.npy_int32 idx
+  np.npy_int8 adapt
+  np.npy_int32 weight
+
   np.npy_int8 adapted
   np.npy_int8 _future_flag1
   np.npy_int8 _future_flag2
-  np.npy_int8 _future_flag3
+
+  np.npy_int32 replaced_idx[4]
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
-  cdef _max_level
+
   cdef _comm
   cdef _mesh
+  cdef np.npy_int8 _min_level
+  cdef np.npy_int8 _max_level
 
   cdef QuadInfo _leaf_info
-
-  cdef _leaf_adapt_idx
-  cdef _leaf_adapt_coarse
-  cdef _leaf_adapt_fine
 
   cdef p4est_connectivity_t _connectivity
   cdef p4est_t* _p4est
 
   #-----------------------------------------------------------------------------
-  cdef _init(
-    P4est self,
-    p4est_locidx_t min_quadrants,
-    int min_level,
-    int fill_uniform )
+  cdef _init(P4est self)
 
   #-----------------------------------------------------------------------------
-  cdef _update_iter(P4est self)
+  cdef void _adapt(P4est self) nogil
 
   #-----------------------------------------------------------------------------
-  cdef _refine(
-    P4est self,
-    int recursive,
-    int maxlevel )
+  cdef void _partition(P4est self) nogil
 
   #-----------------------------------------------------------------------------
-  cdef _coarsen(
-    P4est self,
-    int recursive,
-    int orphans )
-
-  #-----------------------------------------------------------------------------
-  cdef _balance(
-    P4est self,
-    p4est_connect_type_t btype )
-
-  #-----------------------------------------------------------------------------
-  cdef _partition(
-    P4est self,
-    int allow_coarsening )
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# NOTE: these are not class members because they need to match the callback sig.
-# but are implemented as though they were by casting the user pointer to be 'self'
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef void _init_quadrant(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant ) with gil
-
-cdef void _replace_quadrants(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  int num_outgoing,
-  p4est_quadrant_t* outgoing[],
-  int num_incoming,
-  p4est_quadrant_t* incoming[] ) with gil
-
-cdef int _refine_quadrant(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant ) with gil
-
-cdef int _coarsen_quadrants(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrants[] ) with gil
-
-cdef int _weight_quadrant(
-  p4est_t* p4est,
-  p4est_topidx_t cell_idx,
-  p4est_quadrant_t* quadrant ) with gil
-
-cdef void _iter_volume(
-  p4est_iter_volume_info_t* info,
-  void *user_data ) with gil
+  cdef _sync_leaf_info(P4est self)

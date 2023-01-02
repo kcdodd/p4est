@@ -4,7 +4,6 @@ from collections.abc import (
   Sequence,
   Mapping )
 
-cimport numpy as cnp
 import numpy as np
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -48,7 +47,8 @@ QUAD_FIELDS = {
   # sub-face. E.G.
   # sub_face, face_orientation = divmod(cell_adj_face, 8)
   # orientation, face = divmod(face_orientation, 4)
-  'cell_adj_face' : ((2,2), np.int8) }
+  'cell_adj_face' : ((2,2), np.int8),
+  'cell_adj_subface' : ((2,2), np.int8) }
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 QuadInfoTuple = namedtuple('QuadInfoTuple', list(QUAD_FIELDS.keys()))
@@ -83,7 +83,8 @@ cdef class QuadInfo:
       weight = self._weight,
       adapt = self._adapt,
       cell_adj = self._cell_adj,
-      cell_adj_face = self._cell_adj_face )
+      cell_adj_face = self._cell_adj_face,
+      cell_adj_subface = self._cell_adj_subface )
 
   #-----------------------------------------------------------------------------
   def set_from(self, info):
@@ -93,16 +94,19 @@ cdef class QuadInfo:
       else:
         info = QuadInfoTuple(*info)
 
-    size = None
+    base_shape = None
+
     for (k, (shape, dtype)), v in zip(QUAD_FIELDS.items(), info):
-      if v.shape[1:] != shape or v.dtype != dtype:
-        raise ValueError(f"'{k}' must have shape[1:] == {shape}, dtype == {dtype}: {v.shape[1:]}, {v.dtype}")
+      ndim = v.ndim - len(shape)
 
-      if size is None:
-        size = len(v)
+      if v.shape[ndim:] != shape or v.dtype != dtype:
+        raise ValueError(f"'{k}' must have trailing shape[{ndim}:] == {shape}, dtype == {dtype}: {v.shape[ndim:]}, {v.dtype}")
 
-      elif len(v) != size:
-        raise ValueError(f"All arrays must have same length: {k} -> {len(v)}")
+      if base_shape is None:
+        base_shape = v.shape[:ndim]
+
+      elif v.shape[:ndim] != base_shape:
+        raise ValueError(f"All arrays must have same leading shape {base_shape}: {k} -> {v.shape[:ndim]}")
 
     self._root = np.ascontiguousarray(info.root)
     self._level = np.ascontiguousarray(info.level)
@@ -111,6 +115,7 @@ cdef class QuadInfo:
     self._adapt = np.ascontiguousarray(info.adapt)
     self._cell_adj = np.ascontiguousarray(info.cell_adj)
     self._cell_adj_face = np.ascontiguousarray(info.cell_adj_face)
+    self._cell_adj_subface = np.ascontiguousarray(info.cell_adj_subface)
 
   #-----------------------------------------------------------------------------
   @property
@@ -181,6 +186,16 @@ cdef class QuadInfo:
   @cell_adj_face.setter
   def cell_adj_face(self, val):
     self._cell_adj_face[:] = val
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cell_adj_subface(self):
+    return self._cell_adj_subface
+
+  #-----------------------------------------------------------------------------
+  @cell_adj_subface.setter
+  def cell_adj_subface(self, val):
+    self._cell_adj_subface[:] = val
 
   #-----------------------------------------------------------------------------
   def resize(self, size):

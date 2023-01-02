@@ -21,6 +21,7 @@ from p4est.mesh.quad_mesh import (
   QuadMesh )
 
 from p4est.core._leaf_info import QuadInfo
+from p4est.core._adapted import Adapted
 
 cdef extern from "Python.h":
   const int PyBUF_READ
@@ -35,11 +36,10 @@ cdef class P4est:
   Parameters
   ----------
   mesh : QuadMesh
-  min_quadrants : None | int
-    (default: 0)
   min_level : None | int
     (default: 0)
-  fill_uniform : bool
+  max_level : None | int
+    (default: -1)
   comm : None | mpi4py.MPI.Comm
     (default: mpi4py.MPI.COMM_WORLD)
 
@@ -48,23 +48,23 @@ cdef class P4est:
   #-----------------------------------------------------------------------------
   def __init__(self,
     mesh,
-    min_quadrants = None,
     min_level = None,
-    fill_uniform = None,
+    max_level = None,
     comm = None ):
 
     #...........................................................................
     if not isinstance(mesh, QuadMeshBase):
       raise ValueError(f"mesh must be a QuadMeshBase: {type(mesh)}")
 
-    if min_quadrants is None:
-      min_quadrants = 0
-
     if min_level is None:
       min_level = 0
 
-    if fill_uniform is None:
-      fill_uniform = False
+    min_level = min(127, max(0, int(min_level)))
+
+    if max_level is None:
+      max_level = -1
+
+    max_level = min(127, max(-1, int(max_level)))
 
     if comm is None:
       comm = MPI.COMM_WORLD
@@ -74,21 +74,14 @@ cdef class P4est:
     self._max_level = P4EST_MAXLEVEL
     self._comm = comm
     self._mesh = mesh
+    self._min_level = min_level
+
     self._leaf_info = QuadInfo(0)
 
-    self._leaf_adapt_idx = 0
-    self._leaf_adapt_coarse = None
-    self._leaf_adapt_fine = None
-
-
-    self._init(min_quadrants, min_level, fill_uniform)
+    self._init()
 
   #-----------------------------------------------------------------------------
-  cdef _init(
-    P4est self,
-    p4est_locidx_t min_quadrants,
-    int min_level,
-    int fill_uniform ):
+  cdef _init(P4est self):
 
     memset(&self._connectivity, 0, sizeof(p4est_connectivity_t));
 
@@ -128,76 +121,15 @@ cdef class P4est:
       p4est = p4est_new_ext(
         comm,
         connectivity,
-        min_quadrants,
-        min_level,
-        fill_uniform,
+        0,
+        self._min_level,
+        0,
         sizeof(aux_quadrant_data_t),
         <p4est_init_t>_init_quadrant,
         <void*>self )
 
     self._p4est = p4est
-    self._update_iter()
-
-  #-----------------------------------------------------------------------------
-  cdef _update_iter(P4est self):
-    cdef:
-      p4est_ghost_t* ghost = p4est_ghost_new(
-        self._p4est,
-        P4EST_CONNECT_FULL)
-
-      p4est_mesh_t* mesh = p4est_mesh_new_ext(
-        self._p4est,
-        ghost,
-        # compute_tree_index
-        0,
-        # compute_level_lists
-        0,
-        P4EST_CONNECT_FULL)
-
-    prev_leaf_info = self._leaf_info
-    self._leaf_info = QuadInfo(mesh.local_num_quadrants)
-
-    from_mask = np.ones(len(prev_leaf_info), dtype = bool)
-    to_mask = np.ones(len(self._leaf_info), dtype = bool)
-
-    _extract_leaf_info(
-      trees = <p4est_tree_t*>self._p4est.trees.array,
-      first_local_tree = self._p4est.first_local_tree,
-      last_local_tree = self._p4est.last_local_tree,
-      quad_to_quad = ndarray_from_ptr(
-        write = False,
-        dtype = np.int32,
-        count = 4*mesh.local_num_quadrants,
-        arr = <char*>mesh.quad_to_quad).reshape(-1,2,2),
-      quad_to_face = ndarray_from_ptr(
-        write = False,
-        dtype = np.int8,
-        count = 4*mesh.local_num_quadrants,
-        arr = <char*>mesh.quad_to_face).reshape(-1,2,2),
-      quad_to_half = ndarray_from_sc_array(
-        write = False,
-        dtype = np.int32,
-        subitems = 2,
-        arr = mesh.quad_to_half).reshape(-1,2),
-      # out
-      root = self._leaf_info.root,
-      level = self._leaf_info.level,
-      origin = self._leaf_info.origin,
-      weight = self._leaf_info.weight,
-      adapt = self._leaf_info.adapt,
-      cell_adj = self._leaf_info.cell_adj,
-      cell_adj_face = self._leaf_info.cell_adj_face,
-      from_mask = from_mask,
-      to_mask = to_mask,
-      prev_adapt = prev_leaf_info.adapt,
-      leaf_adapt_fine = self._leaf_adapt_fine,
-      leaf_adapt_coarse = self._leaf_adapt_coarse )
-
-    if len(prev_leaf_info) > 0:
-      # copy data that should not change
-      self._leaf_info.adapt[to_mask] = prev_leaf_info.adapt[from_mask]
-
-    p4est_mesh_destroy(mesh)
+    self._sync_leaf_info()
 
   #-----------------------------------------------------------------------------
   def __dealloc__(self):
@@ -212,10 +144,6 @@ cdef class P4est:
 
     p4est_destroy(self._p4est)
     self._p4est = NULL
-
-    self._leaf_info = None
-    self._leaf_adapt_coarse = None
-    self._leaf_adapt_fine = None
     self._mesh = None
 
   #-----------------------------------------------------------------------------
@@ -325,155 +253,217 @@ cdef class P4est:
       return interp(cell_verts, UV)
 
   #-----------------------------------------------------------------------------
-  def refine(self,
-    recursive = False,
-    maxlevel = -1 ):
+  def adapt(self):
 
-    num_refine = np.count_nonzero(self._leaf_info.adapt > 0)
-
-    leaf_adapt_coarse = -np.ones(
-      (num_refine,),
-      dtype = np.int32)
-
-    leaf_adapt_fine = -np.ones(
-      (num_refine, 2, 2),
-      dtype = np.int32 )
-
-    self._leaf_adapt_idx = 0
-    self._leaf_adapt_coarse = leaf_adapt_coarse
-    self._leaf_adapt_fine = leaf_adapt_fine
-
-    self._refine(int(recursive), int(maxlevel))
-
-    # save the information of the quads being refined before it's lost
-    coarse_info = self._leaf_info[leaf_adapt_coarse]
-
-    self._update_iter()
-
-    self._leaf_adapt_idx = 0
-    self._leaf_adapt_coarse = None
-    self._leaf_adapt_fine = None
-
-
-    return coarse_info, leaf_adapt_coarse, leaf_adapt_fine
-
-  #-----------------------------------------------------------------------------
-  cdef _refine(
-    P4est self,
-    int recursive,
-    int maxlevel ):
+    _set_leaf_adapt(
+      trees = <p4est_tree_t*>self._p4est.trees.array,
+      first_local_tree = self._p4est.first_local_tree,
+      last_local_tree = self._p4est.last_local_tree,
+      adapt = self._leaf_info.adapt )
 
     with nogil:
-      p4est_refine_ext(
-        self._p4est,
-        recursive,
-        maxlevel,
-        <p4est_refine_t>_refine_quadrant,
-        <p4est_init_t>_init_quadrant,
-        <p4est_replace_t> _replace_quadrants )
+      self._adapt()
+
+    return self._sync_leaf_info()
 
   #-----------------------------------------------------------------------------
-  def coarsen(self,
-    recursive = False,
-    orphans = False ):
+  cdef void _adapt(P4est self) nogil:
 
-    # NOTE: this should over-estimate the number of coarsened cells, since
-    # the condition for coarsening is more strict
-    num_coarse = np.count_nonzero(self._leaf_info.adapt < 0) // 4
+    p4est_refine_ext(
+      self._p4est,
+      # recursive
+      0,
+      self._max_level,
+      <p4est_refine_t>_refine_quadrant,
+      <p4est_init_t>_init_quadrant,
+      <p4est_replace_t> _replace_quadrants )
 
-    leaf_adapt_coarse = -np.ones(
-      (num_coarse,),
-      dtype = np.int32)
+    p4est_coarsen_ext(
+      self._p4est,
+      # recursive
+      0,
+      # orphans
+      1,
+      <p4est_coarsen_t>_coarsen_quadrants,
+      <p4est_init_t>_init_quadrant,
+      <p4est_replace_t> _replace_quadrants )
 
-    leaf_adapt_fine = -np.ones(
-      (num_coarse, 2, 2),
-      dtype = np.int32 )
-
-    self._leaf_adapt_idx = 0
-    self._leaf_adapt_coarse = leaf_adapt_coarse
-    self._leaf_adapt_fine = leaf_adapt_fine
-
-    self._coarsen(int(recursive), int(orphans))
-
-    # save the information of the quads being coarsened before it's lost
-    fine_info = self._leaf_info[leaf_adapt_fine]
-
-    self._update_iter()
-
-    # trim output arrays to actual length
-    fine_info = fine_info[:self._leaf_adapt_idx]
-    leaf_adapt_fine = leaf_adapt_fine[:self._leaf_adapt_idx]
-    leaf_adapt_coarse = leaf_adapt_coarse[:self._leaf_adapt_idx]
-
-    self._leaf_adapt_idx = 0
-    self._leaf_adapt_coarse = None
-    self._leaf_adapt_fine = None
-
-    return fine_info, leaf_adapt_fine, leaf_adapt_coarse
+    p4est_balance_ext(
+      self._p4est,
+      P4EST_CONNECT_FULL,
+      <p4est_init_t>_init_quadrant,
+      <p4est_replace_t> _replace_quadrants )
 
   #-----------------------------------------------------------------------------
-  cdef _coarsen(
-    P4est self,
-    int recursive,
-    int orphans ):
-
-    with nogil:
-      p4est_coarsen_ext(
-        self._p4est,
-        recursive,
-        orphans,
-        <p4est_coarsen_t>_coarsen_quadrants,
-        <p4est_init_t>_init_quadrant,
-        <p4est_replace_t> _replace_quadrants )
-
-  #-----------------------------------------------------------------------------
-  def balance(self,
-    connections = None ):
-
-    if connections is None:
-      connections = 'full'
-
-    connections = {
-      'face': P4EST_CONNECT_FACE,
-      'corner': P4EST_CONNECT_CORNER,
-      'full': P4EST_CONNECT_FULL }[connections]
-
-    self._balance(<p4est_connect_type_t>connections)
-
-  #-----------------------------------------------------------------------------
-  cdef _balance(
-    P4est self,
-    p4est_connect_type_t btype ):
-
-    with nogil:
-      p4est_balance_ext(
-        self._p4est,
-        btype,
-        <p4est_init_t>_init_quadrant,
-        <p4est_replace_t> _replace_quadrants )
-
-  #-----------------------------------------------------------------------------
-  def partition(self,
-    allow_coarsening = False):
-
-    self._partition(int(allow_coarsening))
-
-  #-----------------------------------------------------------------------------
-  cdef _partition(
-    P4est self,
-    int allow_coarsening ):
+  cdef void _partition(P4est self) nogil:
 
     with nogil:
       p4est_partition_ext(
         self._p4est,
-        allow_coarsening,
+        1,
         <p4est_weight_t>_weight_quadrant )
 
+  #-----------------------------------------------------------------------------
+  cdef _sync_leaf_info(P4est self):
+    cdef:
+      p4est_ghost_t* ghost
+      p4est_mesh_t* mesh
+
+    with nogil:
+      ghost = p4est_ghost_new(
+        self._p4est,
+        P4EST_CONNECT_FULL)
+
+      mesh = p4est_mesh_new_ext(
+        self._p4est,
+        ghost,
+        # compute_tree_index
+        0,
+        # compute_level_lists
+        0,
+        P4EST_CONNECT_FULL)
+
+    prev_leaf_info = self._leaf_info
+    self._leaf_info = QuadInfo(mesh.local_num_quadrants)
+
+    num_adapted = _count_leaf_adapted(
+      trees = <p4est_tree_t*>self._p4est.trees.array,
+      first_local_tree = self._p4est.first_local_tree,
+      last_local_tree = self._p4est.last_local_tree )
+
+    leaf_adapted = np.zeros(
+      (num_adapted,),
+      dtype = np.int8)
+
+    leaf_adapted_coarse = -np.ones(
+      (num_adapted,),
+      dtype = np.int32)
+
+    leaf_adapted_fine = -np.ones(
+      (num_adapted, 2, 2),
+      dtype = np.int32 )
+
+    _sync_leaf_info(
+      trees = <p4est_tree_t*>self._p4est.trees.array,
+      first_local_tree = self._p4est.first_local_tree,
+      last_local_tree = self._p4est.last_local_tree,
+      quad_to_quad = ndarray_from_ptr(
+        write = False,
+        dtype = np.int32,
+        count = 4*mesh.local_num_quadrants,
+        arr = <char*>mesh.quad_to_quad).reshape(-1,2,2),
+      quad_to_face = ndarray_from_ptr(
+        write = False,
+        dtype = np.int8,
+        count = 4*mesh.local_num_quadrants,
+        arr = <char*>mesh.quad_to_face).reshape(-1,2,2),
+      quad_to_half = ndarray_from_sc_array(
+        write = False,
+        dtype = np.int32,
+        subitems = 2,
+        arr = mesh.quad_to_half).reshape(-1,2),
+      # out
+      root = self._leaf_info.root,
+      level = self._leaf_info.level,
+      origin = self._leaf_info.origin,
+      weight = self._leaf_info.weight,
+      adapt = self._leaf_info.adapt,
+      cell_adj = self._leaf_info.cell_adj,
+      cell_adj_face = self._leaf_info.cell_adj_face,
+      leaf_adapted = leaf_adapted,
+      leaf_adapted_fine = leaf_adapted_fine,
+      leaf_adapted_coarse = leaf_adapted_coarse )
+
+    p4est_mesh_destroy(mesh)
+
+    refined_mask = leaf_adapted > 0
+    coarsened_mask = ~refined_mask
+
+    fine_idx = leaf_adapted_fine[refined_mask]
+    refined_idx = leaf_adapted_coarse[refined_mask]
+
+    coarse_idx = leaf_adapted_coarse[coarsened_mask]
+    coarsened_idx = leaf_adapted_fine[coarsened_mask]
+
+    refined = Adapted(
+      idx = fine_idx,
+      info = self._leaf_info[fine_idx],
+      replaced_idx = refined_idx,
+      replaced_info = prev_leaf_info[refined_idx] )
+
+    coarsened = Adapted(
+      idx = coarse_idx,
+      info = self._leaf_info[coarse_idx],
+      replaced_idx = coarsened_idx,
+      replaced_info = prev_leaf_info[coarsened_idx] )
+
+    return refined, coarsened
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
-cdef void _extract_leaf_info(
+cdef void _set_leaf_adapt(
+  const p4est_tree_t* trees,
+  npy.npy_int32 first_local_tree,
+  npy.npy_int32 last_local_tree,
+  npy.npy_int8[:] adapt ) nogil:
+
+  cdef:
+    p4est_tree_t* tree = NULL
+    p4est_quadrant_t* quads = NULL
+    p4est_quadrant_t* cell = NULL
+    aux_quadrant_data_t* cell_aux
+
+    npy.npy_int32 root_idx = 0
+    npy.npy_int32 q = 0
+
+
+  for root_idx in range(first_local_tree, last_local_tree+1):
+    tree = &trees[root_idx]
+    quads = <p4est_quadrant_t*>tree.quadrants.array
+
+    for q in range(tree.quadrants.elem_count):
+      cell = &quads[q]
+      cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+      cell_aux.idx = tree.quadrants_offset + q
+      cell_aux.adapt = adapt[cell_aux.idx]
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# @cython.boundscheck(False)
+# @cython.wraparound(False)
+cdef npy.npy_int32 _count_leaf_adapted(
+  const p4est_tree_t* trees,
+  npy.npy_int32 first_local_tree,
+  npy.npy_int32 last_local_tree ) nogil:
+
+  cdef:
+    p4est_tree_t* tree = NULL
+    p4est_quadrant_t* quads = NULL
+    p4est_quadrant_t* cell = NULL
+    aux_quadrant_data_t* cell_aux
+
+    npy.npy_int32 root_idx = 0
+    npy.npy_int32 q = 0
+    npy.npy_int32 adapt_idx = 0
+
+
+  for root_idx in range(first_local_tree, last_local_tree+1):
+    tree = &trees[root_idx]
+    quads = <p4est_quadrant_t*>tree.quadrants.array
+
+    for q in range(tree.quadrants.elem_count):
+      cell = &quads[q]
+      cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+
+      if cell_aux.adapted != 0:
+        adapt_idx += 1
+
+  return adapt_idx
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# @cython.boundscheck(False)
+# @cython.wraparound(False)
+cdef void _sync_leaf_info(
   const p4est_tree_t* trees,
   npy.npy_int32 first_local_tree,
   npy.npy_int32 last_local_tree,
@@ -488,12 +478,10 @@ cdef void _extract_leaf_info(
   npy.npy_int8[:] adapt,
   npy.npy_int32[:,:,:,:] cell_adj,
   npy.npy_int8[:,:,:] cell_adj_face,
-  npy.npy_bool[:] from_mask,
-  npy.npy_bool[:] to_mask,
-  npy.npy_int8[:] prev_adapt,
-  npy.npy_int32[:,:,:] leaf_adapt_fine,
-  npy.npy_int32[:] leaf_adapt_coarse ) nogil:
-  """Low-level method to copy quadrant state to contiguous arrays.
+  npy.npy_int8[:] leaf_adapted,
+  npy.npy_int32[:,:,:] leaf_adapted_fine,
+  npy.npy_int32[:] leaf_adapted_coarse ) nogil:
+  """Low-level method to sync quadrant data with the contiguous arrays.
   """
 
   cdef:
@@ -533,35 +521,37 @@ cdef void _extract_leaf_info(
       # finish tracking of changes due to refine/coarsen operation
       # now that the indices are known, and thus able to map previous quadrants
       if cell_aux.adapted == 1:
-        adapt_idx = cell_aux.adapt_idx // 4
-        k = cell_aux.adapt_idx % 4
+        # refined
+        leaf_adapted[adapt_idx] = 1
+
+        k = (
+          (cell_aux.replaced_idx[1] >= 0)
+          + 2*(cell_aux.replaced_idx[2] >= 0)
+          + 3*(cell_aux.replaced_idx[3] >= 0) )
 
         i = k // 2
         j = k % 2
 
-        leaf_adapt_fine[adapt_idx, i, j] = cell_idx
+        leaf_adapted_fine[adapt_idx, i, j] = cell_idx
 
-        prev_cell_idx = leaf_adapt_coarse[adapt_idx]
-        adapt[cell_idx] = prev_adapt[prev_cell_idx] - 1
+        if k == 0:
+          prev_cell_idx = cell_aux.replaced_idx[0]
+          leaf_adapted_coarse[adapt_idx] = prev_cell_idx
 
-        from_mask[prev_cell_idx] = False
-        to_mask[cell_idx] = False
+        adapt_idx += 1
 
       elif cell_aux.adapted == -1:
-        leaf_adapt_coarse[cell_aux.adapt_idx] = cell_idx
+        # coarsened
+        leaf_adapted[adapt_idx] = -1
+        leaf_adapted_coarse[adapt_idx] = cell_idx
 
-        prev_fine_idx[:,:] = leaf_adapt_fine[cell_aux.adapt_idx]
+        prev_fine_idx = leaf_adapted_fine[adapt_idx]
+        prev_fine_idx[0,0] = cell_aux.replaced_idx[0]
+        prev_fine_idx[0,1] = cell_aux.replaced_idx[1]
+        prev_fine_idx[1,0] = cell_aux.replaced_idx[2]
+        prev_fine_idx[1,1] = cell_aux.replaced_idx[3]
 
-        max_prev_adapt = -128
-
-        for i in range(2):
-          for j in  range(2):
-            prev_cell_idx = prev_fine_idx[i,j]
-            max_prev_adapt = max(max_prev_adapt, prev_adapt[prev_cell_idx])
-            from_mask[prev_cell_idx] = False
-
-        adapt[cell_idx] = 1 + max_prev_adapt
-        to_mask[cell_idx] = False
+        adapt_idx += 1
 
       else:
         #??
@@ -569,8 +559,10 @@ cdef void _extract_leaf_info(
 
       # reset auxiliary information
       cell_aux.idx = cell_idx
-      cell_aux.adapt_idx = -1
       cell_aux.adapted = 0
+
+      adapt[cell_idx] = cell_aux.adapt
+      weight[cell_idx] = cell_aux.weight
 
       root[cell_idx] = root_idx
       level[cell_idx] = cell.level
@@ -609,19 +601,23 @@ cdef void _extract_leaf_info(
             # quad_to_half array that stores two quadrant numbers per index,
             cell_adj[cell_idx,i,j] = quad_to_half[cell_adj_idx]
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# NOTE: these are not class members because they need to match the callback sig.
-# but are implemented as though they were by casting the user pointer to be 'self'
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _init_quadrant(
   p4est_t* p4est,
   p4est_topidx_t root_idx,
-  p4est_quadrant_t* quadrant ) with gil:
+  p4est_quadrant_t* quadrant ) nogil:
   # print(f"+ quadrant: root= {root_idx}, level= {quadrant.level}, x= {quadrant.x}, y=, {quadrant.y}, data= {<int>quadrant.p.user_data})")
   cdef aux_quadrant_data_t* cell_aux = <aux_quadrant_data_t*>quadrant.p.user_data
   cell_aux.idx = -1
-  cell_aux.adapt_idx = -1
+  cell_aux.adapt = 0
+  cell_aux.weight = 1
+
   cell_aux.adapted = 0
+  cell_aux.replaced_idx[0] = -1
+  cell_aux.replaced_idx[1] = -1
+  cell_aux.replaced_idx[2] = -1
+  cell_aux.replaced_idx[3] = -1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _replace_quadrants(
@@ -630,16 +626,19 @@ cdef void _replace_quadrants(
   int num_outgoing,
   p4est_quadrant_t* outgoing[],
   int num_incoming,
-  p4est_quadrant_t* incoming[] ) with gil:
+  p4est_quadrant_t* incoming[] ) nogil:
 
-  self = <P4est>p4est.user_pointer
-  cdef p4est_quadrant_t* cell
-  cdef aux_quadrant_data_t* cell_aux
+  cdef:
+    p4est_quadrant_t* cell
+    aux_quadrant_data_t* cell_aux
 
-  cdef size_t adapt_idx = self._leaf_adapt_idx
-  self._leaf_adapt_idx += 1
+    p4est_quadrant_t* _cell
+    aux_quadrant_data_t* _cell_aux
 
-  assert adapt_idx < len(self._leaf_adapt_coarse)
+    npy.npy_int8 prev_adapt
+    npy.npy_int8 prev_weight
+
+    npy.npy_int8 k
 
   # NOTE: incoming means the 'added' quadrants, and outgoing means 'removed'
   if num_outgoing == 4:
@@ -647,74 +646,76 @@ cdef void _replace_quadrants(
     # assert num_outgoing == 4
     assert num_incoming == 1
 
-    # print(f"Coarsening: root= {root_idx}, adapt_idx= {adapt_idx}")
+    # print(f"Coarsening: root= {root_idx}")
 
     cell = incoming[0]
 
     # flag that this index currently refers to the adapt array
     cell_aux = <aux_quadrant_data_t*>cell.p.user_data
     cell_aux.adapted = -1
-    cell_aux.adapt_idx = adapt_idx
+
+    prev_adapt = -128
+    prev_weight = 0
 
     for k in range(4):
-      cell = outgoing[k]
-      cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+      _cell = outgoing[k]
+      _cell_aux = <aux_quadrant_data_t*>_cell.p.user_data
 
-      i, j = divmod(k, 2)
-      self._leaf_adapt_fine[adapt_idx, i, j] = cell_aux.idx
-      # print(f" - [{i,j}]: cell_idx= {cell_aux.idx}")
+      prev_adapt = max(prev_adapt, _cell_aux.adapt)
+      prev_weight = max(prev_weight, _cell_aux.weight)
+
+      cell_aux.replaced_idx[k] = _cell_aux.idx
+
+    cell_aux.adapt = prev_adapt + 1
+    cell_aux.weight = prev_weight
 
   else:
     # Refining: remove 1 -> add 4
     assert num_outgoing == 1
     assert num_incoming == 4
+    # print(f"Refining: root= {root_idx}")
 
-    # print(f"Refining: root= {root_idx}, adapt_idx= {adapt_idx}")
+    _cell = outgoing[0]
+    _cell_aux = <aux_quadrant_data_t*>_cell.p.user_data
 
-    cell = outgoing[0]
-    cell_aux = <aux_quadrant_data_t*>cell.p.user_data
-
-    # store index of cell being refined
-    self._leaf_adapt_coarse[adapt_idx] = cell_aux.idx
-
-    # print(f" - : cell_idx= {cell_aux.idx}")
+    prev_adapt = _cell_aux.adapt
+    prev_weight = _cell_aux.weight
 
     for k in range(4):
       cell = incoming[k]
 
-      # flag that this index currently refers to the adapt array
       cell_aux = <aux_quadrant_data_t*>cell.p.user_data
-      cell_aux.adapted = 1
-      cell_aux.adapt_idx = 4*adapt_idx + k
+      cell_aux.adapt = prev_adapt - 1
+      cell_aux.weight = prev_weight
 
-      # i, j = divmod(k, 2)
-      # print(f" + [{i},{j}]: adapt_idx= {cell_aux.adapt_idx}")
+      cell_aux.adapted = 1
+      cell_aux.replaced_idx[k] = _cell_aux.idx
+      cell_aux.replaced_idx[(k+1)%4] = -1
+      cell_aux.replaced_idx[(k+2)%4] = -1
+      cell_aux.replaced_idx[(k+3)%4] = -1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef int _refine_quadrant(
   p4est_t* p4est,
   p4est_topidx_t root_idx,
-  p4est_quadrant_t* quadrant ) with gil:
-
-  self = <P4est>p4est.user_pointer
+  p4est_quadrant_t* quadrant ) nogil:
 
   cdef aux_quadrant_data_t* cell_aux = <aux_quadrant_data_t*>quadrant.p.user_data
 
-  return self._leaf_info._adapt[cell_aux.idx] > 0
+  return cell_aux.adapt > 0
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef int _coarsen_quadrants(
   p4est_t* p4est,
   p4est_topidx_t root_idx,
-  p4est_quadrant_t* quadrants[] ) with gil:
+  p4est_quadrant_t* quadrants[] ) nogil:
 
-  self = <P4est>p4est.user_pointer
   cdef aux_quadrant_data_t* cell_aux
 
   for k in range(4):
     cell_aux = <aux_quadrant_data_t*>quadrants[k].p.user_data
 
-    if self._leaf_info._adapt[cell_aux.idx] >= 0:
+    if cell_aux.adapt >= 0:
       return 0
 
   return 1
@@ -723,19 +724,11 @@ cdef int _coarsen_quadrants(
 cdef int _weight_quadrant(
   p4est_t* p4est,
   p4est_topidx_t root_idx,
-  p4est_quadrant_t* quadrant ) with gil:
-
-  self = <P4est>p4est.user_pointer
+  p4est_quadrant_t* quadrant ) nogil:
 
   cdef aux_quadrant_data_t* cell_aux = <aux_quadrant_data_t*>quadrant.p.user_data
 
-  return self._leaf_info._weight[cell_aux.idx]
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef void _iter_volume(
-  p4est_iter_volume_info_t* info,
-  void *user_data ) with gil:
-  pass
+  return cell_aux.weight
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef ndarray_from_ptr(write, dtype, count, char* arr):

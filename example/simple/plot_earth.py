@@ -215,15 +215,12 @@ def interpgrid_2D_to_3D():
   im2 = ImageOps.grayscale(im1)
   gray_image = np.array(im2)
   scaled_image = gray_image / 255
-  #d_u = np.pi / scaled_image.shape[0]
-  u = np.linspace(0 , np.pi, scaled_image.shape[0])
 
-  #d_v = 2*np.pi / scaled_image.shape[1]
-  print(max(u))
+  u = np.linspace(0 , np.pi, scaled_image.shape[0])
   v = np.linspace(-np.pi, np.pi, scaled_image.shape[1])
   r = scaled_image
 
-  f =  RectBivariateSpline(u , v , r, kx = 1, ky = 1 )
+  f = RectBivariateSpline(u , v , r, kx = 1, ky = 1 )
 
   return f
 
@@ -411,25 +408,52 @@ mesh = cube()
 f = interpgrid_2D_to_3D()
 tol = 0.05
 
+from timeit import default_timer as timer
 
 grid = P4est(
   mesh = mesh,
   min_level = 0)
 for p in range(4):
   grid.leaf_info.adapt = 1
-  grid.refine()
+  grid.adapt()
 
 for r in range(6):
-    points = trans_cart_to_sphere(grid.leaf_coord(uv = (0.5,0.5), interp = interp_slerp_quad))
-    points[...,1] = np.pi / 2 - points[...,1]
-    value = f(*points.transpose(1,0)[:2][::-1], grid = False)
-    value_adj = value[grid.leaf_info.cell_adj]
-    d_value = np.abs(value[:,None,None,None] - value_adj).max(axis = (1,2,3))
-    refine = d_value > tol
-    grid.leaf_info.adapt = refine
-    if not np.any(refine):
-      break
-    grid.refine()
+  # yappi.set_clock_type("cpu") # Use set_clock_type("wall") for wall time
+  # yappi.start()
+
+  times = dict()
+  times['init'] = timer()
+
+  points = trans_cart_to_sphere(grid.leaf_coord(uv = (0.5,0.5), interp = interp_slerp_quad))
+  points[...,1] = np.pi / 2 - points[...,1]
+
+  times['interp'] = timer()
+  value = f(*points.transpose(1,0)[:2][::-1], grid = False)
+  times['diff'] = timer()
+  value_adj = value[grid.leaf_info.cell_adj]
+  d_value = np.abs(value[:,None,None,None] - value_adj).max(axis = (1,2,3))
+  refine = d_value > tol
+  grid.leaf_info.adapt = refine
+
+  times['refine'] = timer()
+
+  if not np.any(refine):
+    break
+
+  grid.adapt()
+
+  times['done'] = timer()
+
+  print()
+  print(f"total: {times['done']-times['init']}")
+  items = iter(times.items())
+  k0, t0 = next(items)
+  for k, t in items:
+    print(f'{k0}: {t-t0}')
+    k0, t0 = k, t
+
+  # yappi.get_func_stats().print_all()
+
 points = trans_cart_to_sphere(grid.leaf_coord(uv = (0.5,0.5), interp = interp_slerp_quad))
 points[...,1] = np.pi / 2 - points[...,1]
 value = f(*points.transpose(1,0)[:2][::-1], grid = False)

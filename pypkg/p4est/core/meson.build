@@ -12,10 +12,12 @@ install_files = [
   '__init__.py',
   '__init__.pxd',
   '_leaf_info.pxd',
+  '_adapted.pxd',
   '_p4est.pxd' ]
 
 modules = [
   '_leaf_info',
+  '_adapted',
   '_p4est' ]
 
 foreach mod : modules
