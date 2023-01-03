@@ -7,6 +7,7 @@ cdef class LeafInfo:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class QuadInfo(LeafInfo):
   cdef public np.ndarray _root
+  cdef public np.ndarray _idx
   cdef public np.ndarray _level
   cdef public np.ndarray _origin
   cdef public np.ndarray _weight

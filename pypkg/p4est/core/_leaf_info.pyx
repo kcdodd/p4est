@@ -98,6 +98,9 @@ cdef class LeafInfo:
 
     self.set_from(info)
 
+  #-----------------------------------------------------------------------------
+  def contiguous(self):
+    return type(self)( np.ascontiguousarray(arr) for arr in self.as_tuple() )
 
   #-----------------------------------------------------------------------------
   def __len__(self):
@@ -105,14 +108,12 @@ cdef class LeafInfo:
 
   #-----------------------------------------------------------------------------
   def __getitem__( self, idx ):
-    return type(self)(
-      np.ascontiguousarray(arr[idx])
-      for arr in self.as_tuple() )
+    return type(self)( arr[idx] for arr in self.as_tuple() )
 
   #-----------------------------------------------------------------------------
   def __setitem__( self, idx, info ):
     if not isinstance(info, (type(self), self._tuple_cls())):
-      raise ValueError(f"Expected QuadInfo: {type(info)}")
+      raise ValueError(f"Expected {type(self).__name__}: {type(info)}")
 
     if isinstance(info, type(self)):
       info = info.as_tuple()
@@ -123,17 +124,6 @@ cdef class LeafInfo:
   #-----------------------------------------------------------------------------
   def as_tuple(self):
     return self.tuple_cls(*[getattr(self,'_'+k) for k in self._fields().keys()])
-      # root = self._root,
-      # level = self._level,
-      # origin = self._origin,
-      # weight = self._weight,
-      # adapt = self._adapt,
-      # cell_adj = self._cell_adj,
-      # cell_adj_face = self._cell_adj_face,
-      # cell_adj_subface = self._cell_adj_subface,
-      # cell_adj_order = self._cell_adj_order,
-      # cell_adj_level = self._cell_adj_level,
-      # cell_adj_rank = self._cell_adj_rank )
 
   #-----------------------------------------------------------------------------
   def set_from(self, info):
@@ -143,18 +133,6 @@ cdef class LeafInfo:
       setattr(self, '_'+k, v)
 
     self._shape = base_shape
-    # self._root = np.ascontiguousarray(info.root)
-    # self._level = np.ascontiguousarray(info.level)
-    # self._origin = np.ascontiguousarray(info.origin)
-    # self._weight = np.ascontiguousarray(info.weight)
-    # self._adapt = np.ascontiguousarray(info.adapt)
-    # self._cell_adj = np.ascontiguousarray(info.cell_adj)
-    # self._cell_adj_face = np.ascontiguousarray(info.cell_adj_face)
-    # self._cell_adj_subface = np.ascontiguousarray(info.cell_adj_subface)
-    # self._cell_adj_order = np.ascontiguousarray(info.cell_adj_order)
-    # self._cell_adj_level = np.ascontiguousarray(info.cell_adj_level)
-    # self._cell_adj_rank = np.ascontiguousarray(info.cell_adj_rank)
-
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class QuadInfo(LeafInfo):
@@ -164,6 +142,8 @@ cdef class QuadInfo(LeafInfo):
     return {
       # the index of the original root level mesh.cells
       'root' : (tuple(), np.int32),
+      # unique local index
+      'idx' : (tuple(), np.int32),
       # refinement level
       'level' : (tuple(), np.int8),
       # Normalized coordinate of the leaf's origin relative to the root cell
@@ -226,6 +206,16 @@ cdef class QuadInfo(LeafInfo):
   @root.setter
   def root(self, val):
     self._root[:] = val
+
+  #-----------------------------------------------------------------------------
+  @property
+  def idx(self):
+    return self._idx
+
+  #-----------------------------------------------------------------------------
+  @idx.setter
+  def idx(self, val):
+    self._idx[:] = val
 
   #-----------------------------------------------------------------------------
   @property

@@ -10,9 +10,9 @@ cdef class Adapted:
     replaced_info):
 
     self._idx = np.ascontiguousarray(idx)
-    self._info = info
+    self._info = info.contiguous()
     self._replaced_idx = np.ascontiguousarray(replaced_idx)
-    self._replaced_info = replaced_info
+    self._replaced_info = replaced_info.contiguous()
 
   #-----------------------------------------------------------------------------
   @property

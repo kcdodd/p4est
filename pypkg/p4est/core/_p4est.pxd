@@ -556,6 +556,8 @@ cdef class P4est:
 
   cdef QuadInfo _leaf_info
   cdef QuadGhostInfo _ghost_info
+  cdef _rank_ghosts
+  cdef _rank_mirrors
 
   cdef p4est_connectivity_t _connectivity
   cdef p4est_t* _p4est

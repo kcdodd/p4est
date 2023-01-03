@@ -20,7 +20,7 @@ class jagged_array:
   """
   #-----------------------------------------------------------------------------
   def __init__(self, data, row_idx):
-    data = np.ascontiguousarray(data)
+    # data = np.ascontiguousarray(data)
     row_idx = np.ascontiguousarray(row_idx)
 
     if (
@@ -31,8 +31,8 @@ class jagged_array:
 
       raise ValueError(f"Must have row_idx[0] = 0, and row_idx[-1] = len(data)")
 
-    if not np.all(np.diff(row_idx) > 0):
-      raise ValueError(f"row_idx must be monotonically increasing, row_idx[i] < row_idx[i+i]")
+    if not np.all(np.diff(row_idx) >= 0):
+      raise ValueError(f"row_idx must be monotonically increasing, row_idx[i] <= row_idx[i+i]")
 
 
     self._data = data
@@ -41,6 +41,11 @@ class jagged_array:
   #-----------------------------------------------------------------------------
   @property
   def data(self):
+    return self._data
+
+  #-----------------------------------------------------------------------------
+  @property
+  def flat(self):
     return self._data
 
   #-----------------------------------------------------------------------------
@@ -65,4 +70,12 @@ class jagged_array:
   #-----------------------------------------------------------------------------
   def __iter__(self):
     for i in range(len(self.row_idx) - 1):
-      yield self.data[self.row_idx[i]:self.row_idx[i+1]]
+      yield self[i]
+
+  #-----------------------------------------------------------------------------
+  def __getitem__( self, idx ):
+    return self.data[self.row_idx[idx]:self.row_idx[idx+1]]
+
+  #-----------------------------------------------------------------------------
+  def __setitem__( self, idx, row_data ):
+    self.data[self.row_idx[idx]:self.row_idx[idx+1]] = row_data

@@ -13,6 +13,8 @@ from p4est import (
   P4est,
   QuadMesh )
 
+from mpi4py.util.dtlib import from_numpy_dtype
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def cube(length = 1.0):
   half = 0.5*length
@@ -208,7 +210,30 @@ for r in range(6):
 
   points = trans_cart_to_sphere(grid.leaf_coord(uv = (0.5,0.5), interp = interp_slerp_quad))
   points[...,1] = np.pi / 2 - points[...,1]
-  value = f(*points.transpose(1,0)[:2][::-1], grid = False)
+  local_value = f(*points.transpose(1,0)[:2][::-1], grid = False)
+
+  # exchange process neighbor information
+  sendbuf = np.ascontiguousarray(local_value[grid.rank_mirrors.flat.idx])
+  recvbuf = np.empty((len(grid.rank_ghosts.data),), dtype = local_value.dtype)
+
+  mpi_datatype = from_numpy_dtype(local_value.dtype)
+  print(mpi_datatype)
+
+  grid.comm.Alltoallv(
+    sendbuf = [
+      sendbuf, (
+        # counts
+        np.diff(grid.rank_mirrors.row_idx),
+        # displs
+        grid.rank_mirrors.row_idx[:-1] ),
+      mpi_datatype ],
+    recvbuf = [
+      recvbuf, (
+        np.diff(grid.rank_ghosts.row_idx),
+        grid.rank_ghosts.row_idx[:-1] ),
+      mpi_datatype ])
+
+  value = np.concatenate([local_value, recvbuf])
 
   value_adj = value[grid.leaf_info.cell_adj]
   d_value = np.abs(value[:,None,None,None] - value_adj).max(axis = (1,2,3))

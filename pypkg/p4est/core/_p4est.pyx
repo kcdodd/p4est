@@ -78,6 +78,8 @@ cdef class P4est:
 
     self._leaf_info = QuadInfo(0)
     self._ghost_info = QuadGhostInfo(0)
+    self._rank_ghosts = None
+    self._rank_mirrors = None
 
     self._init()
 
@@ -191,6 +193,16 @@ cdef class P4est:
   @property
   def ghost_info(self):
     return self._ghost_info
+
+  #-----------------------------------------------------------------------------
+  @property
+  def rank_ghosts(self):
+    return self._rank_ghosts
+
+  #-----------------------------------------------------------------------------
+  @property
+  def rank_mirrors(self):
+    return self._rank_mirrors
 
   #-----------------------------------------------------------------------------
   def leaf_coord(self,
@@ -384,6 +396,8 @@ cdef class P4est:
       leaf_adapted_fine = leaf_adapted_fine,
       leaf_adapted_coarse = leaf_adapted_coarse )
 
+    self._leaf_info.idx = np.arange(mesh.local_num_quadrants)
+
     ranks = np.concatenate([
       np.full(
         (len(self._leaf_info),),
@@ -408,20 +422,55 @@ cdef class P4est:
 
     self._leaf_info.cell_adj -= (ng + nl) * (cell_adj // nl)
 
+    ghost_proc_offsets = np.copy(ndarray_from_ptr(
+      write = False,
+      dtype = np.int32,
+      count = ghost.mpisize + 1,
+      arr = <char*>ghost.proc_offsets))
+
     _sync_ghost_info(
       ghosts = <p4est_quadrant_t*> ghost.ghosts.array,
       num_ghosts = mesh.ghost_num_quadrants,
-      proc_offsets = ndarray_from_ptr(
-        write = False,
-        dtype = np.int32,
-        count = ghost.mpisize + 1,
-        arr = <char*>ghost.proc_offsets),
+      proc_offsets = ghost_proc_offsets,
       # out
       rank = self._ghost_info.rank,
       root = self._ghost_info.root,
       idx = self._ghost_info.idx,
       level = self._ghost_info.level,
       origin = self._ghost_info.origin )
+
+    self._rank_ghosts = jagged_array(
+      data = self._ghost_info,
+      row_idx = ghost_proc_offsets )
+
+    # indices of each mirror in leaf_info
+    mirrors_idx = np.zeros((ghost.mirrors.elem_count,), dtype = np.int32)
+
+    _sync_mirror_idx(
+      mirrors = <p4est_quadrant_t*> ghost.mirrors.array,
+      num_mirrors = ghost.mirrors.elem_count,
+      mirrors_idx = mirrors_idx )
+
+    # indices into mirrors (grouped by processor rank)
+    # NOTE: this is kind of like argsort(ghost.mirrors) by rank
+    mirror_proc_mirrors = ndarray_from_ptr(
+      write = False,
+      dtype = np.int32,
+      count = ghost.mirrors.elem_count,
+      arr = <char*>ghost.mirror_proc_mirrors)
+
+    mirror_info = self._leaf_info[mirrors_idx[mirror_proc_mirrors]]
+
+    # indices into mirror_proc_mirrors for each rank
+    mirror_proc_offsets = np.copy(ndarray_from_ptr(
+      write = False,
+      dtype = np.int32,
+      count = ghost.mpisize + 1,
+      arr = <char*>ghost.mirror_proc_offsets))
+
+    self._rank_mirrors = jagged_array(
+      data = mirror_info,
+      row_idx = mirror_proc_offsets )
 
     p4est_mesh_destroy(mesh)
     p4est_ghost_destroy(ghost)
@@ -692,6 +741,28 @@ cdef void _sync_ghost_info(
       level[q] = cell.level
       origin[q,0] = cell.x
       origin[q,1] = cell.y
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# @cython.boundscheck(False)
+# @cython.wraparound(False)
+cdef void _sync_mirror_idx(
+  p4est_quadrant_t* mirrors,
+  npy.npy_int32 num_mirrors,
+  # out
+  npy.npy_int32[:] mirrors_idx ) nogil:
+
+
+  cdef:
+    p4est_quadrant_t* cell = NULL
+    aux_quadrant_data_t* cell_aux
+
+    npy.npy_int32 r = 0
+    npy.npy_int32 q = 0
+
+  for q in range(num_mirrors):
+    cell = &mirrors[q]
+    cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+    mirrors_idx[q] = cell_aux.idx
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _init_quadrant(
