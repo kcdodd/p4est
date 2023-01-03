@@ -253,8 +253,21 @@ cdef extern from "p4est_extended.h" nogil:
 
   #.............................................................................
   ctypedef struct p4est_ghost_t:
-    # TODO
-    pass
+    int mpisize
+    p4est_topidx_t num_trees
+    p4est_connect_type_t btype
+
+    sc_array_t ghosts
+    p4est_locidx_t *tree_offsets
+    p4est_locidx_t *proc_offsets
+
+    sc_array_t mirrors
+    p4est_locidx_t *mirror_tree_offsets
+    p4est_locidx_t *mirror_proc_mirrors
+    p4est_locidx_t *mirror_proc_offsets
+
+    p4est_locidx_t *mirror_proc_fronts
+    p4est_locidx_t *mirror_proc_front_offsets
 
   #.............................................................................
   ctypedef struct p4est_mesh_t:
@@ -307,7 +320,7 @@ cdef extern from "p4est_extended.h" nogil:
     int num_outgoing,
     p4est_quadrant_t * outgoing[],
     int num_incoming,
-    p4est_quadrant_t * incoming[]);
+    p4est_quadrant_t * incoming[])
 
   # Callback function prototype to decide for refinement.
   ctypedef int (*p4est_refine_t)(

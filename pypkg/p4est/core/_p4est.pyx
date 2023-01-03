@@ -377,7 +377,33 @@ cdef class P4est:
       leaf_adapted_fine = leaf_adapted_fine,
       leaf_adapted_coarse = leaf_adapted_coarse )
 
+    ranks = np.concatenate([
+      np.full(
+        (len(self._leaf_info),),
+        fill_value = self.comm.rank,
+        dtype = np.int32),
+      ndarray_from_ptr(
+        write = False,
+        dtype = np.intc,
+        count = mesh.ghost_num_quadrants,
+        arr = <char*>mesh.ghost_to_proc)])
+
+    self._leaf_info.cell_adj_rank = ranks[self._leaf_info.cell_adj]
+
+    # translate cell_adj indicies for ghost quadrants to {-ng..-1)
+    # NOTE: This can be used to flag ghost vs local based on the sign,
+    # but also, negative indexing can be used (without modification) for indexing
+    # ghost data either appended to the end of an array of local data, or stored
+    # in a separate array of only ghost data.
+    nl = mesh.local_num_quadrants
+    ng = mesh.ghost_num_quadrants
+    cell_adj = self._leaf_info.cell_adj
+
+    self._leaf_info.cell_adj -= (ng + nl) * (cell_adj // nl)
+
+
     p4est_mesh_destroy(mesh)
+    p4est_ghost_destroy(ghost)
 
     refined_mask = leaf_adapted > 0
     coarsened_mask = ~refined_mask
@@ -470,6 +496,9 @@ cdef void _sync_leaf_info(
   const p4est_tree_t* trees,
   npy.npy_int32 first_local_tree,
   npy.npy_int32 last_local_tree,
+  # npy.npy_int32 num_local,
+  # npy.npy_int32 num_ghost,
+  # const int[:] ghost_to_proc,
   const npy.npy_int32[:,:,:] quad_to_quad,
   const npy.npy_int8[:,:,:] quad_to_face,
   const npy.npy_int32[:,:] quad_to_half,

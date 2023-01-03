@@ -59,7 +59,9 @@ QUAD_FIELDS = {
   # relative ordering {-1, 1} of the adjacent cell
   'cell_adj_order' : ((2,2), np.int8),
   # relative level {-1, 0, 1} of the adjacent cell
-  'cell_adj_level' : ((2,2), np.int8) }
+  'cell_adj_level' : ((2,2), np.int8),
+  # MPI process rank of adjacent cell
+  'cell_adj_rank' : ((2,2,2), np.int32)  }
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 QuadInfoTuple = namedtuple('QuadInfoTuple', list(QUAD_FIELDS.keys()))
@@ -97,7 +99,8 @@ cdef class QuadInfo:
       cell_adj_face = self._cell_adj_face,
       cell_adj_subface = self._cell_adj_subface,
       cell_adj_order = self._cell_adj_order,
-      cell_adj_level = self._cell_adj_level )
+      cell_adj_level = self._cell_adj_level,
+      cell_adj_rank = self._cell_adj_rank )
 
   #-----------------------------------------------------------------------------
   def set_from(self, info):
@@ -131,6 +134,7 @@ cdef class QuadInfo:
     self._cell_adj_subface = np.ascontiguousarray(info.cell_adj_subface)
     self._cell_adj_order = np.ascontiguousarray(info.cell_adj_order)
     self._cell_adj_level = np.ascontiguousarray(info.cell_adj_level)
+    self._cell_adj_rank = np.ascontiguousarray(info.cell_adj_rank)
 
   #-----------------------------------------------------------------------------
   @property
@@ -231,6 +235,16 @@ cdef class QuadInfo:
   @cell_adj_level.setter
   def cell_adj_level(self, val):
     self._cell_adj_level[:] = val
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cell_adj_rank(self):
+    return self._cell_adj_rank
+
+  #-----------------------------------------------------------------------------
+  @cell_adj_rank.setter
+  def cell_adj_rank(self, val):
+    self._cell_adj_rank[:] = val
 
   #-----------------------------------------------------------------------------
   def resize(self, size):
