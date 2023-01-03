@@ -432,7 +432,7 @@ cdef class P4est:
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
 cdef void _set_leaf_adapt(
-  const p4est_tree_t* trees,
+  p4est_tree_t* trees,
   npy.npy_int32 first_local_tree,
   npy.npy_int32 last_local_tree,
   npy.npy_int8[:] adapt ) nogil:
@@ -466,10 +466,10 @@ cdef npy.npy_int32 _count_leaf_adapted(
   npy.npy_int32 last_local_tree ) nogil:
 
   cdef:
-    p4est_tree_t* tree = NULL
-    p4est_quadrant_t* quads = NULL
-    p4est_quadrant_t* cell = NULL
-    aux_quadrant_data_t* cell_aux
+    const p4est_tree_t* tree = NULL
+    const p4est_quadrant_t* quads = NULL
+    const p4est_quadrant_t* cell = NULL
+    const aux_quadrant_data_t* cell_aux
 
     npy.npy_int32 root_idx = 0
     npy.npy_int32 q = 0
@@ -493,7 +493,7 @@ cdef npy.npy_int32 _count_leaf_adapted(
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
 cdef void _sync_leaf_info(
-  const p4est_tree_t* trees,
+  p4est_tree_t* trees,
   npy.npy_int32 first_local_tree,
   npy.npy_int32 last_local_tree,
   # npy.npy_int32 num_local,
@@ -684,7 +684,7 @@ cdef void _replace_quadrants(
   if num_outgoing == 4:
     # Coarsening: remove 4 -> add 1
     # assert num_outgoing == 4
-    assert num_incoming == 1
+    # assert num_incoming == 1
 
     # print(f"Coarsening: root= {root_idx}")
 
@@ -711,8 +711,8 @@ cdef void _replace_quadrants(
 
   else:
     # Refining: remove 1 -> add 4
-    assert num_outgoing == 1
-    assert num_incoming == 4
+    # assert num_outgoing == 1
+    # assert num_incoming == 4
     # print(f"Refining: root= {root_idx}")
 
     _cell = outgoing[0]

@@ -123,7 +123,7 @@ entry = 'partis.pyproj.builder:meson'
 # NOTE: for developement, setting 'build_clean = false' makes re-compiling faster,
 # since it can skip repeating some steps, but be cautious of large changes, or
 # different 'options', breaking an existing build config (delete the build directory).
-build_clean = false
+build_clean = true
 prefix = 'build'
 build_dir = 'build/tmp'
 
