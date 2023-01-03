@@ -97,6 +97,8 @@ copy = [
   'subprojects/sc/test',
   'subprojects/sc/AUTHORS',
   'subprojects/sc/COPYING',
+  'subprojects/sc/VERSION',
+  'subprojects/sc/BUILDNUMBER.in',
   'subprojects/sc/meson_options.txt',
   'subprojects/sc/meson.build',
   'test',
@@ -105,7 +107,6 @@ copy = [
   'COPYING',
   'VERSION',
   'BUILDNUMBER.in',
-  'BUILDTAGS.in',
   'meson_options.txt',
   'meson.build',
   'build_requirements.txt']
@@ -150,7 +151,7 @@ mpi = 'enabled'
 log_priority = 'error'
 
 # Compile with profiling code
-profile = true
+profile = false
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # binary distribution installed paths

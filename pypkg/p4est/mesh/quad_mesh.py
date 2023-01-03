@@ -1,5 +1,5 @@
 import numpy as np
-from .utils import jagged_array
+from ..utils import jagged_array
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class QuadMeshBase:

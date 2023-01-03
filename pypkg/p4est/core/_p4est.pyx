@@ -1,5 +1,10 @@
+cdef extern from "Python.h":
+  const int PyBUF_READ
+  const int PyBUF_WRITE
+  PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
-
+from libc.stdlib cimport malloc, free
+from libc.string cimport memset
 
 from collections import namedtuple
 from collections.abc import (
@@ -13,20 +18,15 @@ import numpy as np
 from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
 
-from libc.stdlib cimport malloc, free
-from libc.string cimport memset
-
+from p4est.utils import jagged_array
 from p4est.mesh.quad_mesh import (
   QuadMeshBase,
   QuadMesh )
-
-from p4est.core._leaf_info import QuadInfo
+from p4est.core._leaf_info import (
+  QuadInfo,
+  QuadGhostInfo )
 from p4est.core._adapted import Adapted
 
-cdef extern from "Python.h":
-  const int PyBUF_READ
-  const int PyBUF_WRITE
-  PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -77,6 +77,7 @@ cdef class P4est:
     self._min_level = min_level
 
     self._leaf_info = QuadInfo(0)
+    self._ghost_info = QuadGhostInfo(0)
 
     self._init()
 
@@ -185,6 +186,11 @@ cdef class P4est:
   @property
   def leaf_info(self):
     return self._leaf_info
+
+  #-----------------------------------------------------------------------------
+  @property
+  def ghost_info(self):
+    return self._ghost_info
 
   #-----------------------------------------------------------------------------
   def leaf_coord(self,
@@ -325,6 +331,7 @@ cdef class P4est:
 
     prev_leaf_info = self._leaf_info
     self._leaf_info = QuadInfo(mesh.local_num_quadrants)
+    self._ghost_info = QuadGhostInfo(mesh.ghost_num_quadrants)
 
     num_adapted = _count_leaf_adapted(
       trees = <p4est_tree_t*>self._p4est.trees.array,
@@ -401,6 +408,20 @@ cdef class P4est:
 
     self._leaf_info.cell_adj -= (ng + nl) * (cell_adj // nl)
 
+    _sync_ghost_info(
+      ghosts = <p4est_quadrant_t*> ghost.ghosts.array,
+      num_ghosts = mesh.ghost_num_quadrants,
+      proc_offsets = ndarray_from_ptr(
+        write = False,
+        dtype = np.int32,
+        count = ghost.mpisize + 1,
+        arr = <char*>ghost.proc_offsets),
+      # out
+      rank = self._ghost_info.rank,
+      root = self._ghost_info.root,
+      idx = self._ghost_info.idx,
+      level = self._ghost_info.level,
+      origin = self._ghost_info.origin )
 
     p4est_mesh_destroy(mesh)
     p4est_ghost_destroy(ghost)
@@ -641,6 +662,36 @@ cdef void _sync_leaf_info(
             cell_adj[cell_idx,i,j] = quad_to_half[cell_adj_idx]
             cell_adj_level[cell_idx,i,j] = 1
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# @cython.boundscheck(False)
+# @cython.wraparound(False)
+cdef void _sync_ghost_info(
+  p4est_quadrant_t* ghosts,
+  npy.npy_int32 num_ghosts,
+  const npy.npy_int32[:] proc_offsets,
+  # out
+  npy.npy_int32[:] rank,
+  npy.npy_int32[:] root,
+  npy.npy_int32[:] idx,
+  npy.npy_int8[:] level,
+  npy.npy_int32[:,:] origin ) nogil:
+
+
+  cdef:
+    p4est_quadrant_t* cell = NULL
+    npy.npy_int32 r = 0
+    npy.npy_int32 q = 0
+
+  for r in range(len(proc_offsets)-1):
+    for q in range(proc_offsets[r], proc_offsets[r+1]):
+      cell = &ghosts[q]
+
+      rank[q] = r
+      root[q] = cell.p.piggy3.which_tree
+      idx[q] = cell.p.piggy3.local_num
+      level[q] = cell.level
+      origin[q,0] = cell.x
+      origin[q,1] = cell.y
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _init_quadrant(

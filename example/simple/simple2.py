@@ -133,6 +133,61 @@ def periodic_stack():
     vert_nodes = vert_nodes )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def icosahedron_golden():
+
+  c3 = np.cos(np.pi/3)
+  s3 = np.sin(np.pi/3)
+
+  verts = np.array([
+    [ 0.0 + c3,    s3,  0.0 ],
+    [ 1.0 + c3,    s3,  0.0 ],
+    [ 2.0 + c3,    s3,  0.0 ],
+    [ 3.0 + c3,    s3,  0.0 ],
+    [ 4.0 + c3,    s3,  0.0 ],
+    [ 0.0,  0.0,  0.0 ],
+    [ 1.0,  0.0,  0.0 ],
+    [ 2.0,  0.0,  0.0 ],
+    [ 3.0,  0.0,  0.0 ],
+    [ 4.0,  0.0,  0.0 ],
+    [ 5.0,  0.0,  0.0 ],
+    [ 0.0 + c3, -  s3,  0.0 ],
+    [ 1.0 + c3, -  s3,  0.0 ],
+    [ 2.0 + c3, -  s3,  0.0 ],
+    [ 3.0 + c3, -  s3,  0.0 ],
+    [ 4.0 + c3, -  s3,  0.0 ],
+    [ 5.0 + c3, -  s3,  0.0 ],
+    [ 0.0 + 2*c3, -2*s3,  0.0 ],
+    [ 1.0 + 2*c3, -2*s3,  0.0 ],
+    [ 2.0 + 2*c3, -2*s3,  0.0 ],
+    [ 3.0 + 2*c3, -2*s3,  0.0 ],
+    [ 4.0 + 2*c3, -2*s3,  0.0 ] ])
+
+  vert_nodes = -np.ones(len(verts), dtype = np.int32)
+  vert_nodes[[0,1,2,3,4]] = 0
+  # NOTE: this currently crashes during 'balance'
+  # vert_nodes[[5,10]] = 2
+  # vert_nodes[[11,16]] = 3
+  vert_nodes[[17,18,19,20,21]] = 1
+
+  cells = np.array([
+    [[5,  11], [0,  6]],
+    [[11, 17], [6, 12]],
+    [[6,  12], [1,  7]],
+    [[12, 18], [7, 13]],
+    [[7,  13], [2,  8]],
+    [[13, 19], [8, 14]],
+    [[8,  14], [3,  9]],
+    [[14, 20], [9, 15]],
+    [[9,  15], [4, 10]],
+    [[15, 21], [10, 16]]],
+    dtype = np.int32 )
+
+  return QuadMesh(
+    verts = verts,
+    cells = cells,
+    vert_nodes = vert_nodes)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def icosahedron_spherical(radius = 1.0):
 
   c3 = np.cos(np.pi/3)
@@ -167,9 +222,10 @@ def icosahedron_spherical(radius = 1.0):
 
   vert_nodes = -np.ones(len(verts), dtype = np.int32)
   vert_nodes[[0,1,2,3,4]] = 0
-  vert_nodes[[5,10]] = 1
-  vert_nodes[[11,16]] = 2
-  vert_nodes[[17,18,19,20,21]] = 3
+  # NOTE: this currently crashes during 'balance'
+  # vert_nodes[[5,10]] = 2
+  # vert_nodes[[11,16]] = 3
+  vert_nodes[[17,18,19,20,21]] = 1
 
   cells = np.array([
     [[5,  11], [0,  6]],
@@ -347,6 +403,21 @@ def plot_grid(grid, interp = None):
   p.show()
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def run_icosahedron_golden():
+  mesh = icosahedron_golden()
+
+  grid = P4est(
+    mesh = mesh,
+    min_level = 0)
+
+  for r in range(3):
+    grid.leaf_info.adapt = 1
+    grid.adapt()
+
+  plot_grid(grid)
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_icosahedron_spherical():
   mesh = icosahedron_spherical()
 
@@ -356,7 +427,7 @@ def run_icosahedron_spherical():
 
   for r in range(3):
     grid.leaf_info.adapt = 1
-    grid.refine()
+    grid.adapt()
 
   plot_grid(grid, interp = interp_sphere_to_cart_slerp)
 
@@ -371,7 +442,7 @@ def run_icosahedron():
 
   for r in range(4):
     grid.leaf_info.adapt = 1
-    grid.refine()
+    grid.adapt()
 
   plot_grid(grid, interp = interp_slerp_quad)
 
@@ -385,13 +456,14 @@ def run_cube():
 
   for r in range(4):
     grid.leaf_info.adapt = 1
-    grid.refine()
+    grid.adapt()
 
   plot_grid(grid, interp = interp_slerp_quad)
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 if __name__ == '__main__':
+  run_icosahedron_golden()
   run_icosahedron_spherical()
   run_icosahedron()
   run_cube()

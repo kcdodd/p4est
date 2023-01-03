@@ -1,10 +1,36 @@
+from libc.stdio cimport FILE
 
 from cpython cimport PyObject
 cimport numpy as np
 
 from mpi4py.MPI cimport MPI_Comm, Comm
 
-from p4est.core._leaf_info cimport QuadInfo
+from p4est.core._leaf_info cimport (
+  QuadInfo,
+  QuadGhostInfo )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef extern from "sc.h" nogil:
+  #.............................................................................
+  ctypedef int sc_MPI_Comm
+
+  #.............................................................................
+  ctypedef void (*sc_log_handler_t)(
+    FILE * log_stream,
+    const char *filename,
+    int lineno,
+    int package,
+    int category,
+    int priority,
+    const char *msg)
+
+  #-----------------------------------------------------------------------------
+  void sc_init(
+    sc_MPI_Comm mpicomm,
+    int catch_signals,
+    int print_backtrace,
+    sc_log_handler_t log_handler,
+    int log_threshold)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # NOTE: Some important definitions are not in p4est.h
@@ -12,8 +38,7 @@ cdef extern from "p4est_extended.h" nogil:
   const int P4EST_MAXLEVEL
   const int P4EST_ROOT_LEN
 
-  #.............................................................................
-  ctypedef int sc_MPI_Comm
+
 
   #.............................................................................
   ctypedef np.npy_int32 p4est_topidx_t
@@ -530,6 +555,7 @@ cdef class P4est:
   cdef np.npy_int8 _max_level
 
   cdef QuadInfo _leaf_info
+  cdef QuadGhostInfo _ghost_info
 
   cdef p4est_connectivity_t _connectivity
   cdef p4est_t* _p4est
