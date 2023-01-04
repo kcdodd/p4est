@@ -173,13 +173,19 @@ class QuadMesh(QuadMeshBase):
       raise ValueError(f"'vert_nodes' values must be in the range [-1,{len(verts)-1}]: [{_min},{_max}]")
 
     #...........................................................................
-    ( cell_adj,
-      cell_adj_face ) = quad_cell_adjacency(cells)
-
     ( self._vert_nodes,
       cell_nodes,
       node_cells,
       node_cells_vert ) = quad_cell_nodes(cells, vert_nodes)
+
+    independent = self._vert_nodes == -1
+    ni = np.count_nonzero(independent)
+
+    full_vert_nodes = np.copy(self._vert_nodes)
+    full_vert_nodes[independent] = np.arange(ni) + np.amax(self._vert_nodes) + 1
+
+    ( cell_adj,
+      cell_adj_face ) = quad_cell_adjacency(full_vert_nodes[cells])
 
     super().__init__(
       verts = verts,
