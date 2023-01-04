@@ -21,7 +21,7 @@ from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
 
 from p4est.utils import jagged_array
-from p4est.mesh.quad_mesh import (
+from p4est.mesh.quad import (
   QuadMeshBase,
   QuadMesh )
 from p4est.core._leaf_info import (
@@ -298,6 +298,13 @@ cdef class P4est:
 
   #-----------------------------------------------------------------------------
   def adapt(self):
+    """Applies refinement, coarsening, and then balances based on ``leaf_info.adapt``.
+
+    Returns
+    -------
+    refined : Adapted
+    coarsened : Adapted
+    """
 
     _set_leaf_adapt(
       trees = <p4est_tree_t*>self._p4est.trees.array,

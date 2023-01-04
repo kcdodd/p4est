@@ -1,1 +1,1 @@
-from .quad_mesh import QuadMesh
+from .quad import QuadMesh
