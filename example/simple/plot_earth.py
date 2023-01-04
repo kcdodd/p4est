@@ -1,3 +1,9 @@
+from partis.utils import init_logging
+
+init_logging(
+  'info',
+  # autodetect color
+  with_color = None )
 
 import numpy as np
 from scipy.interpolate import (
@@ -213,6 +219,7 @@ def plot_grid(grid, interp = None, scalars = None):
   return verts,faces
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 mesh = cube()
 f = interpgrid_2D_to_3D()
 tol = 0.05

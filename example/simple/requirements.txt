@@ -1,3 +1,4 @@
 pyvista==0.37.0
 scipy~=1.7
 Pillow~=9.3
+partis-utils

@@ -148,7 +148,7 @@ pypkg = true
 mpi = 'enabled'
 
 # one of {'trace', 'debug', 'verbose', 'info', 'warning', 'error'}
-log_priority = 'error'
+log_priority = 'trace'
 
 # Compile with profiling code
 profile = false

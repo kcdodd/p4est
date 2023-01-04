@@ -25,6 +25,12 @@ cdef extern from "sc.h" nogil:
     const char *msg)
 
   #-----------------------------------------------------------------------------
+  void sc_set_log_defaults(
+    FILE * log_stream,
+    sc_log_handler_t log_handler,
+    int log_threshold)
+
+  #-----------------------------------------------------------------------------
   void sc_init(
     sc_MPI_Comm mpicomm,
     int catch_signals,

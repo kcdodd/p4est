@@ -1,3 +1,5 @@
+from libc.stdio cimport FILE
+
 cdef extern from "Python.h":
   const int PyBUF_READ
   const int PyBUF_WRITE
@@ -27,7 +29,31 @@ from p4est.core._leaf_info import (
   QuadGhostInfo )
 from p4est.core._adapted import Adapted
 
+import logging
+log = logging.getLogger('p4est.core')
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+sc_log_priority_to_level = [
+  # SC_LP_ALWAYS
+  logging.NOTSET,
+  # SC_LP_TRACE
+  logging.NOTSET + 5,
+  # SC_LP_DEBUG
+  logging.DEBUG,
+  # SC_LP_VERBOSE
+  logging.DEBUG + 5,
+  # SC_LP_INFO
+  logging.INFO,
+  # SC_LP_STATISTICS
+  logging.INFO + 1,
+  # SC_LP_PRODUCTION
+  logging.INFO + 2,
+  # SC_LP_ESSENTIAL
+  logging.INFO + 3,
+  # SC_LP_ERROR
+  logging.ERROR,
+  # SC_LP_SILENT
+  logging.CRITICAL + 10 ]
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
@@ -919,3 +945,54 @@ cdef ndarray_from_sc_array(write, dtype, subitems, sc_array_t* arr):
     buffer,
     dtype = dtype,
     count = subitems * arr.elem_count )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def log_initialize():
+  sc_set_log_defaults(
+    NULL,
+    <sc_log_handler_t>_sc_log_handler,
+    -1 )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef void _sc_log_handler(
+  FILE * log_stream,
+  const char *filename,
+  int lineno,
+  # NOTE: currently no API for getting 'package' information outside of libsc
+  int package,
+  int category,
+  int priority,
+  const char *msg) with gil:
+
+  if msg == NULL:
+    return
+
+  level = sc_log_priority_to_level[min(9, max(0, priority))]
+
+  if not log.isEnabledFor(level):
+    return
+
+  cdef bytes b_str
+
+  if filename == NULL:
+    filename_str = "(unknown file)"
+  else:
+    b_str = filename
+    filename_str = b_str.decode('ascii', errors = 'replace')
+
+  b_str = msg
+  msg_str = b_str.decode('ascii', errors = 'replace')
+
+  record = log.makeRecord(
+    log.name,
+    level,
+    filename_str,
+    lineno,
+    msg_str,
+    tuple(),
+    None,
+    "(unknown function)",
+    None,
+    None )
+
+  log.handle(record)
