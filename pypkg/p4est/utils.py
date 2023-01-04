@@ -20,28 +20,33 @@ class jagged_array:
   """
   #-----------------------------------------------------------------------------
   def __init__(self, data, row_idx):
-    # data = np.ascontiguousarray(data)
+
     row_idx = np.ascontiguousarray(row_idx)
+
+    if not np.issubdtype(row_idx.dtype, np.integer):
+      raise ValueError(f"Must have integral row_idx.dtype: {row_idx.dtype}")
 
     if (
       row_idx.ndim != 1
-      or len(row_idx) == 0
-      or row_idx[0] != 0
-      or row_idx[-1] != len(data) ):
+      or len(row_idx) == 0 ):
 
-      raise ValueError(f"Must have row_idx[0] = 0, and row_idx[-1] = len(data)")
+      raise ValueError(f"Must have row_idx.ndim = 1 and len(row_idx) > 0: {row_idx.ndim}, {len(row_idx)}")
 
-    if not np.all(np.diff(row_idx) >= 0):
-      raise ValueError(f"row_idx must be monotonically increasing, row_idx[i] <= row_idx[i+i]")
+    if row_idx[0] != 0:
+      raise ValueError(f"Must have row_idx[0] = 0: {row_idx[0]}")
+
+    if row_idx[-1] != len(data):
+      raise ValueError(f"Must have row_idx[-1] = len(data) = {len(data)}: {row_idx[-1]}")
+
+    row_counts = np.diff(row_idx)
+
+    if not np.all(row_counts >= 0):
+      raise ValueError(f"Must have row_idx[i] <= row_idx[i+i]")
 
 
     self._data = data
     self._row_idx = row_idx
-
-  #-----------------------------------------------------------------------------
-  @property
-  def data(self):
-    return self._data
+    self._row_counts = row_counts
 
   #-----------------------------------------------------------------------------
   @property
@@ -55,8 +60,8 @@ class jagged_array:
 
   #-----------------------------------------------------------------------------
   @property
-  def shape(self):
-    return (len(self.row_idx) - 1, None, *self.data.shape[1:])
+  def row_counts(self):
+    return self._row_counts
 
   #-----------------------------------------------------------------------------
   @property

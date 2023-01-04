@@ -94,9 +94,9 @@ cdef class P4est:
     cdef np.ndarray[np.npy_int8, ndim=3] cell_adj_face = self._mesh.cell_adj_face
 
     cdef np.ndarray[np.npy_int32, ndim=1] tree_to_corner = self._mesh.cell_nodes.ravel()
-    cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = self._mesh.node_cells.row_idx
-    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = self._mesh.node_cells.data
-    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = self._mesh.node_cells_vert.data
+    cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = np.ascontiguousarray(self._mesh.node_cells.row_idx)
+    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = np.ascontiguousarray(self._mesh.node_cells.flat)
+    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = np.ascontiguousarray(self._mesh.node_cells_vert.flat)
 
     self._connectivity.num_vertices = len(verts)
     self._connectivity.vertices = <double*>verts.data
@@ -451,22 +451,23 @@ cdef class P4est:
       num_mirrors = ghost.mirrors.elem_count,
       mirrors_idx = mirrors_idx )
 
-    # indices into mirrors (grouped by processor rank)
-    # NOTE: this is kind of like argsort(ghost.mirrors) by rank
-    mirror_proc_mirrors = ndarray_from_ptr(
-      write = False,
-      dtype = np.int32,
-      count = ghost.mirrors.elem_count,
-      arr = <char*>ghost.mirror_proc_mirrors)
-
-    mirror_info = self._leaf_info[mirrors_idx[mirror_proc_mirrors]]
-
     # indices into mirror_proc_mirrors for each rank
     mirror_proc_offsets = np.copy(ndarray_from_ptr(
       write = False,
       dtype = np.int32,
       count = ghost.mpisize + 1,
       arr = <char*>ghost.mirror_proc_offsets))
+
+    # indices into mirrors (grouped by processor rank)
+    mirror_proc_mirrors = ndarray_from_ptr(
+      write = False,
+      dtype = np.int32,
+      # NOTE: a mirror can be repeated for difference ranks, so need to use
+      # offsets to get total number of rank-wise mirrors (with repeats)
+      count = mirror_proc_offsets[-1],
+      arr = <char*>ghost.mirror_proc_mirrors)
+
+    mirror_info = self._leaf_info[mirrors_idx[mirror_proc_mirrors]]
 
     self._rank_mirrors = jagged_array(
       data = mirror_info,
@@ -728,14 +729,14 @@ cdef void _sync_ghost_info(
 
   cdef:
     p4est_quadrant_t* cell = NULL
-    npy.npy_int32 r = 0
+    npy.npy_int32 p = 0
     npy.npy_int32 q = 0
 
-  for r in range(len(proc_offsets)-1):
-    for q in range(proc_offsets[r], proc_offsets[r+1]):
+  for p in range(len(proc_offsets)-1):
+    for q in range(proc_offsets[p], proc_offsets[p+1]):
       cell = &ghosts[q]
 
-      rank[q] = r
+      rank[q] = p
       root[q] = cell.p.piggy3.which_tree
       idx[q] = cell.p.piggy3.local_num
       level[q] = cell.level
@@ -754,15 +755,11 @@ cdef void _sync_mirror_idx(
 
   cdef:
     p4est_quadrant_t* cell = NULL
-    aux_quadrant_data_t* cell_aux
-
-    npy.npy_int32 r = 0
     npy.npy_int32 q = 0
 
   for q in range(num_mirrors):
     cell = &mirrors[q]
-    cell_aux = <aux_quadrant_data_t*>cell.p.user_data
-    mirrors_idx[q] = cell_aux.idx
+    mirrors_idx[q] = cell.p.piggy3.local_num
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _init_quadrant(

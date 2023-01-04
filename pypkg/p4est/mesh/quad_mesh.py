@@ -51,7 +51,7 @@ class QuadMeshBase:
     if not (
       isinstance(node_cells, jagged_array)
       and isinstance(node_cells_vert, jagged_array)
-      and node_cells.shape == node_cells_vert.shape
+      and node_cells.flat.shape == node_cells_vert.flat.shape
       and (
         node_cells.row_idx is node_cells_vert.row_idx
         or np.all(node_cells.row_idx == node_cells_vert.row_idx) ) ):

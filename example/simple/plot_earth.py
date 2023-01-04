@@ -27,9 +27,6 @@ def cube(length = 1.0):
       indexing = 'ij'),
     axis = -1).transpose(2,1,0,3).reshape(-1, 3)
 
-  print(verts)
-
-
   #Cell with vertex ordering [V0, V1] , [V2, V3]
   cells = np.array([
     [[0, 1], [4, 5]], #Origin Cell
@@ -156,6 +153,30 @@ def interp_sphere_to_cart_slerp(verts, uv):
     uv = uv )
 
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def mpi_ghost_exchange(grid, local_value):
+
+  # exchange process neighbor information
+  sendbuf = np.ascontiguousarray(local_value[grid.rank_mirrors.flat.idx])
+  recvbuf = np.empty((len(grid.rank_ghosts.flat),), dtype = local_value.dtype)
+
+  mpi_datatype = from_numpy_dtype(local_value.dtype)
+
+  grid.comm.Alltoallv(
+    sendbuf = [
+      sendbuf, (
+        # counts
+        grid.rank_mirrors.row_counts,
+        # displs
+        grid.rank_mirrors.row_idx[:-1] ),
+      mpi_datatype ],
+    recvbuf = [
+      recvbuf, (
+        grid.rank_ghosts.row_counts,
+        grid.rank_ghosts.row_idx[:-1] ),
+      mpi_datatype ])
+
+  return np.concatenate([local_value, recvbuf])
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def plot_grid(grid, interp = None, scalars = None):
@@ -212,31 +233,10 @@ for r in range(6):
   points[...,1] = np.pi / 2 - points[...,1]
   local_value = f(*points.transpose(1,0)[:2][::-1], grid = False)
 
-  # exchange process neighbor information
-  sendbuf = np.ascontiguousarray(local_value[grid.rank_mirrors.flat.idx])
-  recvbuf = np.empty((len(grid.rank_ghosts.data),), dtype = local_value.dtype)
-
-  mpi_datatype = from_numpy_dtype(local_value.dtype)
-  print(mpi_datatype)
-
-  grid.comm.Alltoallv(
-    sendbuf = [
-      sendbuf, (
-        # counts
-        np.diff(grid.rank_mirrors.row_idx),
-        # displs
-        grid.rank_mirrors.row_idx[:-1] ),
-      mpi_datatype ],
-    recvbuf = [
-      recvbuf, (
-        np.diff(grid.rank_ghosts.row_idx),
-        grid.rank_ghosts.row_idx[:-1] ),
-      mpi_datatype ])
-
-  value = np.concatenate([local_value, recvbuf])
+  value = mpi_ghost_exchange(grid, local_value)
 
   value_adj = value[grid.leaf_info.cell_adj]
-  d_value = np.abs(value[:,None,None,None] - value_adj).max(axis = (1,2,3))
+  d_value = np.abs(local_value[:,None,None,None] - value_adj).max(axis = (1,2,3))
 
   refine = d_value > tol
   grid.leaf_info.adapt = refine
