@@ -66,7 +66,7 @@ class jagged_array:
   #-----------------------------------------------------------------------------
   @property
   def dtype(self):
-    return self.data.dtype
+    return self._data.dtype
 
   #-----------------------------------------------------------------------------
   def __len__(self):
@@ -79,8 +79,8 @@ class jagged_array:
 
   #-----------------------------------------------------------------------------
   def __getitem__( self, idx ):
-    return self.data[self.row_idx[idx]:self.row_idx[idx+1]]
+    return self._data[self.row_idx[idx]:self.row_idx[idx+1]]
 
   #-----------------------------------------------------------------------------
   def __setitem__( self, idx, row_data ):
-    self.data[self.row_idx[idx]:self.row_idx[idx+1]] = row_data
+    self._data[self.row_idx[idx]:self.row_idx[idx+1]] = row_data
