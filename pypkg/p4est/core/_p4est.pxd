@@ -1,50 +1,18 @@
-from libc.stdio cimport FILE
-
-from cpython cimport PyObject
 cimport numpy as np
-
-from mpi4py.MPI cimport MPI_Comm, Comm
-
+# from mpi4py.MPI cimport MPI_Comm, Comm
+from p4est.core._sc cimport (
+  sc_MPI_Comm,
+  sc_array_t,
+  sc_mempool_t )
 from p4est.core._leaf_info cimport (
   QuadInfo,
   QuadGhostInfo )
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef extern from "sc.h" nogil:
-  #.............................................................................
-  ctypedef int sc_MPI_Comm
-
-  #.............................................................................
-  ctypedef void (*sc_log_handler_t)(
-    FILE * log_stream,
-    const char *filename,
-    int lineno,
-    int package,
-    int category,
-    int priority,
-    const char *msg)
-
-  #-----------------------------------------------------------------------------
-  void sc_set_log_defaults(
-    FILE * log_stream,
-    sc_log_handler_t log_handler,
-    int log_threshold)
-
-  #-----------------------------------------------------------------------------
-  void sc_init(
-    sc_MPI_Comm mpicomm,
-    int catch_signals,
-    int print_backtrace,
-    sc_log_handler_t log_handler,
-    int log_threshold)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # NOTE: Some important definitions are not in p4est.h
 cdef extern from "p4est_extended.h" nogil:
   const int P4EST_MAXLEVEL
   const int P4EST_ROOT_LEN
-
-
 
   #.............................................................................
   ctypedef np.npy_int32 p4est_topidx_t
@@ -53,45 +21,6 @@ cdef extern from "p4est_extended.h" nogil:
   ctypedef np.npy_int64 p4est_gloidx_t
   ctypedef np.npy_uint64 p4est_lid_t
 
-  #.............................................................................
-  ctypedef struct sc_array_t:
-    # interface variables
-    # size of a single element
-    size_t elem_size
-    # number of valid elements
-    size_t elem_count
-
-    # implementation variables
-    # number of allocated bytes
-    # or -(number of viewed bytes + 1)
-    # if this is a view: the "+ 1"
-    # distinguishes an array of size 0
-    # from a view of size 0
-    ssize_t byte_alloc
-
-    # linear array to store elements
-    char *array
-
-  #.............................................................................
-  ctypedef struct sc_mempool_t:
-    # interface variables
-    #size of a single element
-    size_t elem_size
-    #number of valid elements
-    size_t elem_count
-    #Boolean is set in constructor.
-    int zero_and_persist
-
-    # implementation variables
-    #ifdef SC_MEMPOOL_MSTAMP
-    # sc_mstamp_t mstamp
-    #our own obstack replacement
-    #else
-    # struct obstack obstack
-    #holds the allocated elements
-    #endif
-    sc_array_t freed
-    #buffers the freed elements
 
   #.............................................................................
   ctypedef struct p4est_inspect_t:

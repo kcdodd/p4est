@@ -1,25 +1,14 @@
-from libc.stdio cimport FILE
-
-cdef extern from "Python.h":
-  const int PyBUF_READ
-  const int PyBUF_WRITE
-  PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
-
-from libc.stdlib cimport malloc, free
+# from libc.stdlib cimport malloc, free
 from libc.string cimport memset
-
 from collections import namedtuple
 from collections.abc import (
   Iterable,
   Sequence,
   Mapping )
-
 cimport numpy as npy
 import numpy as np
-
 from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
-
 from p4est.utils import jagged_array
 from p4est.mesh.quad import (
   QuadMeshBase,
@@ -28,32 +17,9 @@ from p4est.core._leaf_info import (
   QuadInfo,
   QuadGhostInfo )
 from p4est.core._adapted import Adapted
-
-import logging
-log = logging.getLogger('p4est.core')
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-sc_log_priority_to_level = [
-  # SC_LP_ALWAYS
-  logging.NOTSET,
-  # SC_LP_TRACE
-  logging.NOTSET + 5,
-  # SC_LP_DEBUG
-  logging.DEBUG,
-  # SC_LP_VERBOSE
-  logging.DEBUG + 5,
-  # SC_LP_INFO
-  logging.INFO,
-  # SC_LP_STATISTICS
-  logging.INFO + 1,
-  # SC_LP_PRODUCTION
-  logging.INFO + 2,
-  # SC_LP_ESSENTIAL
-  logging.INFO + 3,
-  # SC_LP_ERROR
-  logging.ERROR,
-  # SC_LP_SILENT
-  logging.CRITICAL + 10 ]
+from p4est.core._sc cimport (
+  ndarray_from_ptr,
+  ndarray_from_sc_array )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
@@ -922,84 +888,3 @@ cdef int _weight_quadrant(
 
   return cell_aux.weight
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef ndarray_from_ptr(write, dtype, count, char* arr):
-  itemsize = np.dtype(dtype).itemsize
-
-  buffer = <object>PyMemoryView_FromMemory(
-    arr,
-    itemsize * count,
-    PyBUF_WRITE if write else PyBUF_READ )
-
-  return np.frombuffer(
-    buffer,
-    dtype = dtype,
-    count = count )
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef ndarray_from_sc_array(write, dtype, subitems, sc_array_t* arr):
-  itemsize = np.dtype(dtype).itemsize
-
-  if itemsize * subitems != arr.elem_size:
-    raise ValueError(f"Item size does not match: {dtype}.itemsize == {itemsize}, arr.elem_size == {arr.elem_size}")
-
-  buffer = <object>PyMemoryView_FromMemory(
-    arr.array,
-    arr.elem_size * arr.elem_count,
-    PyBUF_WRITE if write else PyBUF_READ )
-
-  return np.frombuffer(
-    buffer,
-    dtype = dtype,
-    count = subitems * arr.elem_count )
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def log_initialize():
-  sc_set_log_defaults(
-    NULL,
-    <sc_log_handler_t>_sc_log_handler,
-    -1 )
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef void _sc_log_handler(
-  FILE * log_stream,
-  const char *filename,
-  int lineno,
-  # NOTE: currently no API for getting 'package' information outside of libsc
-  int package,
-  int category,
-  int priority,
-  const char *msg) with gil:
-
-  if msg == NULL:
-    return
-
-  level = sc_log_priority_to_level[min(9, max(0, priority))]
-
-  if not log.isEnabledFor(level):
-    return
-
-  cdef bytes b_str
-
-  if filename == NULL:
-    filename_str = "(unknown file)"
-  else:
-    b_str = filename
-    filename_str = b_str.decode('ascii', errors = 'replace')
-
-  b_str = msg
-  msg_str = b_str.decode('ascii', errors = 'replace')
-
-  record = log.makeRecord(
-    log.name,
-    level,
-    filename_str,
-    lineno,
-    msg_str,
-    tuple(),
-    None,
-    "(unknown function)",
-    None,
-    None )
-
-  log.handle(record)
