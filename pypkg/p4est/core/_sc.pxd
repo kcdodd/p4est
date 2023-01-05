@@ -77,5 +77,4 @@ cdef extern from "sc_containers.h" nogil:
     #buffers the freed elements
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef ndarray_from_ptr(write, dtype, count, char* arr)
 cdef ndarray_from_sc_array(write, dtype, subitems, sc_array_t* arr)

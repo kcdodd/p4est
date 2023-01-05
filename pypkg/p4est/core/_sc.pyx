@@ -93,50 +93,6 @@ cdef void _sc_log_handler(
   log.handle(record)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef ndarray_from_ptr(write, dtype, count, char* arr):
-  """
-
-  .. attention::
-
-    The returned array is simply a view into the underlying memory pointed to,
-    and should never be passed on to other code that cannot gaurantee
-    the referenced memory will be kept alive.
-    Attempting to access the array elements after the pointer is freed
-    will (at best) lead to a segfault.
-
-    There is also no way for this routine to verify
-    the amount of referenced memory matches the requested item count.
-
-  Parameters
-  ----------
-  write : bool
-    Should the returned ndarray be writable, otherwise is read-only
-  dtype : np.dtype
-    Numpy datatype of returned array.
-  count : int
-    Number of items of dtype.
-  arr : char*
-    Pointer to beginning of memory, must be at least ``dtype.itemsize * count``.
-
-  Returns
-  -------
-  ndarray:
-    Array of length ``count``.
-  """
-
-  itemsize = np.dtype(dtype).itemsize
-
-  buffer = <object>PyMemoryView_FromMemory(
-    arr,
-    itemsize * count,
-    PyBUF_WRITE if write else PyBUF_READ )
-
-  return np.frombuffer(
-    buffer,
-    dtype = dtype,
-    count = count )
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef ndarray_from_sc_array(write, dtype, subitems, sc_array_t* arr):
   """
 

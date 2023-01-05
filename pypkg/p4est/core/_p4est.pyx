@@ -17,8 +17,9 @@ from p4est.core._leaf_info import (
   QuadInfo,
   QuadGhostInfo )
 from p4est.core._adapted import Adapted
+from p4est.core._utils cimport (
+  ndarray_from_ptr )
 from p4est.core._sc cimport (
-  ndarray_from_ptr,
   ndarray_from_sc_array )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
