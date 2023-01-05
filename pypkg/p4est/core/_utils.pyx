@@ -128,53 +128,33 @@ cdef _ndarray_bufspec(arr):
   # of the initial dtype.
   count = contiguous_vol or 1
 
-  mpi_dtype.Commit()
-
   # NOTE: this is some hackery to create a buffer that mpi4py will accept
   # (since non-contiguous buffers are automatically rejected).
-  # In the case that 'arr' is non-contiguous, there is some difficulty to
-  # retreiving the actual memory footprint from here, and various ways of
-  # attempting to get a pointer to the end of 'arr' seem pretty fragil.
-  # This method first gets back to the base (contiguous) array, then uses its
-  # size to find a 'safe' end to the memory.
-  # As long as the 'start' pointer and datatype strides lead to valid memory,
-  # MPI doesn't actually care about these other numbers.
 
-  base = arr
+  buf = arr
 
-  while base.base is not None:
-    base = base.base
+  while not (buf.flags['C'] or buf.flags['F']):
+    if buf.base is None:
+      raise ValueError(f"'arr' must have a contiguous base array")
 
-  cdef npy.ndarray _base = base
+    buf = buf.base
+
+  cdef npy.ndarray _buf = buf
   cdef npy.ndarray _arr = arr
 
-  cdef ptrdiff_t nbytes = base.nbytes
-  cdef npy.npy_int8* origin = <npy.npy_int8*>_base.data
+  cdef ptrdiff_t nbytes = buf.nbytes
+  cdef npy.npy_int8* origin = <npy.npy_int8*>_buf.data
   cdef npy.npy_int8* start = <npy.npy_int8*>_arr.data
-  cdef npy.npy_int8* end = origin + nbytes
 
-  nbytes = end - start
-  n = nbytes // itemsize
+  cdef ptrdiff_t offset_nbytes = start - origin
 
-  cdef npy.npy_intp[:] _dims = np.array([nbytes], dtype = np.intp)
+  assert offset_nbytes >= 0
 
-  cdef npy.ndarray buf = npy.PyArray_New(
-    npy.ndarray,
-    1,
-    &_dims[0],
-    npy.NPY_INT8,
-    NULL,
-    <void*>start,
-    0,
-    npy.NPY_ARRAY_C_CONTIGUOUS | (npy.NPY_ARRAY_WRITEABLE if arr.flags.writeable else 0),
-    None )
+  mpi_dtype = mpi_dtype.Create_hindexed_block(count, [offset_nbytes])
 
-  # Reference count of the 'contiguous' buffer to the original.
-  # npy.set_array_base(buf, base)
-  assert npy.PyArray_SetBaseObject(buf, arr) == 0
-  Py_INCREF(arr)
+  mpi_dtype.Commit()
 
   return [
     buf,
-    count,
+    1,
     mpi_dtype]
