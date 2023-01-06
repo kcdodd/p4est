@@ -1,42 +1,11 @@
-from libc.stdio cimport FILE
-
-from cpython cimport PyObject
 cimport numpy as np
-
-from mpi4py.MPI cimport MPI_Comm, Comm
-
+from p4est.core._sc cimport (
+  sc_MPI_Comm,
+  sc_array_t,
+  sc_mempool_t )
 from p4est.core._leaf_info cimport (
   HexInfo,
   HexGhostInfo )
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef extern from "sc.h" nogil:
-  #.............................................................................
-  ctypedef int sc_MPI_Comm
-
-  #.............................................................................
-  ctypedef void (*sc_log_handler_t)(
-    FILE * log_stream,
-    const char *filename,
-    int lineno,
-    int package,
-    int category,
-    int priority,
-    const char *msg)
-
-  #-----------------------------------------------------------------------------
-  void sc_set_log_defaults(
-    FILE * log_stream,
-    sc_log_handler_t log_handler,
-    int log_threshold)
-
-  #-----------------------------------------------------------------------------
-  void sc_init(
-    sc_MPI_Comm mpicomm,
-    int catch_signals,
-    int print_backtrace,
-    sc_log_handler_t log_handler,
-    int log_threshold)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # NOTE: Some important definitions are not in p8est.h
@@ -50,46 +19,6 @@ cdef extern from "p8est_extended.h" nogil:
   ctypedef np.npy_int32 p4est_locidx_t
   ctypedef np.npy_int64 p4est_gloidx_t
   ctypedef np.npy_uint64 p4est_lid_t
-
-  #.............................................................................
-  ctypedef struct sc_array_t:
-    # interface variables
-    # size of a single element
-    size_t elem_size
-    # number of valid elements
-    size_t elem_count
-
-    # implementation variables
-    # number of allocated bytes
-    # or -(number of viewed bytes + 1)
-    # if this is a view: the "+ 1"
-    # distinguishes an array of size 0
-    # from a view of size 0
-    ssize_t byte_alloc
-
-    # linear array to store elements
-    char *array
-
-  #.............................................................................
-  ctypedef struct sc_mempool_t:
-    # interface variables
-    #size of a single element
-    size_t elem_size
-    #number of valid elements
-    size_t elem_count
-    #Boolean is set in constructor.
-    int zero_and_persist
-
-    # implementation variables
-    #ifdef SC_MEMPOOL_MSTAMP
-    # sc_mstamp_t mstamp
-    #our own obstack replacement
-    #else
-    # struct obstack obstack
-    #holds the allocated elements
-    #endif
-    sc_array_t freed
-    #buffers the freed elements
 
   #.............................................................................
   ctypedef struct p8est_inspect_t:
@@ -150,7 +79,7 @@ cdef extern from "p8est_extended.h" nogil:
     # (6 * num_trees) face to face+orientation
     np.npy_int8* tree_to_face
     # 12 * num_trees) or NULL
-    p4est_topidx_t tree_to_edge
+    p4est_topidx_t* tree_to_edge
     # (8 * num_trees) or NULL (see description)
     p4est_topidx_t* tree_to_corner
 
@@ -158,7 +87,7 @@ cdef extern from "p8est_extended.h" nogil:
     # list of trees that meet at an edge
     p4est_topidx_t* edge_to_tree
     # tree-edges+orientations
-    p4est_topidx_t* edge_to_edge
+    np.npy_int8* edge_to_edge
 
     # corner to offset in corner_to_tree and corner_to_corner
     p4est_topidx_t* ctt_offset
@@ -239,7 +168,7 @@ cdef extern from "p8est_extended.h" nogil:
     # cumulative sum over earlier trees on this processor (locals only)
     p4est_locidx_t quadrants_offset
     # locals only
-    p4est_locidx_t quadrants_per_level[p8est_MAXLEVEL + 1]
+    p4est_locidx_t quadrants_per_level[P8EST_MAXLEVEL + 1]
     # highest local quadrant level
     np.npy_int8 maxlevel
 
@@ -502,13 +431,13 @@ cdef class P8est:
   cdef p8est_t* _p4est
 
   #-----------------------------------------------------------------------------
-  cdef _init(P4est self)
+  cdef _init(P8est self)
 
   #-----------------------------------------------------------------------------
-  cdef void _adapt(P4est self) nogil
+  cdef void _adapt(P8est self) nogil
 
   #-----------------------------------------------------------------------------
-  cdef void _partition(P4est self) nogil
+  cdef void _partition(P8est self) nogil
 
   #-----------------------------------------------------------------------------
-  cdef _sync_leaf_info(P4est self)
+  cdef _sync_leaf_info(P8est self)

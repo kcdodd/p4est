@@ -16,7 +16,7 @@ from p4est.mesh.quad import (
 from p4est.core._leaf_info import (
   QuadInfo,
   QuadGhostInfo )
-from p4est.core._adapted import Adapted
+from p4est.core._adapted import QuadAdapted
 from p4est.core._utils cimport (
   ndarray_from_ptr )
 from p4est.core._sc cimport (
@@ -89,7 +89,7 @@ cdef class P4est:
     cdef np.ndarray[np.npy_int32, ndim=1] tree_to_corner = self._mesh.cell_nodes.ravel()
     cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = np.ascontiguousarray(self._mesh.node_cells.row_idx)
     cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = np.ascontiguousarray(self._mesh.node_cells.flat)
-    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = np.ascontiguousarray(self._mesh.node_cells_vert.flat)
+    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = np.ascontiguousarray(self._mesh.node_cells_inv.flat)
 
     self._connectivity.num_vertices = len(verts)
     self._connectivity.vertices = <double*>verts.data
@@ -269,8 +269,8 @@ cdef class P4est:
 
     Returns
     -------
-    refined : Adapted
-    coarsened : Adapted
+    refined : QuadAdapted
+    coarsened : QuadAdapted
     """
 
     _set_leaf_adapt(
@@ -485,13 +485,13 @@ cdef class P4est:
     coarse_idx = leaf_adapted_coarse[coarsened_mask]
     coarsened_idx = leaf_adapted_fine[coarsened_mask]
 
-    refined = Adapted(
+    refined = QuadAdapted(
       idx = fine_idx,
       info = self._leaf_info[fine_idx],
       replaced_idx = refined_idx,
       replaced_info = prev_leaf_info[refined_idx] )
 
-    coarsened = Adapted(
+    coarsened = QuadAdapted(
       idx = coarse_idx,
       info = self._leaf_info[coarse_idx],
       replaced_idx = coarsened_idx,
@@ -684,24 +684,16 @@ cdef void _sync_leaf_info(
 
           # A value of v = 0..7 indicates one same-size neighbor.
           # A value of v = 8..23 indicates a double-size neighbor.
-          #   8 % 8 -> face_order 0
-          #   8 // 16 -> subface 0
-          #   15 % 8 -> face_order 7
-          #   15 // 16 -> subface 0
           # designates the subface of the large neighbor that the quadrant
           # touches (this is the same as the large neighbor's face corner).
-          #   16 % 8 -> face_order 0
-          #   16 // 16 -> subface 1
-          #   23 % 8 -> face_order 7
-          #   23 // 16 -> subface 1
           # A value of v = -8..-1 indicates two half-size neighbors.
-          #   -8 % 8 -> 0
-          #   -1 % 8 -> 7
           face_order = cell_adj_face_idx % 8
 
           cell_adj_face[cell_idx,i,j] = face_order % 4
+          cell_adj_order[cell_idx,i,j] = face_order // 4
+
           cell_adj_subface[cell_idx,i,j] = cell_adj_face_idx // 16
-          cell_adj_order[cell_idx,i,j] = 1 - 2*(face_order // 4)
+
 
           if cell_adj_face_idx >= 0:
             cell_adj[cell_idx,i,j] = cell_adj_idx

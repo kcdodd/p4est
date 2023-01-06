@@ -1,1 +1,7 @@
-from .quad import QuadMesh
+from .quad import (
+  QuadMeshBase,
+  QuadMesh )
+
+from .hex import (
+  HexMeshBase,
+  HexMesh )

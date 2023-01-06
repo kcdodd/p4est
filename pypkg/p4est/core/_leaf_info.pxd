@@ -26,3 +26,12 @@ cdef class QuadGhostInfo(LeafInfo):
   cdef public np.ndarray _idx
   cdef public np.ndarray _level
   cdef public np.ndarray _origin
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class HexInfo(QuadInfo):
+  pass
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class HexGhostInfo(QuadGhostInfo):
+  pass
