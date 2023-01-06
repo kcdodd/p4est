@@ -13,12 +13,16 @@ install_files = [
   '__init__.pxd',
   '_leaf_info.pxd',
   '_adapted.pxd',
-  '_p4est.pxd' ]
+  '_p4est.pxd',
+  # '_p8est.pxd'
+  ]
 
 modules = [
   '_leaf_info',
   '_adapted',
-  '_p4est' ]
+  '_p4est',
+  # '_p8est'
+  ]
 
 foreach mod : modules
 
