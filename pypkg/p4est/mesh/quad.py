@@ -318,19 +318,6 @@ def quad_cell_adjacency(cell_nodes):
   cell_adj[c1,f1] = c0
   cell_adj = cell_adj.reshape(nc, 2, 2)
 
-  # Let my_face and other_face
-  # be the two face numbers of the connecting trees in 0..5.  Then the first
-  # face corner of the lower of my_face and other_face connects to a face
-  # corner numbered 0..3 in the higher of my_face and other_face.  The face
-  # orientation is defined as this number.
-
-  f0_lower = f0 < f1
-
-  ref_node = np.where(
-    f0_lower,
-    cell_face_nodes[c0,f0,0],
-    cell_face_nodes[c1,f1,0] )
-
   orientation = np.any(cell_face_nodes[c1,f1] != cell_face_nodes[c0,f0], axis = 1)
 
   # set the corresponding index of the face and relative orientation to adjacent cell
