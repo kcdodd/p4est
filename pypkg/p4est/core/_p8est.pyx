@@ -237,7 +237,7 @@ cdef class P8est:
     """
 
     if uv is None:
-      uv = np.zeros((2,), dtype = np.float64)
+      uv = 0.5*np.ones((3,), dtype = np.float64)
 
     else:
       uv = np.asarray(uv, dtype = np.float64)
@@ -265,8 +265,8 @@ cdef class P8est:
     if interp is None:
       _UV = 1.0 - UV
 
-      # bi-linear interpolation
-      c = np.empty(cell_verts.shape[:3])
+      # tri-linear interpolation
+      c = np.empty(cell_verts.shape[:4])
       c[:,0,0,0] = _UV[:,0]*_UV[:,1]*_UV[:,2]
       c[:,0,0,1] = UV[:,0]*_UV[:,1]*_UV[:,2]
       c[:,0,1,0] = _UV[:,0]*UV[:,1]*_UV[:,2]
@@ -278,7 +278,7 @@ cdef class P8est:
       c[:,1,1,1] = UV[:,0]*UV[:,1]*UV[:,2]
 
       # Perform the interpolation
-      return np.sum(c[:,:,:,None] * cell_verts, axis = (1,2,3))
+      return np.sum(c[:,:,:,:,None] * cell_verts, axis = (1,2,3))
 
     else:
       return interp(cell_verts, UV)
@@ -583,7 +583,7 @@ cdef npy.npy_int32 _count_leaf_adapted(
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
-cdef void _sync_leaf_info(
+cdef _sync_leaf_info(
   p8est_tree_t* trees,
   npy.npy_int32 first_local_tree,
   npy.npy_int32 last_local_tree,
@@ -606,7 +606,7 @@ cdef void _sync_leaf_info(
   npy.npy_int8[:,:,:] cell_adj_level,
   npy.npy_int8[:] leaf_adapted,
   npy.npy_int32[:,:,:,:] leaf_adapted_fine,
-  npy.npy_int32[:] leaf_adapted_coarse ) nogil:
+  npy.npy_int32[:] leaf_adapted_coarse ):
   """Low-level method to sync quadrant data with the contiguous arrays.
   """
 
@@ -652,6 +652,7 @@ cdef void _sync_leaf_info(
         # refined
         leaf_adapted[adapt_idx] = 1
 
+        #  which octant of the replaced cell
         m = (
           (cell_aux.replaced_idx[1] >= 0)
           + 2*(cell_aux.replaced_idx[2] >= 0)
@@ -668,7 +669,7 @@ cdef void _sync_leaf_info(
         k = m // 4
         m %= 4
         j = m // 2
-        i = m % 4
+        i = m % 2
 
         leaf_adapted_fine[adapt_idx, k, j, i] = cell_idx
         adapt_idx += 1
@@ -705,9 +706,12 @@ cdef void _sync_leaf_info(
       level[cell_idx] = cell.level
       origin[cell_idx,0] = cell.x
       origin[cell_idx,1] = cell.y
+      origin[cell_idx,2] = cell.z
 
       # get adjacency information from the mesh
+      # loop x, y, z
       for i in range(3):
+        # loop -x,+x, .
         for j in  range(2):
           cell_adj_idx = quad_to_quad[cell_idx,i,j]
           cell_adj_face_idx = quad_to_face[cell_idx,i,j]
@@ -724,28 +728,30 @@ cdef void _sync_leaf_info(
           # A value of v = -24..-1 indicates four half-size neighbors.
           face_order = cell_adj_face_idx % 24
 
-          # v -> 0, or 1 + h
-          m = cell_adj_face_idx // 24
-
           cell_adj_face[cell_idx,i,j] = face_order % 6
           cell_adj_order[cell_idx,i,j] = face_order // 6
+
+          # v -> 0, or 1 + h
+          m = cell_adj_face_idx // 24
 
           cell_adj_subface[cell_idx,i,j] = 0 if m == 0 else (m - 1)
 
 
           if cell_adj_face_idx >= 0:
-            cell_adj[cell_idx,i,j] = cell_adj_idx
+            # neighbor <= level
+            cell_adj[cell_idx,i,j,:,:] = cell_adj_idx
             cell_adj_level[cell_idx,i,j] = 0 if (cell_adj_face_idx < 8) else -1
           else:
+            # neighbor > level
             # In this case the corresponding quad_to_quad index points into the
             # quad_to_half array that stores four quadrant numbers per index,
-            cell_adj[cell_idx,i,j] = quad_to_half[cell_adj_idx]
+            cell_adj[cell_idx,i,j,:,:] = quad_to_half[cell_adj_idx]
             cell_adj_level[cell_idx,i,j] = 1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
-cdef void _sync_ghost_info(
+cdef _sync_ghost_info(
   p8est_quadrant_t* ghosts,
   npy.npy_int32 num_ghosts,
   const npy.npy_int32[:] proc_offsets,
@@ -754,7 +760,7 @@ cdef void _sync_ghost_info(
   npy.npy_int32[:] root,
   npy.npy_int32[:] idx,
   npy.npy_int8[:] level,
-  npy.npy_int32[:,:] origin ) nogil:
+  npy.npy_int32[:,:] origin ):
 
 
   cdef:
@@ -777,11 +783,11 @@ cdef void _sync_ghost_info(
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
-cdef void _sync_mirror_idx(
+cdef _sync_mirror_idx(
   p8est_quadrant_t* mirrors,
   npy.npy_int32 num_mirrors,
   # out
-  npy.npy_int32[:] mirrors_idx ) nogil:
+  npy.npy_int32[:] mirrors_idx ):
 
 
   cdef:
@@ -836,7 +842,7 @@ cdef void _replace_quadrants(
 
   # NOTE: incoming means the 'added' quadrants, and outgoing means 'removed'
   if num_outgoing == 8:
-    # Coarsening: remove 4 -> add 1
+    # Coarsening: remove 8 -> add 1
     # assert num_outgoing == 8
     # assert num_incoming == 1
 
@@ -864,7 +870,7 @@ cdef void _replace_quadrants(
     cell_aux.weight = prev_weight
 
   else:
-    # Refining: remove 1 -> add 4
+    # Refining: remove 1 -> add 8
     # assert num_outgoing == 1
     # assert num_incoming == 8
     # print(f"Refining: root= {root_idx}")

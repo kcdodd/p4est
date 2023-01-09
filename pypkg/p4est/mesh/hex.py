@@ -1,5 +1,7 @@
 import numpy as np
-from ..utils import jagged_array
+from ..utils import (
+  jagged_array,
+  unique_full )
 from ..geom import (
   trans_sphere_to_cart )
 
@@ -372,75 +374,67 @@ def hex_cell_adjacency(cell_nodes):
   nc = len(cell_nodes)
   cidx = np.arange(nc)
 
-  # build adjacency from per-cell node list
-
-  # faces defined as 4 nodes each -> (NC,6,2,2) -> (NC,6,4)
-  # NOTE: put the new face index as axis = 1, instead of axis = 0
-  # also flatten the last two dimensions
-  vfaces = np.stack((
-    # -/+ xfaces
-    cell_nodes[:,[0,0,1,1],[0,1,0,1],0],
-    cell_nodes[:,[0,0,1,1],[0,1,0,1],1],
-    # -/+ yfaces
-    cell_nodes[:,[0,0,1,1],0,[0,1,0,1]],
-    cell_nodes[:,[0,0,1,1],1,[0,1,0,1]],
-    # -/+ zfaces
-    cell_nodes[:,0,[0,0,1,1],[0,1,0,1]],
-    cell_nodes[:,1,[0,0,1,1],[0,1,0,1]] ),
+  # build adjacency from per-cell node list (NC,6,2,2) -> (NC,6,4)
+  cell_face_nodes = np.stack(
+    # 6 faces, defined from 4 nodes each -> (NC,6,2,2)
+    ( # -/+ xfaces
+      cell_nodes[:,:,:,0],
+      cell_nodes[:,:,:,1],
+      # -/+ yfaces
+      cell_nodes[:,:,0,:],
+      cell_nodes[:,:,1,:],
+      # -/+ zfaces
+      cell_nodes[:,0,:,:],
+      cell_nodes[:,1,:,:] ),
+    # NOTE: put the new face index as axis = 1, instead of axis = 0,
     axis = 1 ).reshape(nc, 6, 4)
 
-  # keep track where vertex order is changed to recover orientation
-  isort = np.argsort(vfaces, axis = 2)
 
-  # Let my_face and other_face
-  # be the two face numbers of the connecting trees in 0..5.  Then the first
-  # face corner of the lower of my_face and other_face connects to a face
-  # corner numbered 0..3 in the higher of my_face and other_face.  The face
-  # orientation is defined as this number.
-  # TODO: this isn't correct, better just to compute it after like it says
-  reversed = isort[:,:,0] != 0
-  vfaces = np.take_along_axis(vfaces, isort, axis = 2)
-
-  # reduce faces down to unique pairs of vertices
-  faces, idx, idx_inv = np.unique(
-    vfaces.reshape(6*nc, 4),
-    return_index = True,
-    return_inverse = True,
+  # reduce faces down to unique sets of 4 nodes
+  # face_nodes, cell_faces, face_counts =
+  sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
+    # sort nodes for each face, removing differences in node order
+    np.sort(
+      # also reshape to a list of 4-node faces (NC,6,2,2) -> (6*NC,4)
+      cell_face_nodes.reshape(6*nc, 4),
+      # sort over the 4 nodes of each face
+      axis = 1 ),
+    # unique over all cells
     axis = 0 )
 
-  fidx = np.arange(len(faces))
+  face_counts = np.diff(unique_idx)
 
-  # indices of unique faces for each cell, according to the vertex order above
-  ifaces = idx_inv.reshape(len(cell_nodes), 6)
+  if np.any(face_counts > 2):
+    raise ValueError(f"Face shared by more than two cells.")
 
-  # reconstructed the 'edges' passing through faces connecting cells
-  # i.e. the 'edge list' representation of a graph where cells are the nodes
-  dual_edges = -np.ones((len(faces), 2), dtype = np.int32)
+  # face_cell_nodes = cell_face_nodes[sort_idx]
 
-  for i in range(6):
-    # set cell indices for adjacent pairs
-    # FIFO conditional
-    j = np.where(dual_edges[ifaces[:,i],0] == -1, 0, 1)
-    dual_edges[ifaces[:,i], j] = cidx
+  # # the 4 nodes for each unique face
+  # face_nodes = face_cell_nodes[unique_mask]
 
-  # filter out all faces that don't connect a pair of cells
-  # TODO: some kind of default boundary condition?
-  m = ~np.any(dual_edges == -1, axis = 1)
-  dual_edges = dual_edges[m]
-  dual_fidx = fidx[m]
+  # define (arbitrary) indices for list of unique faces
+  nf = np.count_nonzero(unique_mask)
+  fidx = np.arange(nf)
 
-  # indices of first cell
-  c0 = dual_edges[:,0]
+  # reconstruct, for each face, the (up to) two cells it connects
+  # NOTE: each face index appears up to two times in cell_faces,
+  # repeat the cell for faces that *don't* connect to another cell
+  face_cells = np.repeat(sort_idx // 6, 3-face_counts).reshape(nf, 2)
+
+  # NOTE: becomes the mapping from each cell to the 6 unique faces
+  # (6*NC,) -> (NC,6)
+  cell_faces = inv_idx.reshape(nc, 6)
+
+
+  # indices of first cell of all faces
+  c0 = face_cells[:,0]
   # local indices of shared face in first cells
-  f0 = np.nonzero(ifaces[c0] == dual_fidx[:,None])[1]
+  f0 = np.nonzero(cell_faces[c0] == fidx[:,None])[1]
 
-  # indices of second cell
-  c1 = dual_edges[:,1]
+  # indices of second cell of all faces
+  c1 = face_cells[:,1]
   # local indices of shared face in second cells
-  f1 = np.nonzero(ifaces[c1] == dual_fidx[:,None])[1]
-
-  # relative orientation if one (but not both) are in reversed order
-  orientation = (reversed[c0,f0] ^ reversed[c1,f1]).astype(np.int8)
+  f1 = np.nonzero(cell_faces[c1] == fidx[:,None])[1]
 
   cell_adj = np.empty((len(cell_nodes), 6), dtype = np.int32)
   # default adjacency back onto own index
@@ -450,13 +444,31 @@ def hex_cell_adjacency(cell_nodes):
   cell_adj[c1,f1] = c0
   cell_adj = cell_adj.reshape(nc, 3, 2)
 
+  # Let my_face and other_face
+  # be the two face numbers of the connecting trees in 0..5.  Then the first
+  # face corner of the lower of my_face and other_face connects to a face
+  # corner numbered 0..3 in the higher of my_face and other_face.  The face
+  # orientation is defined as this number.
+
+  f0_lower = f0 < f1
+
+  ref_node = np.where(
+    f0_lower,
+    cell_face_nodes[c0,f0,0],
+    cell_face_nodes[c1,f1,0] )
+
+  orientation = np.where(
+    f0_lower,
+    np.nonzero(cell_face_nodes[c1,f1] == ref_node[:,None])[1],
+    np.nonzero(cell_face_nodes[c0,f0] == ref_node[:,None])[1] )
+
   # set the corresponding index of the face and relative orientation to adjacent cell
   cell_adj_face = np.empty((len(cell_nodes), 6), dtype = np.int8)
-  # default adjacent face
+  # default adjacent face is same face
   cell_adj_face[:] = np.arange(6)[None,:]
   # computed adjacent face
-  cell_adj_face[c0,f0] = f1
-  cell_adj_face[c1,f1] = f0
+  cell_adj_face[c0,f0] = f1 + 6*orientation
+  cell_adj_face[c1,f1] = f0 + 6*orientation
   cell_adj_face = cell_adj_face.reshape(nc, 3, 2)
 
   return cell_adj, cell_adj_face
@@ -574,9 +586,9 @@ def hex_cell_nodes(cells, vert_nodes):
 
   _node_keep = np.repeat( node_keep, node_cells_count )
 
-  node_cells_count = node_cells_count[node_keep]
-  node_cells = node_cells[_node_keep]
-  node_cells_inv = node_cells_inv[_node_keep]
+  node_cells_count = np.ascontiguousarray(node_cells_count[node_keep])
+  node_cells = np.ascontiguousarray(node_cells[_node_keep])
+  node_cells_inv = np.ascontiguousarray(node_cells_inv[_node_keep])
 
   # NOTE: this still points to the memoryview of un-raveled cell_nodes
   _cell_nodes[sort_idx[~_node_keep]] = -1

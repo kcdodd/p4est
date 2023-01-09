@@ -171,7 +171,7 @@ cdef class QuadInfo(LeafInfo):
       # ---+----+----+---
       #    |100 | 101|
       #
-      # Indexing: [(y-normal, x-normal), (-face, +face), (-half, +half)]
+      # Indexing: [(x-normal, y-normal), (-face, +face), (-half, +half)]
       # If cell_adj[i,j,0] == cell_adj[i,j,1], then both halfs are shared with
       # the same cell (of equal or greater size).
       # Otherwise each half is shared with different cells of 1/2 size.
@@ -415,7 +415,7 @@ cdef class HexInfo(QuadInfo):
       # ---+----+----+---
       #    |100 | 101|
       #
-      # Indexing: [(y-normal, x-normal), (-face, +face), (-half, +half)]
+      # Indexing: [(x-normal, y-normal, z-normal), (-face, +face), (-half, +half)]
       # If cell_adj[i,j,0] == cell_adj[i,j,1], then both halfs are shared with
       # the same cell (of equal or greater size).
       # Otherwise each half is shared with different cells of 1/2 size.
