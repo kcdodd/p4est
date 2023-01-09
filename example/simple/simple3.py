@@ -1,4 +1,5 @@
 import numpy as np
+import itertools
 import pyvista as pv
 from p4est import (
   P8est,
@@ -7,7 +8,7 @@ from p4est import (
 
 from p4est.mesh.hex import (
   HexMesh,
-  cube)
+  cube )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def plot_mesh(mesh):
@@ -62,31 +63,40 @@ def plot_grid(grid, interp = None):
   scale = 0.99
   _scale = 1.0 - scale
 
+  scales = [_scale, scale]
+
   pv.set_plot_theme('paraview')
   p = pv.Plotter()
 
-  nc = len(grid.leaf_info)
-  verts = np.empty((4*nc, 3))
-  verts[:nc] = grid.leaf_coord(uv = (scale, _scale, _scale), interp = interp)
-  verts[nc:2*nc] = grid.leaf_coord(uv = (scale, _scale, scale), interp = interp)
-  verts[2*nc:3*nc] = grid.leaf_coord(uv = (scale, scale, scale), interp = interp)
-  verts[3*nc:] = grid.leaf_coord(uv = (scale, scale, _scale), interp = interp)
+  # nc = len(grid.leaf_info)
+  # verts = np.empty((nc, 2,2,2,3))
 
-  idx = np.arange(nc)
+  # for i,j,k in itertools.product([0,1], repeat=3):
+  #   verts[:,i,j,k] = grid.leaf_coord(
+  #     uv = (scales[i], scales[j], scales[k]),
+  #     interp = interp)
 
-  faces = np.empty((nc, 5), dtype = np.int32)
-  faces[:,0] = 4
-  faces[:nc,1] = idx
-  faces[:nc,2] = idx + nc
-  faces[:nc,3] = idx + 2*nc
-  faces[:nc,4] = idx + 3*nc
+  # idx = np.arange(nc)
 
-  p.add_mesh(
-    pv.PolyData(verts, faces = faces.ravel()),
-    scalars = grid.leaf_info.root,
-    show_edges = True,
-    line_width = 1,
-    point_size = 3 )
+  # cells = np.empty((nc, 9), dtype = np.int32)
+  # cells[:,0] = 8
+  # cells[:nc,1:] = idx[:,None] + np.arange(8)[None,:]
+
+  points = grid.leaf_coord(
+    uv = (0.5, 0.5, 0.5))
+
+
+  p.add_points(
+    points,
+    point_size = 7,
+    color = 'red',
+    opacity = 0.75 )
+
+  # p.add_mesh(
+  #   pv.UnstructuredGrid(cells, [pv.CellType.HEXAHEDRON]*nc, verts.reshape(-1,3)),
+  #   scalars = grid.leaf_info.root,
+  #   show_edges = True,
+  #   line_width = 1 )
 
 
   p.add_axes()
@@ -101,7 +111,7 @@ def run_cube():
     mesh = mesh,
     min_level = 0)
 
-  for r in range(4):
+  for r in range(3):
     grid.leaf_info.adapt = 1
     grid.adapt()
 

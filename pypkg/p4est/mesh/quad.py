@@ -235,101 +235,6 @@ class QuadMesh(QuadMeshBase):
   def vert_nodes(self):
     return self._vert_nodes
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def quad_cell_adjacency(cell_nodes):
-  """Derives topological adjacency between quad. cells accross shared faces
-
-  Parameters
-  ----------
-  cell_nodes : ndarray with shape = (NC, 2, 2), dtype = np.int32
-    Quadrilateral cells, each defined by the indices of its 4 vertices.
-
-  Returns
-  -------
-  cell_adj : ndarray with shape (NC, 2, 2) and dtype np.int32
-    Topological connectivity to other cells accross each face.
-  cell_adj_face : ndarray with shape (NC, 2, 2) and dtype np.int8
-    Topological order of the faces of each connected cell.
-
-  """
-
-  nc = len(cell_nodes)
-  cidx = np.arange(nc)
-
-  # build adjacency from per-cell vertex list
-
-  # faces defined as 2 nodes each -> (NC,4,2)
-  # NOTE: put the new face index as axis = 1, instead of axis = 0
-  cell_face_nodes = np.stack((
-    # -/+ xfaces
-    cell_nodes[:,:,0],
-    cell_nodes[:,:,1],
-    # -/+ yfaces
-    cell_nodes[:,0,:],
-    cell_nodes[:,1,:] ),
-    axis = 1 )
-
-  sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
-    # sort nodes for each face, removing differences in node order
-    np.sort(
-      # also reshape to a list of 2-node faces (NC,4,2) -> (4*NC,2)
-      cell_face_nodes.reshape(4*nc, 2),
-      # sort over the 2 nodes of each face
-      axis = 1 ),
-    # unique over all cells
-    axis = 0 )
-
-  face_counts = np.diff(unique_idx)
-
-  if np.any(face_counts > 2):
-    raise ValueError(f"Face shared by more than two cells.")
-
-
-  # define (arbitrary) indices for list of unique faces
-  nf = np.count_nonzero(unique_mask)
-  fidx = np.arange(nf)
-
-  # reconstruct, for each face, the (up to) two cells it connects
-  # NOTE: each face index appears up to two times in cell_faces,
-  # repeat the cell for faces that *don't* connect to another cell
-  repeats = np.repeat(3-face_counts, face_counts)
-  face_cells = np.repeat(sort_idx // 4, repeats).reshape(nf, 2)
-
-  # NOTE: becomes the mapping from each cell to the 6 unique faces
-  # (4*NC,) -> (NC,4)
-  cell_faces = inv_idx.reshape(nc, 4)
-
-
-  # indices of first cell of all faces
-  c0 = face_cells[:,0]
-  # local indices of shared face in first cells
-  f0 = np.nonzero(cell_faces[c0] == fidx[:,None])[1]
-
-  # indices of second cell of all faces
-  c1 = face_cells[:,1]
-  # local indices of shared face in second cells
-  f1 = np.nonzero(cell_faces[c1] == fidx[:,None])[1]
-
-  cell_adj = np.empty((nc, 4), dtype = np.int32)
-  # default adjacency back onto own index
-  cell_adj[:] = np.arange(nc)[:,None]
-  # computed adjacency
-  cell_adj[c0,f0] = c1
-  cell_adj[c1,f1] = c0
-  cell_adj = cell_adj.reshape(nc, 2, 2)
-
-  orientation = np.any(cell_face_nodes[c1,f1] != cell_face_nodes[c0,f0], axis = 1)
-
-  # set the corresponding index of the face and relative orientation to adjacent cell
-  cell_adj_face = np.empty((nc, 4), dtype = np.int8)
-  # default adjacent face is same face
-  cell_adj_face[:] = np.arange(4)[None,:]
-  # computed adjacent face
-  cell_adj_face[c0,f0] = f1 + 4*orientation
-  cell_adj_face[c1,f1] = f0 + 4*orientation
-  cell_adj_face = cell_adj_face.reshape(nc, 2, 2)
-
-  return cell_adj, cell_adj_face
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def quad_cell_nodes(cells, vert_nodes):
@@ -463,6 +368,101 @@ def quad_cell_nodes(cells, vert_nodes):
     node_cells,
     node_cells_inv )
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def quad_cell_adjacency(cell_nodes):
+  """Derives topological adjacency between quad. cells accross shared faces
+
+  Parameters
+  ----------
+  cell_nodes : ndarray with shape = (NC, 2, 2), dtype = np.int32
+    Quadrilateral cells, each defined by the indices of its 4 vertices.
+
+  Returns
+  -------
+  cell_adj : ndarray with shape (NC, 2, 2) and dtype np.int32
+    Topological connectivity to other cells accross each face.
+  cell_adj_face : ndarray with shape (NC, 2, 2) and dtype np.int8
+    Topological order of the faces of each connected cell.
+
+  """
+
+  nc = len(cell_nodes)
+  cidx = np.arange(nc)
+
+  # build adjacency from per-cell vertex list
+
+  # faces defined as 2 nodes each -> (NC,4,2)
+  # NOTE: put the new face index as axis = 1, instead of axis = 0
+  cell_face_nodes = np.stack((
+    # -/+ xfaces
+    cell_nodes[:,:,0],
+    cell_nodes[:,:,1],
+    # -/+ yfaces
+    cell_nodes[:,0,:],
+    cell_nodes[:,1,:] ),
+    axis = 1 )
+
+  sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
+    # sort nodes for each face, removing differences in node order
+    np.sort(
+      # also reshape to a list of 2-node faces (NC,4,2) -> (4*NC,2)
+      cell_face_nodes.reshape(4*nc, 2),
+      # sort over the 2 nodes of each face
+      axis = 1 ),
+    # unique over all cells
+    axis = 0 )
+
+  face_counts = np.diff(unique_idx)
+
+  if np.any(face_counts > 2):
+    raise ValueError(f"Face shared by more than two cells.")
+
+
+  # define (arbitrary) indices for list of unique faces
+  nf = np.count_nonzero(unique_mask)
+  fidx = np.arange(nf)
+
+  # reconstruct, for each face, the (up to) two cells it connects
+  # NOTE: each face index appears up to two times in cell_faces,
+  # repeat the cell for faces that *don't* connect to another cell
+  repeats = np.repeat(3-face_counts, face_counts)
+  face_cells = np.repeat(sort_idx // 4, repeats).reshape(nf, 2)
+
+  # NOTE: becomes the mapping from each cell to the 6 unique faces
+  # (4*NC,) -> (NC,4)
+  cell_faces = inv_idx.reshape(nc, 4)
+
+
+  # indices of first cell of all faces
+  c0 = face_cells[:,0]
+  # local indices of shared face in first cells
+  f0 = np.nonzero(cell_faces[c0] == fidx[:,None])[1]
+
+  # indices of second cell of all faces
+  c1 = face_cells[:,1]
+  # local indices of shared face in second cells
+  f1 = np.nonzero(cell_faces[c1] == fidx[:,None])[1]
+
+  cell_adj = np.empty((nc, 4), dtype = np.int32)
+  # default adjacency back onto own index
+  cell_adj[:] = np.arange(nc)[:,None]
+  # computed adjacency
+  cell_adj[c0,f0] = c1
+  cell_adj[c1,f1] = c0
+  cell_adj = cell_adj.reshape(nc, 2, 2)
+
+  orientation = np.any(cell_face_nodes[c1,f1] != cell_face_nodes[c0,f0], axis = 1)
+
+  # set the corresponding index of the face and relative orientation to adjacent cell
+  cell_adj_face = np.empty((nc, 4), dtype = np.int8)
+  # default adjacent face is same face
+  cell_adj_face[:] = np.arange(4)[None,:]
+  # computed adjacent face
+  cell_adj_face[c0,f0] = f1 + 4*orientation
+  cell_adj_face[c1,f1] = f0 + 4*orientation
+  cell_adj_face = cell_adj_face.reshape(nc, 2, 2)
+
+  return cell_adj, cell_adj_face
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def unit_square():

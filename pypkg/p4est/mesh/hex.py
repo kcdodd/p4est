@@ -137,16 +137,6 @@ class HexMeshBase:
     node_cells,
     node_cells_inv ):
 
-    if not (
-      isinstance(node_cells, jagged_array)
-      and isinstance(node_cells_inv, jagged_array)
-      and node_cells.flat.shape == node_cells_inv.flat.shape
-      and (
-        node_cells.row_idx is node_cells_inv.row_idx
-        or np.all(node_cells.row_idx == node_cells_inv.row_idx) ) ):
-
-      raise ValueError(f"node_cells and node_cells_inv must have the same structure")
-
     self._verts = np.ascontiguousarray(
       verts,
       dtype = np.float64 )
@@ -173,6 +163,15 @@ class HexMeshBase:
 
     #...........................................................................
     # TODO: ensure proper dtype of the jagged_array?
+    if not (
+      isinstance(edge_cells, jagged_array)
+      and isinstance(edge_cells_inv, jagged_array)
+      and edge_cells.flat.shape == edge_cells_inv.flat.shape
+      and (
+        edge_cells.row_idx is edge_cells_inv.row_idx
+        or np.all(edge_cells.row_idx == edge_cells_inv.row_idx) ) ):
+
+      raise ValueError(f"edge_cells and edge_cells_inv must have the same structure")
 
     edges = np.repeat(np.arange(len(edge_cells)), edge_cells.row_counts)
     _edges = cell_edges.reshape(-1,12)[(edge_cells.flat, edge_cells_inv.flat)]
@@ -182,6 +181,17 @@ class HexMeshBase:
         f"'cell_edges' is not consistent with 'edge_cells' and 'edge_cells_inv'")
 
     #...........................................................................
+    if not (
+      isinstance(node_cells, jagged_array)
+      and isinstance(node_cells_inv, jagged_array)
+      and node_cells.flat.shape == node_cells_inv.flat.shape
+      and (
+        node_cells.row_idx is node_cells_inv.row_idx
+        or np.all(node_cells.row_idx == node_cells_inv.row_idx) ) ):
+
+      raise ValueError(f"node_cells and node_cells_inv must have the same structure")
+
+
     nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
     _nodes = self._cell_nodes.reshape(-1,8)[(node_cells.flat, node_cells_inv.flat)]
 
@@ -295,8 +305,6 @@ class HexMesh(HexMeshBase):
       cells,
       dtype = np.int32 ).reshape(-1, 2, 2, 2)
 
-    print('verts, cells', verts.shape, cells.shape)
-
     #...........................................................................
     if vert_nodes is None:
       vert_nodes = -np.ones(len(verts), dtype = np.int32)
@@ -329,13 +337,14 @@ class HexMesh(HexMeshBase):
     full_vert_nodes = np.copy(self._vert_nodes)
     full_vert_nodes[independent] = np.arange(ni) + np.amax(self._vert_nodes) + 1
 
-    ( cell_adj,
-      cell_adj_face ) = hex_cell_adjacency(full_vert_nodes[cells])
+    full_cell_nodes = full_vert_nodes[cells]
 
-    # TODO
-    cell_edges = -np.ones((len(cells), 3, 2, 2), dtype = np.int32)
-    edge_cells = jagged_array(np.array([], dtype = np.int32), np.arange(1).astype(np.int32))
-    edge_cells_inv = jagged_array(np.array([], dtype = np.int8), np.arange(1).astype(np.int32))
+    ( cell_edges,
+      edge_cells,
+      edge_cells_inv ) = hex_cell_edges(full_cell_nodes)
+
+    ( cell_adj,
+      cell_adj_face ) = hex_cell_adjacency(full_cell_nodes)
 
     super().__init__(
       verts = verts,
@@ -354,120 +363,6 @@ class HexMesh(HexMeshBase):
   def vert_nodes(self):
     return self._vert_nodes
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def hex_cell_adjacency(cell_nodes):
-  """Derives topological adjacency between quad. cells accross shared faces
-
-  Parameters
-  ----------
-  cell_nodes : ndarray with shape = (NC, 2, 2), dtype = np.int32
-    Mapping of cells to the indices of their (up to) 8 nodes
-
-  Returns
-  -------
-  cell_adj : ndarray with shape (NC, 2, 2) and dtype np.int32
-    Topological connectivity to other cells accross each face.
-  cell_adj_face : ndarray with shape (NC, 2, 2) and dtype np.int8
-    Topological order of the faces of each connected cell.
-
-  """
-  nc = len(cell_nodes)
-  cidx = np.arange(nc)
-
-  # build adjacency from per-cell node list (NC,6,2,2) -> (NC,6,4)
-  cell_face_nodes = np.stack(
-    # 6 faces, defined from 4 nodes each -> (NC,6,2,2)
-    ( # -/+ xfaces
-      cell_nodes[:,:,:,0],
-      cell_nodes[:,:,:,1],
-      # -/+ yfaces
-      cell_nodes[:,:,0,:],
-      cell_nodes[:,:,1,:],
-      # -/+ zfaces
-      cell_nodes[:,0,:,:],
-      cell_nodes[:,1,:,:] ),
-    # NOTE: put the new face index as axis = 1, instead of axis = 0,
-    axis = 1 ).reshape(nc, 6, 4)
-
-
-  # reduce faces down to unique sets of 4 nodes
-  # face_nodes, cell_faces, face_counts =
-  sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
-    # sort nodes for each face, removing differences in node order
-    np.sort(
-      # also reshape to a list of 4-node faces (NC,6,2,2) -> (6*NC,4)
-      cell_face_nodes.reshape(6*nc, 4),
-      # sort over the 4 nodes of each face
-      axis = 1 ),
-    # unique over all cells
-    axis = 0 )
-
-  face_counts = np.diff(unique_idx)
-
-  if np.any(face_counts > 2):
-    raise ValueError(f"Face shared by more than two cells.")
-
-  # define (arbitrary) indices for list of unique faces
-  nf = np.count_nonzero(unique_mask)
-  fidx = np.arange(nf)
-
-  # reconstruct, for each face, the (up to) two cells it connects
-  # NOTE: each face index appears up to two times in cell_faces,
-  # repeat the cell for faces that *don't* connect to another cell
-  repeats = np.repeat(3-face_counts, face_counts)
-  face_cells = np.repeat(sort_idx // 6, repeats).reshape(nf, 2)
-
-  # NOTE: becomes the mapping from each cell to the 6 unique faces
-  # (6*NC,) -> (NC,6)
-  cell_faces = inv_idx.reshape(nc, 6)
-
-
-  # indices of first cell of all faces
-  c0 = face_cells[:,0]
-  # local indices of shared face in first cells
-  f0 = np.nonzero(cell_faces[c0] == fidx[:,None])[1]
-
-  # indices of second cell of all faces
-  c1 = face_cells[:,1]
-  # local indices of shared face in second cells
-  f1 = np.nonzero(cell_faces[c1] == fidx[:,None])[1]
-
-  cell_adj = np.empty((nc, 6), dtype = np.int32)
-  # default adjacency back onto own index
-  cell_adj[:] = np.arange(nc)[:,None]
-  # computed adjacency
-  cell_adj[c0,f0] = c1
-  cell_adj[c1,f1] = c0
-  cell_adj = cell_adj.reshape(nc, 3, 2)
-
-  # Let my_face and other_face
-  # be the two face numbers of the connecting trees in 0..5.  Then the first
-  # face corner of the lower of my_face and other_face connects to a face
-  # corner numbered 0..3 in the higher of my_face and other_face.  The face
-  # orientation is defined as this number.
-
-  f0_lower = f0 < f1
-
-  ref_node = np.where(
-    f0_lower,
-    cell_face_nodes[c0,f0,0],
-    cell_face_nodes[c1,f1,0] )
-
-  orientation = np.where(
-    f0_lower,
-    np.nonzero(cell_face_nodes[c1,f1] == ref_node[:,None])[1],
-    np.nonzero(cell_face_nodes[c0,f0] == ref_node[:,None])[1] )
-
-  # set the corresponding index of the face and relative orientation to adjacent cell
-  cell_adj_face = np.empty((nc, 6), dtype = np.int8)
-  # default adjacent face is same face
-  cell_adj_face[:] = np.arange(6)[None,:]
-  # computed adjacent face
-  cell_adj_face[c0,f0] = f1 + 6*orientation
-  cell_adj_face[c1,f1] = f0 + 6*orientation
-  cell_adj_face = cell_adj_face.reshape(nc, 3, 2)
-
-  return cell_adj, cell_adj_face
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def hex_cell_nodes(cells, vert_nodes):
@@ -578,7 +473,7 @@ def hex_cell_nodes(cells, vert_nodes):
   # Only store nodes that:
   # Are associated with 2 or more vertices ("non-local" connections),
   # or connect 5 or more cells (mesh singularities )
-  node_keep = (nodes != -1) & ((node_cells_count > 4) | (node_verts_count > 1))
+  node_keep = (nodes != -1) & ((node_cells_count > 8) | (node_verts_count > 1))
 
   _node_keep = np.repeat( node_keep, node_cells_count )
 
@@ -600,6 +495,209 @@ def hex_cell_nodes(cells, vert_nodes):
     cell_nodes,
     node_cells,
     node_cells_inv )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def hex_cell_edges(cell_nodes):
+  """Derives topological edges shared by cells
+
+  Parameters
+  ----------
+  cell_nodes : ndarray with shape = (NC, 2, 2, 2), dtype = np.int32
+    Mapping of cells to the indices of their (up to) 8 nodes
+
+  Returns
+  -------
+  cell_edges : ndarray with shape (NC, 3, 2, 2) and dtype np.int32
+  edge_cells : jagged_array
+  edge_cells_inv : jagged_array
+
+  """
+  nc = len(cell_nodes)
+  cidx = np.arange(nc)
+
+  # build edges from per-cell node list (NC,12,2)
+  cell_edge_nodes = np.stack(
+    ( # x-edges
+      cell_nodes[:,0,0,:],
+      cell_nodes[:,0,1,:],
+      cell_nodes[:,1,0,:],
+      cell_nodes[:,1,1,:],
+      # y-edges
+      cell_nodes[:,0,:,0],
+      cell_nodes[:,0,:,1],
+      cell_nodes[:,1,:,0],
+      cell_nodes[:,1,:,1],
+      # z-edges
+      cell_nodes[:,:,0,0],
+      cell_nodes[:,:,0,1],
+      cell_nodes[:,:,1,0],
+      cell_nodes[:,:,1,1] ),
+    # NOTE: put the new face index as axis = 1, instead of axis = 0,
+    axis = 1 )
+
+  # reduce edges down to unique sets of 2 nodes
+  sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
+    # sort nodes for each face, removing differences in node order
+    np.sort(
+      # also reshape to a list of 4-node faces (NC,12,2) -> (12*NC,2)
+      cell_edge_nodes.reshape(12*nc, 2),
+      # sort over the 2 nodes of each edge
+      axis = 1 ),
+    # unique over all cells
+    axis = 0 )
+
+  # mapping of cell to unique edges
+  _cell_edges = inv_idx
+  # mapping of unique edges to the cells that share it
+  edge_cells = (sort_idx // 12).astype(np.int32)
+  # mapping to cell's local index of each edge
+  edge_cells_inv = (sort_idx % 12).astype(np.int8)
+
+  # keep only edges shared by more than one cell
+  edge_cell_counts = np.diff(unique_idx)
+  edge_keep = edge_cell_counts > 1
+  _edge_keep = np.repeat( edge_keep, edge_cell_counts )
+
+  # set un-used edge indices to -1
+  _cell_edges[sort_idx[~_edge_keep]] = -1
+
+  edge_cell_counts = np.ascontiguousarray(edge_cell_counts[edge_keep])
+  edge_cells = np.ascontiguousarray(edge_cells[_edge_keep])
+  edge_cells_inv = np.ascontiguousarray(edge_cells_inv[_edge_keep])
+
+  # recompute offsets after filtering kept edges
+  edge_cells_idx = np.concatenate(([0],np.cumsum(edge_cell_counts))).astype(np.int32)
+
+  # (12*NC,) -> (NC, 3, 2, 2)
+  cell_edges = _cell_edges.reshape(nc, 3, 2, 2)
+
+  edge_cells = jagged_array(
+    data = edge_cells,
+    row_idx = edge_cells_idx )
+
+  edge_cells_inv = jagged_array(
+    data = edge_cells_inv,
+    row_idx = edge_cells_idx )
+
+  return (
+    cell_edges,
+    edge_cells,
+    edge_cells_inv )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def hex_cell_adjacency(cell_nodes):
+  """Derives topological adjacency between quad. cells accross shared faces
+
+  Parameters
+  ----------
+  cell_nodes : ndarray with shape = (NC, 2, 2, 2), dtype = np.int32
+    Mapping of cells to the indices of their (up to) 8 nodes
+
+  Returns
+  -------
+  cell_adj : ndarray with shape (NC, 3, 2) and dtype np.int32
+    Topological connectivity to other cells accross each face.
+  cell_adj_face : ndarray with shape (NC, 3, 2) and dtype np.int8
+    Topological order of the faces of each connected cell.
+
+  """
+  nc = len(cell_nodes)
+  cidx = np.arange(nc)
+
+  # build adjacency from per-cell node list (NC,6,2,2) -> (NC,6,4)
+  cell_face_nodes = np.stack(
+    # 6 faces, defined from 4 nodes each -> (NC,6,2,2)
+    ( # -/+ xfaces
+      cell_nodes[:,:,:,0],
+      cell_nodes[:,:,:,1],
+      # -/+ yfaces
+      cell_nodes[:,:,0,:],
+      cell_nodes[:,:,1,:],
+      # -/+ zfaces
+      cell_nodes[:,0,:,:],
+      cell_nodes[:,1,:,:] ),
+    # NOTE: put the new face index as axis = 1, instead of axis = 0,
+    axis = 1 ).reshape(nc, 6, 4)
+
+
+  # reduce faces down to unique sets of 4 nodes
+  sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
+    # sort nodes for each face, removing differences in node order
+    np.sort(
+      # also reshape to a list of 4-node faces (NC,6,2,2) -> (6*NC,4)
+      cell_face_nodes.reshape(6*nc, 4),
+      # sort over the 4 nodes of each face
+      axis = 1 ),
+    # unique over all cells
+    axis = 0 )
+
+  face_counts = np.diff(unique_idx)
+
+
+  if np.any(face_counts > 2):
+    raise ValueError(f"Face shared by more than two cells.")
+
+  # define (arbitrary) indices for list of unique faces
+  nf = np.count_nonzero(unique_mask)
+  fidx = np.arange(nf)
+
+  # reconstruct, for each face, the (up to) two cells it connects
+  # NOTE: each face index appears up to two times in cell_faces,
+  # repeat the cell for faces that *don't* connect to another cell
+  repeats = np.repeat(3-face_counts, face_counts)
+  face_cells = np.repeat(sort_idx // 6, repeats).reshape(nf, 2)
+
+  # NOTE: becomes the mapping from each cell to the 6 unique faces
+  # (6*NC,) -> (NC,6)
+  cell_faces = inv_idx.reshape(nc, 6)
+
+
+  # indices of first cell of all faces
+  c0 = face_cells[:,0]
+  # local indices of shared face in first cells
+  f0 = np.nonzero(cell_faces[c0] == fidx[:,None])[1]
+
+  # indices of second cell of all faces
+  c1 = face_cells[:,1]
+  # local indices of shared face in second cells
+  f1 = np.nonzero(cell_faces[c1] == fidx[:,None])[1]
+
+  cell_adj = np.empty((nc, 6), dtype = np.int32)
+  # default adjacency back onto own index
+  cell_adj[:] = np.arange(nc)[:,None]
+  # computed adjacency
+  cell_adj[c0,f0] = c1
+  cell_adj[c1,f1] = c0
+  cell_adj = cell_adj.reshape(nc, 3, 2)
+
+  # Let my_face and other_face
+  # be the two face numbers of the connecting trees in 0..5.  Then the first
+  # face corner of the lower of my_face and other_face connects to a face
+  # corner numbered 0..3 in the higher of my_face and other_face.  The face
+  # orientation is defined as this number.
+
+  f0_lower = f0 < f1
+
+  ref_node = np.where(
+    f0_lower,
+    cell_face_nodes[c0,f0,0],
+    cell_face_nodes[c1,f1,0] )
+
+  orientation = np.where(
+    f0_lower,
+    np.nonzero(cell_face_nodes[c1,f1] == ref_node[:,None])[1],
+    np.nonzero(cell_face_nodes[c0,f0] == ref_node[:,None])[1] )
+
+  # set the corresponding index of the face and relative orientation to adjacent cell
+  cell_adj_face = np.empty((nc, 6), dtype = np.int8)
+  # default adjacent face is same face
+  cell_adj_face[:] = np.arange(6)[None,:]
+  # computed adjacent face
+  cell_adj_face[c0,f0] = f1 + 6*orientation
+  cell_adj_face[c1,f1] = f0 + 6*orientation
+  cell_adj_face = cell_adj_face.reshape(nc, 3, 2)
+
+  return cell_adj, cell_adj_face
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
