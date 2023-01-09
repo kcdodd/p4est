@@ -407,11 +407,6 @@ def hex_cell_adjacency(cell_nodes):
   if np.any(face_counts > 2):
     raise ValueError(f"Face shared by more than two cells.")
 
-  # face_cell_nodes = cell_face_nodes[sort_idx]
-
-  # # the 4 nodes for each unique face
-  # face_nodes = face_cell_nodes[unique_mask]
-
   # define (arbitrary) indices for list of unique faces
   nf = np.count_nonzero(unique_mask)
   fidx = np.arange(nf)
@@ -419,7 +414,8 @@ def hex_cell_adjacency(cell_nodes):
   # reconstruct, for each face, the (up to) two cells it connects
   # NOTE: each face index appears up to two times in cell_faces,
   # repeat the cell for faces that *don't* connect to another cell
-  face_cells = np.repeat(sort_idx // 6, 3-face_counts).reshape(nf, 2)
+  repeats = np.repeat(3-face_counts, face_counts)
+  face_cells = np.repeat(sort_idx // 6, repeats).reshape(nf, 2)
 
   # NOTE: becomes the mapping from each cell to the 6 unique faces
   # (6*NC,) -> (NC,6)
@@ -436,9 +432,9 @@ def hex_cell_adjacency(cell_nodes):
   # local indices of shared face in second cells
   f1 = np.nonzero(cell_faces[c1] == fidx[:,None])[1]
 
-  cell_adj = np.empty((len(cell_nodes), 6), dtype = np.int32)
+  cell_adj = np.empty((nc, 6), dtype = np.int32)
   # default adjacency back onto own index
-  cell_adj[:] = np.arange(len(cell_nodes))[:,None]
+  cell_adj[:] = np.arange(nc)[:,None]
   # computed adjacency
   cell_adj[c0,f0] = c1
   cell_adj[c1,f1] = c0
@@ -463,7 +459,7 @@ def hex_cell_adjacency(cell_nodes):
     np.nonzero(cell_face_nodes[c0,f0] == ref_node[:,None])[1] )
 
   # set the corresponding index of the face and relative orientation to adjacent cell
-  cell_adj_face = np.empty((len(cell_nodes), 6), dtype = np.int8)
+  cell_adj_face = np.empty((nc, 6), dtype = np.int8)
   # default adjacent face is same face
   cell_adj_face[:] = np.arange(6)[None,:]
   # computed adjacent face

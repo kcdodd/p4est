@@ -1,5 +1,7 @@
 import numpy as np
-from ..utils import jagged_array
+from ..utils import (
+  jagged_array,
+  unique_full )
 from ..geom import (
   trans_sphere_to_cart )
 
@@ -234,12 +236,12 @@ class QuadMesh(QuadMeshBase):
     return self._vert_nodes
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def quad_cell_adjacency(cells):
+def quad_cell_adjacency(cell_nodes):
   """Derives topological adjacency between quad. cells accross shared faces
 
   Parameters
   ----------
-  cells : ndarray with shape = (NC, 2, 2), dtype = np.int32
+  cell_nodes : ndarray with shape = (NC, 2, 2), dtype = np.int32
     Quadrilateral cells, each defined by the indices of its 4 vertices.
 
   Returns
@@ -251,81 +253,94 @@ def quad_cell_adjacency(cells):
 
   """
 
-  nc = len(cells)
+  nc = len(cell_nodes)
   cidx = np.arange(nc)
 
   # build adjacency from per-cell vertex list
 
   # faces defined as 2 nodes each -> (NC,4,2)
   # NOTE: put the new face index as axis = 1, instead of axis = 0
-  vfaces = np.stack((
+  cell_face_nodes = np.stack((
     # -/+ xfaces
-    cells[:,[0,1],0],
-    cells[:,[0,1],1],
+    cell_nodes[:,:,0],
+    cell_nodes[:,:,1],
     # -/+ yfaces
-    cells[:,0,[0,1]],
-    cells[:,1,[0,1]] ),
+    cell_nodes[:,0,:],
+    cell_nodes[:,1,:] ),
     axis = 1 )
 
-  # keep track where vertex order is changed to recover orientation
-  isort = np.argsort(vfaces, axis = 2)
-  reversed = isort[:,:,0] != 0
-  vfaces = np.take_along_axis(vfaces, isort, axis = 2)
-
-  # reduce faces down to unique pairs of vertices
-  faces, idx, idx_inv = np.unique(
-    vfaces.reshape(4*nc, 2),
-    return_index = True,
-    return_inverse = True,
+  sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
+    # sort nodes for each face, removing differences in node order
+    np.sort(
+      # also reshape to a list of 2-node faces (NC,4,2) -> (4*NC,2)
+      cell_face_nodes.reshape(4*nc, 2),
+      # sort over the 2 nodes of each face
+      axis = 1 ),
+    # unique over all cells
     axis = 0 )
 
-  fidx = np.arange(len(faces))
+  face_counts = np.diff(unique_idx)
 
-  # indices of unique faces for each cell, according to the vertex order above
-  ifaces = idx_inv.reshape(len(cells), 4)
+  if np.any(face_counts > 2):
+    raise ValueError(f"Face shared by more than two cells.")
 
-  # reconstructed the 'edges' passing through faces connecting cells
-  # i.e. the 'edge list' representation of a graph where cells are the nodes
-  dual_edges = -np.ones((len(faces), 2), dtype = np.int32)
 
-  for i in range(4):
-    # set cell indices for adjacent pairs
-    # FIFO conditional
-    j = np.where(dual_edges[ifaces[:,i],0] == -1, 0, 1)
-    dual_edges[ifaces[:,i], j] = cidx
+  # define (arbitrary) indices for list of unique faces
+  nf = np.count_nonzero(unique_mask)
+  fidx = np.arange(nf)
 
-  # filter out all faces that don't connect a pair of cells
-  # TODO: some kind of default boundary condition?
-  m = ~np.any(dual_edges == -1, axis = 1)
-  dual_edges = dual_edges[m]
-  dual_fidx = fidx[m]
+  # reconstruct, for each face, the (up to) two cells it connects
+  # NOTE: each face index appears up to two times in cell_faces,
+  # repeat the cell for faces that *don't* connect to another cell
+  repeats = np.repeat(3-face_counts, face_counts)
+  face_cells = np.repeat(sort_idx // 4, repeats).reshape(nf, 2)
 
-  # indices of first cell
-  c0 = dual_edges[:,0]
+  # NOTE: becomes the mapping from each cell to the 6 unique faces
+  # (4*NC,) -> (NC,4)
+  cell_faces = inv_idx.reshape(nc, 4)
+
+
+  # indices of first cell of all faces
+  c0 = face_cells[:,0]
   # local indices of shared face in first cells
-  f0 = np.nonzero(ifaces[c0] == dual_fidx[:,None])[1]
+  f0 = np.nonzero(cell_faces[c0] == fidx[:,None])[1]
 
-  # indices of second cell
-  c1 = dual_edges[:,1]
+  # indices of second cell of all faces
+  c1 = face_cells[:,1]
   # local indices of shared face in second cells
-  f1 = np.nonzero(ifaces[c1] == dual_fidx[:,None])[1]
+  f1 = np.nonzero(cell_faces[c1] == fidx[:,None])[1]
 
-  # relative orientation if one (but not both) are in reversed order
-  orientation = (reversed[c0,f0] ^ reversed[c1,f1]).astype(np.int8)
-
-  cell_adj = np.empty((len(cells), 4), dtype = np.int32)
+  cell_adj = np.empty((nc, 4), dtype = np.int32)
   # default adjacency back onto own index
-  cell_adj[:] = np.arange(len(cells))[:,None]
+  cell_adj[:] = np.arange(nc)[:,None]
+  # computed adjacency
   cell_adj[c0,f0] = c1
   cell_adj[c1,f1] = c0
-  cell_adj = cell_adj.reshape(-1, 2, 2)
+  cell_adj = cell_adj.reshape(nc, 2, 2)
+
+  # Let my_face and other_face
+  # be the two face numbers of the connecting trees in 0..5.  Then the first
+  # face corner of the lower of my_face and other_face connects to a face
+  # corner numbered 0..3 in the higher of my_face and other_face.  The face
+  # orientation is defined as this number.
+
+  f0_lower = f0 < f1
+
+  ref_node = np.where(
+    f0_lower,
+    cell_face_nodes[c0,f0,0],
+    cell_face_nodes[c1,f1,0] )
+
+  orientation = np.any(cell_face_nodes[c1,f1] != cell_face_nodes[c0,f0], axis = 1)
 
   # set the corresponding index of the face and relative orientation to adjacent cell
-  cell_adj_face = np.empty((len(cells), 4), dtype = np.int8)
+  cell_adj_face = np.empty((nc, 4), dtype = np.int8)
+  # default adjacent face is same face
   cell_adj_face[:] = np.arange(4)[None,:]
+  # computed adjacent face
   cell_adj_face[c0,f0] = f1 + 4*orientation
   cell_adj_face[c1,f1] = f0 + 4*orientation
-  cell_adj_face = cell_adj_face.reshape(-1, 2, 2)
+  cell_adj_face = cell_adj_face.reshape(nc, 2, 2)
 
   return cell_adj, cell_adj_face
 
