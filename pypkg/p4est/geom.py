@@ -62,6 +62,12 @@ def trans_cart_to_sphere(xyz):
   return uvr
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def interp_linear(eta, x0, x1):
+  """Linear interpolation
+  """
+  return (1.0 - eta)[...,None] * x0 + eta[...,None] * x1
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def interp_slerp(eta, x0, x1):
   """Spherical linear interpolation
   """
@@ -79,8 +85,19 @@ def interp_slerp(eta, x0, x1):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def interp_slerp_quad(verts, uv):
-  """Spherical linear interpolation of quadrilateral vertices
+  """Spherical linear interpolation of quadrilateral vertices, assumes third axis
+  is 'radial'.
   """
+
+  if uv.shape[-1] == 3:
+    m = np.prod(verts.shape[-3:])
+    s = verts.shape[:-4] + verts.shape[-3:]
+
+    verts = interp_linear(
+      eta = uv[...,2],
+      x0 = verts[...,0,:,:,:].reshape(-1, m),
+      x1 = verts[...,1,:,:,:].reshape(-1, m)).reshape(s)
+
   return interp_slerp(
     eta = uv[...,1],
     x0 = interp_slerp(

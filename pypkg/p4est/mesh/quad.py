@@ -678,9 +678,8 @@ def icosahedron_golden():
 
   vert_nodes = -np.ones(len(verts), dtype = np.int32)
   vert_nodes[[0,1,2,3,4]] = 0
-  # NOTE: this currently crashes during 'balance'
-  # vert_nodes[[5,10]] = 2
-  # vert_nodes[[11,16]] = 3
+  vert_nodes[[5,10]] = 2
+  vert_nodes[[11,16]] = 3
   vert_nodes[[17,18,19,20,21]] = 1
 
   cells = np.array([
@@ -743,13 +742,10 @@ def icosahedron_spherical(radius = 1.0):
 
   verts[:,2] = radius
 
-  # verts = trans_sphere_to_cart(verts)
-
   vert_nodes = -np.ones(len(verts), dtype = np.int32)
   vert_nodes[[0,1,2,3,4]] = 0
-  # NOTE: this currently crashes during 'balance'
-  # vert_nodes[[5,10]] = 2
-  # vert_nodes[[11,16]] = 3
+  vert_nodes[[5,10]] = 2
+  vert_nodes[[11,16]] = 3
   vert_nodes[[17,18,19,20,21]] = 1
 
   cells = np.array([

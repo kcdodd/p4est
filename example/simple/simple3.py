@@ -8,7 +8,9 @@ from p4est import (
 
 from p4est.mesh.hex import (
   HexMesh,
-  cube )
+  cube,
+  icosahedron_spherical_shell,
+  icosahedron_shell)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def plot_mesh(mesh):
@@ -16,25 +18,23 @@ def plot_mesh(mesh):
   pv.set_plot_theme('paraview')
   p = pv.Plotter()
 
-  nc = len(mesh.cells)
-
-  faces = np.empty((nc, 5), dtype = mesh.cells.dtype)
-  faces[:,0] = 4
-  faces[:nc,1] = mesh.cells[:,0,0]
-  faces[:nc,2] = mesh.cells[:,0,1]
-  faces[:nc,3] = mesh.cells[:,1,1]
-  faces[:nc,4] = mesh.cells[:,1,0]
 
   verts = mesh.verts
 
+  nc = len(mesh.cells)
+  cells = np.empty((nc, 9), dtype = np.int32)
+  cells[:,0] = 8
+  cells[:,1:3] = mesh.cells[:,0,0,:]
+  cells[:,3:5] = mesh.cells[:,0,1,::-1]
+  cells[:,5:7] = mesh.cells[:,1,0,:]
+  cells[:,7:] = mesh.cells[:,1,1,::-1]
+
   p.add_mesh(
-    pv.PolyData(verts, faces = faces.ravel()),
-    # scalars = np.arange(len(mesh.verts)),
-    scalars = np.arange(len(mesh.cells)),
+    pv.UnstructuredGrid(cells, [pv.CellType.HEXAHEDRON]*nc, verts.reshape(-1,3)),
+    scalars = np.arange(nc),
     show_edges = True,
     line_width = 1,
-    point_size = 3 )
-
+    opacity = 1.0)
 
   for i in range(len(mesh.node_cells)):
     m = mesh.vert_nodes == i
@@ -68,36 +68,53 @@ def plot_grid(grid, interp = None):
   pv.set_plot_theme('paraview')
   p = pv.Plotter()
 
-  # nc = len(grid.leaf_info)
-  # verts = np.empty((nc, 2,2,2,3))
+  # points = grid.leaf_coord(
+  #   uv = (0.5, 0.5, 0.5))
 
-  # for i,j,k in itertools.product([0,1], repeat=3):
-  #   verts[:,i,j,k] = grid.leaf_coord(
-  #     uv = (scales[i], scales[j], scales[k]),
-  #     interp = interp)
+  # p.add_points(
+  #   points,
+  #   point_size = 7,
+  #   color = 'red',
+  #   opacity = 0.75 )
 
-  # idx = np.arange(nc)
+  nc = len(grid.leaf_info)
+  verts = np.empty((nc, 2,2,2,3))
 
-  # cells = np.empty((nc, 9), dtype = np.int32)
-  # cells[:,0] = 8
-  # cells[:nc,1:] = idx[:,None] + np.arange(8)[None,:]
+  kji = [
+    (0,0,0),
+    (0,0,1),
+    (0,1,1),
+    (0,1,0),
+    (1,0,0),
+    (1,0,1),
+    (1,1,1),
+    (1,1,0) ]
 
-  points = grid.leaf_coord(
-    uv = (0.5, 0.5, 0.5))
+  for k,j,i in kji:
+    verts[:,k,j,i] = grid.leaf_coord(
+      uv = (scales[k], scales[j], scales[i]),
+      interp = interp)
 
+  vidx = (8*np.arange(nc)[:,None] + np.arange(8)[None,:]).reshape(-1,2,2,2)
 
-  p.add_points(
-    points,
-    point_size = 7,
-    color = 'red',
-    opacity = 0.75 )
+  cells = np.empty((nc, 9), dtype = np.int32)
+  cells[:,0] = 8
+  cells[:,1:3] = vidx[:,0,0,:]
+  cells[:,3:5] = vidx[:,0,1,::-1]
+  cells[:,5:7] = vidx[:,1,0,:]
+  cells[:,7:] = vidx[:,1,1,::-1]
 
-  # p.add_mesh(
-  #   pv.UnstructuredGrid(cells, [pv.CellType.HEXAHEDRON]*nc, verts.reshape(-1,3)),
-  #   scalars = grid.leaf_info.root,
-  #   show_edges = True,
-  #   line_width = 1 )
+  _grid = pv.UnstructuredGrid(cells, [pv.CellType.HEXAHEDRON]*nc, verts.reshape(-1,3))
+  _grid.cell_data['root'] = grid.leaf_info.root
 
+  p.add_mesh_clip_plane(
+    mesh = _grid,
+    scalars = 'root',
+    show_edges = True,
+    line_width = 1,
+    normal='x',
+    invert = True,
+    crinkle = True)
 
   p.add_axes()
   p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
@@ -111,12 +128,44 @@ def run_cube():
     mesh = mesh,
     min_level = 0)
 
+  for r in range(4):
+    grid.leaf_info.adapt = 1
+    grid.adapt()
+
+  plot_grid(grid, interp = None)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def run_icosahedron_spherical():
+  mesh = icosahedron_spherical_shell()
+  # plot_mesh(mesh)
+
+  grid = P8est(
+    mesh = mesh,
+    min_level = 0)
+
   for r in range(3):
     grid.leaf_info.adapt = 1
     grid.adapt()
 
-  plot_grid(grid)
+  plot_grid(grid, interp = interp_sphere_to_cart_slerp)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def run_icosahedron():
+  mesh = icosahedron_shell()
+  # plot_mesh(mesh)
+
+  grid = P8est(
+    mesh = mesh,
+    min_level = 0)
+
+  for r in range(3):
+    grid.leaf_info.adapt = 1
+    grid.adapt()
+
+  plot_grid(grid, interp = interp_slerp_quad)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 if __name__ == '__main__':
   run_cube()
+  run_icosahedron_spherical()
+  run_icosahedron()

@@ -6,6 +6,7 @@ from p4est import (
   interp_slerp_quad)
 
 from p4est.mesh.quad import (
+  QuadMesh,
   icosahedron_golden,
   icosahedron_spherical,
   icosahedron,
@@ -128,6 +129,7 @@ def run_icosahedron_spherical():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_icosahedron():
   mesh = icosahedron()
+  plot_mesh(mesh)
 
   grid = P4est(
     mesh = mesh,
