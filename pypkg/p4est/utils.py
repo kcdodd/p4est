@@ -66,7 +66,7 @@ class jagged_array:
   #-----------------------------------------------------------------------------
   @property
   def dtype(self):
-    return self.data.dtype
+    return self._data.dtype
 
   #-----------------------------------------------------------------------------
   def __len__(self):
@@ -79,8 +79,72 @@ class jagged_array:
 
   #-----------------------------------------------------------------------------
   def __getitem__( self, idx ):
-    return self.data[self.row_idx[idx]:self.row_idx[idx+1]]
+    return self._data[self.row_idx[idx]:self.row_idx[idx+1]]
 
   #-----------------------------------------------------------------------------
   def __setitem__( self, idx, row_data ):
-    self.data[self.row_idx[idx]:self.row_idx[idx+1]] = row_data
+    self._data[self.row_idx[idx]:self.row_idx[idx+1]] = row_data
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def unique_full(arr, axis):
+  """This is a reimplementation of np.unique, but returns the needed intermediate
+  arrays needed to construct the outputs, instead of the standard outputs
+  (numpy/lib/arraysetops.py).
+
+  Parameters
+  ----------
+  arr : ndarray of shape[axis] == N
+    Must be a *non-empty* array with numeric dtype
+  axis : int
+    Non-None axis to perform sort
+
+  Returns
+  -------
+  sort_idx : ndarray of shape = (N,)
+    The 'argsort' of the array along given axis, with all other axes collapsed
+    to participate in sorting.
+    ``unique_with_repeats = arr[sort_idx]``
+  unique_mask : ndarray of shape = (N,), dtype = bool
+    Mask of the first occurance of each unique value in the *sorted*
+    array along the given axis.
+    ``unique = arr[sort_idx[unique_mask]]``
+  unique_idx : ndarray of shape <= (N+1,)
+    Offset to the first occurance of each unique value in the *sorted*
+    array along the given axis, plus an additional entry at the end that
+    is the total count.
+    ``unique = arr[sort_idx[unique_idx[:-1]]]``
+    ``counts = np.diff(unique_idx)``
+  inv_idx : ndarray of shape = (N,)
+    Indices of sorted unique values to reconstruct the original (unsorted) array.
+    ``np.all(arr == unique[inv_idx])
+  """
+
+  arr = np.moveaxis(arr, axis, 0)
+
+  orig_shape, orig_dtype = arr.shape, arr.dtype
+  n = orig_shape[0]
+  m = np.prod(orig_shape[1:], dtype=np.intp)
+
+  arr = np.ascontiguousarray(arr.reshape(n,m))
+
+  dtype = [('f{i}'.format(i=i), arr.dtype) for i in range(arr.shape[1])]
+  arr = arr.view(dtype).reshape(n)
+
+  sort_idx = np.argsort(arr, kind='mergesort')
+
+  arr = arr[sort_idx]
+
+  # mask of first occurance of each value
+  unique_mask = np.empty(n, dtype = bool)
+  unique_mask[0] = True
+  unique_mask[1:] = arr[1:] != arr[:-1]
+
+  # get the indices of the first occurence of each value
+  # NOTE: 0 < len(unique_idx) <= len(arr[axis])+1
+  # NOTE: 'nonzero' returns a tuple of arrays
+  unique_idx = np.concatenate(np.nonzero(unique_mask) + ([n],)).astype(np.intp)
+
+  inv_idx = np.empty(unique_mask.shape, dtype = np.intp)
+  inv_idx[sort_idx] = np.cumsum(unique_mask) - 1
+
+  return sort_idx, unique_mask, unique_idx, inv_idx

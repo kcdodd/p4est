@@ -1,18 +1,17 @@
 cimport numpy as np
-# from mpi4py.MPI cimport MPI_Comm, Comm
 from p4est.core._sc cimport (
   sc_MPI_Comm,
   sc_array_t,
   sc_mempool_t )
 from p4est.core._leaf_info cimport (
-  QuadInfo,
-  QuadGhostInfo )
+  HexInfo,
+  HexGhostInfo )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# NOTE: Some important definitions are not in p4est.h
-cdef extern from "p4est_extended.h" nogil:
-  const int P4EST_MAXLEVEL
-  const int P4EST_ROOT_LEN
+# NOTE: Some important definitions are not in p8est.h
+cdef extern from "p8est_extended.h" nogil:
+  const int P8EST_MAXLEVEL
+  const int P8EST_ROOT_LEN
 
   #.............................................................................
   ctypedef np.npy_int32 p4est_topidx_t
@@ -21,9 +20,8 @@ cdef extern from "p4est_extended.h" nogil:
   ctypedef np.npy_int64 p4est_gloidx_t
   ctypedef np.npy_uint64 p4est_lid_t
 
-
   #.............................................................................
-  ctypedef struct p4est_inspect_t:
+  ctypedef struct p8est_inspect_t:
     # Use sc_ranges to determine the asymmetric communication pattern.
     # If \a use_balance_ranges is false (the default), sc_notify is used.
     int use_balance_ranges
@@ -32,7 +30,7 @@ cdef extern from "p4est_extended.h" nogil:
     int use_balance_ranges_notify
     # Verify sc_ranges and/or sc_notify as applicable.
     int use_balance_verify
-    # If positive and smaller than p4est_num ranges, overrides it
+    # If positive and smaller than p8est_num ranges, overrides it
     int balance_max_ranges
     size_t balance_A_count_in
     size_t balance_A_count_out
@@ -54,65 +52,79 @@ cdef extern from "p4est_extended.h" nogil:
     int use_B
 
   #.............................................................................
-  ctypedef struct p4est_connectivity_t:
+  ctypedef struct p8est_connectivity_t:
     # the number of vertices that define the \a embedding of the forest
     # (not the topology)
     p4est_topidx_t num_vertices
     # the number of trees
     p4est_topidx_t num_trees
+
+    # the number of edges that help define the topology
+    p4est_topidx_t num_edges
     # the number of corners that help define topology
     p4est_topidx_t num_corners
-    # an array of size (3 * \a num_vertices)
-    double *vertices
-    # embed each tree into \f$R^3\f$ for e.g. visualization (see p4est_vtk.h)
-    p4est_topidx_t *tree_to_vertex
+
+    # an array of size (3 * num_vertices)
+    double* vertices
+    # embed each tree into \f$R^3\f$ for e.g. visualization (see p8est_vtk.h)
+    p4est_topidx_t* tree_to_vertex
 
     # bytes per tree in tree_to_attr
     size_t tree_attr_bytes
     # not touched by p4est
-    char *tree_to_attr
+    char* tree_to_attr
 
-    # (4 * \a num_trees) neighbors across faces
-    p4est_topidx_t *tree_to_tree
-    # (4 * \a num_trees) face to face+orientation (see description)
-    np.npy_int8 *tree_to_face
+    # (6 * num_trees) neighbors across faces
+    p4est_topidx_t* tree_to_tree
+    # (6 * num_trees) face to face+orientation
+    np.npy_int8* tree_to_face
+    # 12 * num_trees) or NULL
+    p4est_topidx_t* tree_to_edge
+    # (8 * num_trees) or NULL (see description)
+    p4est_topidx_t* tree_to_corner
 
-    # (4 * \a num_trees) or NULL (see description)
-    p4est_topidx_t *tree_to_corner
-    # corner to offset in \a corner_to_tree and \a corner_to_corner
-    p4est_topidx_t *ctt_offset
+    p4est_topidx_t* ett_offset
+    # list of trees that meet at an edge
+    p4est_topidx_t* edge_to_tree
+    # tree-edges+orientations
+    np.npy_int8* edge_to_edge
+
+    # corner to offset in corner_to_tree and corner_to_corner
+    p4est_topidx_t* ctt_offset
     # list of trees that meet at a corner
-    p4est_topidx_t *corner_to_tree
+    p4est_topidx_t* corner_to_tree
     # list of tree-corners that meet at a corner
-    np.npy_int8 *corner_to_corner
+    np.npy_int8* corner_to_corner
 
   #-----------------------------------------------------------------------------
-  ctypedef enum p4est_connect_type_t:
-    P4EST_CONNECT_FACE = 21,
-    P4EST_CONNECT_CORNER = 22,
-    P4EST_CONNECT_FULL = P4EST_CONNECT_CORNER
+  ctypedef enum p8est_connect_type_t:
+    P8EST_CONNECT_SELF = 30,
+    P8EST_CONNECT_FACE = 31,
+    P8EST_CONNECT_EDGE = 32,
+    P8EST_CONNECT_CORNER = 33,
+    P8EST_CONNECT_FULL = P8EST_CONNECT_CORNER
 
   #.............................................................................
   # of ghost octants, store the tree and owner rank
-  ctypedef struct p4est_quadrant_piggy1:
+  ctypedef struct p8est_quadrant_piggy1:
     p4est_topidx_t which_tree
     int owner_rank
 
   #.............................................................................
   # of transformed octants, store the original tree and the target tree
-  ctypedef struct p4est_quadrant_piggy2:
+  ctypedef struct p8est_quadrant_piggy2:
     p4est_topidx_t which_tree
     p4est_topidx_t from_tree
 
   #.............................................................................
   # of ghost octants, store the tree and index in the owner's numbering
-  ctypedef struct p4est_quadrant_piggy3:
+  ctypedef struct p8est_quadrant_piggy3:
     p4est_topidx_t which_tree
     p4est_locidx_t local_num
 
   #.............................................................................
   # union of additional data attached to a quadrant
-  cdef union p4est_quadrant_data:
+  cdef union p8est_quadrant_data:
     # user data never changed by p4est
     void* user_data
     long user_long
@@ -121,19 +133,20 @@ cdef extern from "p4est_extended.h" nogil:
     # the tree containing the quadrant
     # (used in auxiliary octants such
     # as the ghost octants in
-    # p4est_ghost_t)
+    # p8est_ghost_t)
     p4est_topidx_t which_tree
 
-    p4est_quadrant_piggy1 piggy1
-    p4est_quadrant_piggy2 piggy2
-    p4est_quadrant_piggy3 piggy3
+    p8est_quadrant_piggy1 piggy1
+    p8est_quadrant_piggy2 piggy2
+    p8est_quadrant_piggy3 piggy3
 
   #.............................................................................
-  ctypedef struct p4est_quadrant_t:
+  ctypedef struct p8est_quadrant_t:
 
     # coordinates
     p4est_qcoord_t x
     p4est_qcoord_t y
+    p4est_qcoord_t z
 
     # level of refinement
     np.npy_int8 level
@@ -142,25 +155,25 @@ cdef extern from "p4est_extended.h" nogil:
     np.npy_int8 pad8
     np.npy_int16 pad16
 
-    p4est_quadrant_data p
+    p8est_quadrant_data p
 
   #.............................................................................
-  ctypedef struct p4est_tree_t:
+  ctypedef struct p8est_tree_t:
     # locally stored quadrants
     sc_array_t quadrants
     # first local descendant
-    p4est_quadrant_t first_desc
+    p8est_quadrant_t first_desc
     # last local descendant
-    p4est_quadrant_t last_desc
+    p8est_quadrant_t last_desc
     # cumulative sum over earlier trees on this processor (locals only)
     p4est_locidx_t quadrants_offset
     # locals only
-    p4est_locidx_t quadrants_per_level[P4EST_MAXLEVEL + 1]
+    p4est_locidx_t quadrants_per_level[P8EST_MAXLEVEL + 1]
     # highest local quadrant level
     np.npy_int8 maxlevel
 
   #.............................................................................
-  ctypedef struct p4est_t:
+  ctypedef struct p8est_t:
     sc_MPI_Comm mpicomm
     # MPI communicator
     # number of MPI processes
@@ -170,7 +183,7 @@ cdef extern from "p4est_extended.h" nogil:
     # flag if communicator is owned
     int mpicomm_owned
     # size of per-quadrant p.user_data
-    # (see p4est_quadrant_t::p4est_quadrant_data::user_data)
+    # (see p8est_quadrant_t::p8est_quadrant_data::user_data)
     size_t data_size
     # convenience pointer for users, never touched by p4est
     void* user_pointer
@@ -194,10 +207,10 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_gloidx_t* global_first_quadrant
 
     # first smallest possible quad for each process and 1 beyond
-    p4est_quadrant_t* global_first_position
+    p8est_quadrant_t* global_first_position
 
     # connectivity structure, not owned
-    p4est_connectivity_t* connectivity
+    p8est_connectivity_t* connectivity
     # array of all trees
     sc_array_t* trees
 
@@ -209,13 +222,13 @@ cdef extern from "p4est_extended.h" nogil:
     sc_mempool_t* quadrant_pool
 
     # algorithmic switches
-    p4est_inspect_t* inspect
+    p8est_inspect_t* inspect
 
   #.............................................................................
-  ctypedef struct p4est_ghost_t:
+  ctypedef struct p8est_ghost_t:
     int mpisize
     p4est_topidx_t num_trees
-    p4est_connect_type_t btype
+    p8est_connect_type_t btype
 
     sc_array_t ghosts
     p4est_locidx_t *tree_offsets
@@ -230,144 +243,150 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_locidx_t *mirror_proc_front_offsets
 
   #.............................................................................
-  ctypedef struct p4est_mesh_t:
+  ctypedef struct p8est_mesh_t:
 
-    p4est_locidx_t      local_num_quadrants
-    p4est_locidx_t      ghost_num_quadrants
+    p4est_locidx_t local_num_quadrants
+    p4est_locidx_t ghost_num_quadrants
 
-    p4est_topidx_t     *quad_to_tree
-    int                *ghost_to_proc
+    p4est_topidx_t *quad_to_tree
+    int *ghost_to_proc
 
-    p4est_locidx_t     *quad_to_quad
-    np.npy_int8        *quad_to_face
-    sc_array_t         *quad_to_half
-    sc_array_t         *quad_level
+    p4est_locidx_t *quad_to_quad
+    np.npy_int8 *quad_to_face
+    sc_array_t *quad_to_half
+    sc_array_t *quad_level
 
-    p4est_locidx_t      local_num_corners
-    p4est_locidx_t     *quad_to_corner
-    sc_array_t         *corner_offset
-    sc_array_t         *corner_quad
-    sc_array_t         *corner_corner
+    p4est_locidx_t local_num_edges
+    p4est_locidx_t *quad_to_edge
+    sc_array_t *edge_offset
+    sc_array_t *edge_quad
+    sc_array_t *edge_edge
+
+    p4est_locidx_t local_num_corners
+    p4est_locidx_t *quad_to_corner
+    sc_array_t *corner_offset
+    sc_array_t *corner_quad
+    sc_array_t *corner_corner
 
   #.............................................................................
-  ctypedef struct p4est_mesh_face_neighbor_t:
-    p4est_t            *p4est
-    p4est_ghost_t      *ghost
-    p4est_mesh_t       *mesh
+  ctypedef struct p8est_mesh_face_neighbor_t:
+    p8est_t *p4est
+    p8est_ghost_t *ghost
+    p8est_mesh_t *mesh
 
-    p4est_topidx_t      which_tree
-    p4est_locidx_t      quadrant_id
-    p4est_locidx_t      quadrant_code
+    p4est_topidx_t which_tree
+    p4est_locidx_t quadrant_id
+    p4est_locidx_t quadrant_code
 
-    int                 face
-    int                 subface
+    int face
+    int subface
 
-    p4est_locidx_t      current_qtq
+    p4est_locidx_t current_qtq
 
   #-----------------------------------------------------------------------------
   # Callback function prototype to initialize the quadrant's user data.
-  ctypedef void (*p4est_init_t)(
-    p4est_t* p4est,
+  ctypedef void (*p8est_init_t)(
+    p8est_t* p4est,
     p4est_topidx_t cell_idx,
-    p4est_quadrant_t* quadrant )
+    p8est_quadrant_t* quadrant )
 
   # Callback function prototype to replace one set of quadrants with another.
   # If the mesh is being refined, num_outgoing will be 1 and num_incoming will
   # be 4, and vice versa if the mesh is being coarsened.
-  ctypedef void (*p4est_replace_t) (
-    p4est_t * p4est,
+  ctypedef void (*p8est_replace_t) (
+    p8est_t * p4est,
     p4est_topidx_t which_tree,
     int num_outgoing,
-    p4est_quadrant_t * outgoing[],
+    p8est_quadrant_t * outgoing[],
     int num_incoming,
-    p4est_quadrant_t * incoming[])
+    p8est_quadrant_t * incoming[])
 
   # Callback function prototype to decide for refinement.
-  ctypedef int (*p4est_refine_t)(
-    p4est_t * p4est,
+  ctypedef int (*p8est_refine_t)(
+    p8est_t * p4est,
     p4est_topidx_t cell_idx,
-    p4est_quadrant_t * quadrant)
+    p8est_quadrant_t * quadrant)
 
   # Callback function prototype to decide for coarsening.
-  ctypedef int (*p4est_coarsen_t)(
-    p4est_t * p4est,
+  ctypedef int (*p8est_coarsen_t)(
+    p8est_t * p4est,
     p4est_topidx_t cell_idx,
     # Pointers to 4 siblings in Morton ordering.
-    p4est_quadrant_t * quadrants[])
+    p8est_quadrant_t * quadrants[])
 
   # Callback function prototype to calculate weights for partitioning.
   # NOTE: Global sum of weights must fit into a 64bit integer.
-  ctypedef int (*p4est_weight_t)(
-    p4est_t * p4est,
+  ctypedef int (*p8est_weight_t)(
+    p8est_t * p4est,
     p4est_topidx_t cell_idx,
-    p4est_quadrant_t * quadrant)
+    p8est_quadrant_t * quadrant)
 
   #-----------------------------------------------------------------------------
-  p4est_t* p4est_new_ext(
+  p8est_t* p8est_new_ext(
     sc_MPI_Comm mpicomm,
-    p4est_connectivity_t* connectivity,
+    p8est_connectivity_t* connectivity,
     p4est_locidx_t min_quadrants,
     int min_level,
     int fill_uniform,
     size_t data_size,
-    p4est_init_t init_fn,
+    p8est_init_t init_fn,
     void* user_pointer )
 
   #.............................................................................
-  void p4est_destroy(p4est_t* p4est)
+  void p8est_destroy(p8est_t* p4est)
 
   #-----------------------------------------------------------------------------
-  p4est_ghost_t* p4est_ghost_new(
-    p4est_t* p4est,
-    p4est_connect_type_t btype)
+  p8est_ghost_t* p8est_ghost_new(
+    p8est_t* p4est,
+    p8est_connect_type_t btype)
 
   #.............................................................................
-  void p4est_ghost_destroy(
-    p4est_ghost_t* ghost)
+  void p8est_ghost_destroy(
+    p8est_ghost_t* ghost)
 
   #.............................................................................
-  p4est_mesh_t* p4est_mesh_new_ext(
-    p4est_t* p4est,
-    p4est_ghost_t* ghost,
+  p8est_mesh_t* p8est_mesh_new_ext(
+    p8est_t* p4est,
+    p8est_ghost_t* ghost,
     int compute_tree_index,
     int compute_level_lists,
-    p4est_connect_type_t btype)
+    p8est_connect_type_t btype)
 
   #.............................................................................
-  void p4est_mesh_destroy(p4est_mesh_t * mesh)
+  void p8est_mesh_destroy(p8est_mesh_t * mesh)
 
   #.............................................................................
-  void p4est_refine_ext(
-    p4est_t * p4est,
+  void p8est_refine_ext(
+    p8est_t * p4est,
     int refine_recursive,
     int maxlevel,
-    p4est_refine_t refine_fn,
-    p4est_init_t init_fn,
-    p4est_replace_t replace_fn )
+    p8est_refine_t refine_fn,
+    p8est_init_t init_fn,
+    p8est_replace_t replace_fn )
 
   #.............................................................................
-  void p4est_coarsen_ext(
-    p4est_t * p4est,
+  void p8est_coarsen_ext(
+    p8est_t * p4est,
     int coarsen_recursive,
     int callback_orphans,
-    p4est_coarsen_t coarsen_fn,
-    p4est_init_t init_fn,
-    p4est_replace_t replace_fn )
+    p8est_coarsen_t coarsen_fn,
+    p8est_init_t init_fn,
+    p8est_replace_t replace_fn )
 
   #.............................................................................
   # 2:1 balance the size differences of neighboring elements in a forest.
-  void p4est_balance_ext(
-    p4est_t * p4est,
-    p4est_connect_type_t btype,
-    p4est_init_t init_fn,
-    p4est_replace_t replace_fn )
+  void p8est_balance_ext(
+    p8est_t * p4est,
+    p8est_connect_type_t btype,
+    p8est_init_t init_fn,
+    p8est_replace_t replace_fn )
 
-  void p4est_balance_subtree_ext(
-    p4est_t * p4est,
-    p4est_connect_type_t btype,
+  void p8est_balance_subtree_ext(
+    p8est_t * p4est,
+    p8est_connect_type_t btype,
     p4est_topidx_t which_tree,
-    p4est_init_t init_fn,
-    p4est_replace_t replace_fn )
+    p8est_init_t init_fn,
+    p8est_replace_t replace_fn )
 
   #.............................................................................
   # Equally partition the forest.
@@ -378,96 +397,10 @@ cdef extern from "p4est_extended.h" nogil:
   #
   # On one process, the function noops and does not call the weight callback.
   # Otherwise, the weight callback is called once per quadrant in order.
-  p4est_gloidx_t p4est_partition_ext(
-    p4est_t * p4est,
+  p4est_gloidx_t p8est_partition_ext(
+    p8est_t * p4est,
     int allow_for_coarsening,
-    p4est_weight_t weight_fn )
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef extern from "p4est_iterate.h" nogil:
-  #.............................................................................
-  ctypedef struct p4est_ghost_t:
-    int mpisize
-    p4est_topidx_t num_trees
-    # which neighbors are in the ghost layer
-    p4est_connect_type_t btype
-
-    # An array of quadrants which make up the ghost layer around \a
-    # p4est.  Their piggy3 data member is filled with their owner's tree
-    # and local number (cumulative over trees).  Quadrants are ordered in \c
-    # p4est_quadrant_compare_piggy order.  These are quadrants inside the
-    # neighboring tree, i.e., \c p4est_quadrant_is_inside() is true for the
-    # quadrant and the neighboring tree.
-
-    sc_array_t ghosts
-    p4est_locidx_t *tree_offsets
-    p4est_locidx_t *proc_offsets
-
-    # An array of local quadrants that touch the parallel boundary from the
-    # inside, i.e., that are ghosts in the perspective of at least one other
-    # processor.  The storage convention is the same as for \c ghosts above.
-
-    sc_array_t mirrors
-    p4est_locidx_t *mirror_tree_offsets
-    p4est_locidx_t *mirror_proc_mirrors
-    p4est_locidx_t *mirror_proc_offsets
-
-    p4est_locidx_t *mirror_proc_fronts
-    p4est_locidx_t *mirror_proc_front_offsets
-
-  #.............................................................................
-  ctypedef struct p4est_iter_volume_info_t:
-    p4est_t *p4est
-    p4est_ghost_t *ghost_layer
-    p4est_quadrant_t *quad
-    p4est_locidx_t quadid
-    p4est_topidx_t treeid
-
-  # The prototype for a function that p4est_iterate will execute at every
-  # quadrant local to the current process.
-  ctypedef void (*p4est_iter_volume_t) (
-    p4est_iter_volume_info_t * info,
-    void *user_data )
-
-  #.............................................................................
-  ctypedef struct p4est_iter_face_info_t:
-    p4est_t *p4est
-    p4est_ghost_t *ghost_layer
-    np.npy_int8 orientation
-    np.npy_int8 tree_boundary
-    # array of p4est_iter_face_side_t type
-    sc_array_t sides
-
-  # The prototype for a function that p4est_iterate will execute wherever two
-  # quadrants share a face: the face can be a 2:1 hanging face, it does not have
-  # to be conformal.
-  ctypedef void (*p4est_iter_face_t) (
-    p4est_iter_face_info_t * info,
-    void *user_data )
-
-  #.............................................................................
-  ctypedef struct p4est_iter_corner_info_t:
-    p4est_t *p4est
-    p4est_ghost_t *ghost_layer
-    np.npy_int8 tree_boundary
-    # array of p4est_iter_corner_side_t type
-    sc_array_t sides
-
-  # The prototype for a function that p4est_iterate will execute wherever two
-  # quadrants share a face: the face can be a 2:1 hanging face, it does not have
-  # to be conformal.
-  ctypedef void (*p4est_iter_corner_t) (
-    p4est_iter_corner_info_t * info,
-    void *user_data )
-
-  #.............................................................................
-  void p4est_iterate(
-    p4est_t* p4est,
-    p4est_ghost_t * ghost_layer,
-    void *user_data,
-    p4est_iter_volume_t iter_volume,
-    p4est_iter_face_t iter_face,
-    p4est_iter_corner_t iter_corner)
+    p8est_weight_t weight_fn )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ctypedef struct aux_quadrant_data_t:
@@ -479,32 +412,32 @@ ctypedef struct aux_quadrant_data_t:
   np.npy_int8 _future_flag1
   np.npy_int8 _future_flag2
 
-  np.npy_int32 replaced_idx[4]
+  np.npy_int32 replaced_idx[8]
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class P4est:
+cdef class P8est:
 
   cdef _comm
   cdef _mesh
   cdef np.npy_int8 _min_level
   cdef np.npy_int8 _max_level
 
-  cdef QuadInfo _leaf_info
-  cdef QuadGhostInfo _ghost_info
+  cdef HexInfo _leaf_info
+  cdef HexGhostInfo _ghost_info
   cdef _rank_ghosts
   cdef _rank_mirrors
 
-  cdef p4est_connectivity_t _connectivity
-  cdef p4est_t* _p4est
+  cdef p8est_connectivity_t _connectivity
+  cdef p8est_t* _p4est
 
   #-----------------------------------------------------------------------------
-  cdef _init(P4est self)
+  cdef _init(P8est self)
 
   #-----------------------------------------------------------------------------
-  cdef void _adapt(P4est self) nogil
+  cdef void _adapt(P8est self) nogil
 
   #-----------------------------------------------------------------------------
-  cdef void _partition(P4est self) nogil
+  cdef void _partition(P8est self) nogil
 
   #-----------------------------------------------------------------------------
-  cdef _sync_leaf_info(P4est self)
+  cdef _sync_leaf_info(P8est self)
