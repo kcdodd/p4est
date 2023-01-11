@@ -242,32 +242,6 @@ cdef class P4est:
       offset = leaf_offset,
       where = info.root )
 
-    # cell_verts = self.mesh.verts[ self.mesh.cells[ info.root ] ]
-
-    # # compute the relative position within the root cell
-    # UV = np.clip(
-    #   ( info.origin + uv[None,:] * qwidth[:,None] ) / P4EST_ROOT_LEN,
-    #   0.0, 1.0)
-
-    # # Compute the coefficients for bilinear interpolation of the root cells
-    # # vertices absolute position onto the desired position relative to the leaf.
-
-    # if interp is None:
-    #   _UV = 1.0 - UV
-
-    #   # bi-linear interpolation
-    #   c = np.empty(cell_verts.shape[:3])
-    #   c[:,0,0] = _UV[:,0]*_UV[:,1]
-    #   c[:,0,1] = UV[:,0]*_UV[:,1]
-    #   c[:,1,0] = _UV[:,0]*UV[:,1]
-    #   c[:,1,1] = UV[:,0]*UV[:,1]
-
-    #   # Perform the interpolation
-    #   return np.sum(c[:,:,:,None] * cell_verts, axis = (1,2))
-
-    # else:
-    #   return interp(cell_verts, UV)
-
   #-----------------------------------------------------------------------------
   def adapt(self):
     """Applies refinement, coarsening, and then balances based on ``leaf_info.adapt``.

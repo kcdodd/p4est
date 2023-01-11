@@ -21,7 +21,7 @@ from p4est import (
   trans_cart_to_sphere,
   interp_slerp_quad)
 
-from p4est.mesh.quad import cube
+from p4est.mesh.quad import spherical_cube
 
 from mpi4py.util.dtlib import from_numpy_dtype
 
@@ -66,17 +66,17 @@ def mpi_ghost_exchange(grid, local_value):
   return np.concatenate([local_value, recvbuf])
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def plot_grid(grid, interp = None, scalars = None):
+def plot_grid(grid, scalars = None):
   scale = 0.99
   _scale = 1.0 - scale
 
 
   nc = len(grid.leaf_info)
   verts = np.empty((4*nc, 3))
-  verts[:nc] = grid.leaf_coord(uv = (_scale, _scale), interp = interp)
-  verts[nc:2*nc] = grid.leaf_coord(uv = (_scale, scale), interp = interp)
-  verts[2*nc:3*nc] = grid.leaf_coord(uv = (scale, scale), interp = interp)
-  verts[3*nc:] = grid.leaf_coord(uv = (scale, _scale), interp = interp)
+  verts[:nc] = grid.coord(offset = (_scale, _scale))
+  verts[nc:2*nc] = grid.coord(offset = (_scale, scale))
+  verts[2*nc:3*nc] = grid.coord(offset = (scale, scale))
+  verts[3*nc:] = grid.coord(offset = (scale, _scale))
 
   idx = np.arange(nc)
 
@@ -101,7 +101,7 @@ def plot_grid(grid, interp = None, scalars = None):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-mesh = cube()
+mesh = spherical_cube()
 f = interpgrid_2D_to_3D()
 tol = 0.05
 
@@ -117,7 +117,7 @@ for p in range(4):
 
 for r in range(6):
 
-  points = trans_cart_to_sphere(grid.leaf_coord(uv = (0.5,0.5), interp = interp_slerp_quad))
+  points = trans_cart_to_sphere(grid.coord(offset = (0.5, 0.5)))
   local_value = f(*points[:,:2].transpose(1,0), grid = False)
 
   value = mpi_ghost_exchange(grid, local_value)
@@ -135,10 +135,10 @@ for r in range(6):
   print(f"{grid.comm.rank} refined: {refined.replaced_idx.shape} -> {refined.idx.shape} (total= {len(grid.leaf_info):,})")
 
 
-points = trans_cart_to_sphere(grid.leaf_coord(uv = (0.5,0.5), interp = interp_slerp_quad))
+points = trans_cart_to_sphere(grid.coord(offset = (0.5,0.5)))
 local_value = f(*points[:,:2].transpose(1,0), grid = False)
 
-plot_grid(grid, interp = interp_slerp_quad, scalars = local_value)
+plot_grid(grid, scalars = local_value)
 
 
 
