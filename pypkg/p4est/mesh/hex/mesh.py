@@ -12,10 +12,14 @@ class HexMesh(HexMeshBase):
 
   Parameters
   ----------
-  verts : ndarray with shape = (NV, 3), dtype = np.float64
+  verts : numpy.ndarray
+    shape = (NV, 3), dtype = np.float64
+
     Position of each vertex.
 
-  cells : ndarray with shape = (NC, 2, 2, 2), dtype = np.int32
+  cells : numpy.ndarray
+    shape = (NC, 2, 2, 2), dtype = np.int32
+
     Mapping of hexahedral cells to the indices of their 8 vertices.
     (AKA :c:var:`p8est_connectivity_t.tree_to_vertex`)
 
@@ -33,7 +37,9 @@ class HexMesh(HexMeshBase):
       cells[:,1,1,0] -> vert(+z, +y, -x)
       cells[:,1,1,1] -> vert(+z, +y, +x)
 
-  vert_nodes : None | ndarray with shape = (NV,), dtype = np.int32
+  vert_nodes : None | numpy.ndarray
+    shape = (NV,), dtype = np.int32
+
     The topological node associated with each vertex, causing cells to be connected
     by having vertices associated with the same node in addition to directly
     sharing vertices.

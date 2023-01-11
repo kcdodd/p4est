@@ -29,7 +29,7 @@ cdef class P8est:
 
   Parameters
   ----------
-  mesh : HexMesh
+  mesh : HexMeshBase
   min_level : None | int
     (default: 0)
   max_level : None | int

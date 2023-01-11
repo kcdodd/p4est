@@ -28,7 +28,7 @@ cdef class P4est:
 
   Parameters
   ----------
-  mesh : QuadMesh
+  mesh : QuadMeshBase
   min_level : None | int
     (default: 0)
   max_level : None | int
@@ -200,7 +200,7 @@ cdef class P4est:
   #-----------------------------------------------------------------------------
   def leaf_coord(self,
     uv = None,
-    idx = None,
+    where = None,
     interp = None ):
     r"""
 
@@ -210,7 +210,7 @@ cdef class P4est:
       Relative position within each leaf to compute the coordinates, normalized
       to the range [0.0, 1.0] along each edge of the leaf.
       (default: (0.0, 0.0))
-    idx : None | any single-dimension ndarray index
+    where : None | any single-dimension ndarray index
       Computes coordinates only for this subset of leaves. (default: slice(None))
     interp : None | callable
       Interpolation function ()
@@ -227,10 +227,10 @@ cdef class P4est:
     else:
       uv = np.asarray(uv, dtype = np.float64)
 
-    if idx is None:
-      idx = slice(None)
+    if where is None:
+      where = slice(None)
 
-    info = self._leaf_info[idx]
+    info = self._leaf_info[where]
 
     # compute the local discrete width of the leaf within the root cell
     # NOTE: the root level = 0 is 2**P4EST_MAXLEVEL wide, and all refinement

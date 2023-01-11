@@ -13,52 +13,6 @@ from p4est.mesh.hex import (
   icosahedron_shell)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def plot_mesh(mesh):
-
-  pv.set_plot_theme('paraview')
-  p = pv.Plotter()
-
-
-  verts = mesh.verts
-
-  nc = len(mesh.cells)
-  cells = np.empty((nc, 9), dtype = np.int32)
-  cells[:,0] = 8
-  cells[:,1:3] = mesh.cells[:,0,0,:]
-  cells[:,3:5] = mesh.cells[:,0,1,::-1]
-  cells[:,5:7] = mesh.cells[:,1,0,:]
-  cells[:,7:] = mesh.cells[:,1,1,::-1]
-
-  p.add_mesh(
-    pv.UnstructuredGrid(cells, [pv.CellType.HEXAHEDRON]*nc, verts.reshape(-1,3)),
-    scalars = np.arange(nc),
-    show_edges = True,
-    line_width = 1,
-    opacity = 1.0)
-
-  for i in range(len(mesh.node_cells)):
-    m = mesh.vert_nodes == i
-    node_verts = verts[m]
-
-    if len(node_verts):
-      p.add_points(
-        node_verts,
-        point_size = 7,
-        color = 'red',
-        opacity = 0.75 )
-
-      p.add_point_labels(
-        node_verts,
-        labels = [ str(i) ]*len(node_verts),
-        text_color = 'yellow',
-        font_size = 30,
-        fill_shape = False )
-
-  p.add_axes()
-  p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
-  p.show()
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def plot_grid(grid, interp = None):
   scale = 0.99
   _scale = 1.0 - scale
@@ -123,6 +77,7 @@ def plot_grid(grid, interp = None):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_cube():
   mesh = cube()
+  # mesh.show()
 
   grid = P8est(
     mesh = mesh,
@@ -137,7 +92,7 @@ def run_cube():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_icosahedron_spherical():
   mesh = icosahedron_spherical_shell()
-  # plot_mesh(mesh)
+  # mesh.show()
 
   grid = P8est(
     mesh = mesh,
@@ -152,7 +107,7 @@ def run_icosahedron_spherical():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_icosahedron():
   mesh = icosahedron_shell()
-  # plot_mesh(mesh)
+  # mesh.show()
 
   grid = P8est(
     mesh = mesh,

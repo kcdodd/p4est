@@ -1,28 +1,40 @@
 import numpy as np
-from ...utils import (
+from p4est.utils import (
   jagged_array,
   unique_full )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def hex_cell_nodes(cells, vert_nodes):
-  """Derives topological nodes between quad. cells
+  """Derives topological nodes between hex. cells
 
   Parameters
   ----------
-  cells : ndarray with shape = (NC, 2, 2, 2), dtype = np.int32
+  cells : numpy.ndarray
+    shape = (NC, 2, 2, 2), dtype = np.int32
+
     Hexahedral cells, each defined by the indices of its 4 vertices.
-  vert_nodes : ndarray with shape = (NV,), dtype = np.int32
+  vert_nodes : numpy.ndarray
+    shape = (NV,), dtype = np.int32
+
     The topological node associated with each vertex.
 
   Returns
   -------
-  vert_nodes : ndarray with shape = (NV,), dtype = np.int32
+  vert_nodes : numpy.ndarray
+    shape = (NV,), dtype = np.int32
+
     Updated ``vert_nodes`` with additional nodes for any detected mesh
     singularities.
-  cell_nodes : ndarray with shape = (NC, 2, 2, 2), dtype = np.int32
+  cell_nodes : numpy.ndarray
+    shape = (NC, 2, 2, 2), dtype = np.int32
+
     Mapping of hexahedral cells to the indices of their (up to) 8 nodes.
-  node_cells : jagged_array, dtype = np.int32
-  node_cells_inv : jagged_array, dtype = np.int32
+  node_cells : jagged_array
+    dtype = np.int32
+
+  node_cells_inv : jagged_array
+    dtype = np.int32
+
     node_cells_inv.row_idx == node_cells.row_idx
   """
 
@@ -225,18 +237,25 @@ def hex_cell_edges(cell_nodes):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def hex_cell_adj(cell_nodes):
-  """Derives topological adjacency between quad. cells accross shared faces
+  """Derives topological adjacency between hex. cells accross shared faces
 
   Parameters
   ----------
-  cell_nodes : ndarray with shape = (NC, 2, 2, 2), dtype = np.int32
+  cell_nodes : numpy.ndarray
+    shape = (NC, 2, 2, 2), dtype = np.int32
+
     Mapping of cells to the indices of their (up to) 8 nodes
 
   Returns
   -------
-  cell_adj : ndarray with shape (NC, 3, 2) and dtype np.int32
+  cell_adj : numpy.ndarray
+    shape (NC, 3, 2), dtype = np.int32
+
     Topological connectivity to other cells accross each face.
-  cell_adj_face : ndarray with shape (NC, 3, 2) and dtype np.int8
+
+  cell_adj_face : numpy.ndarray
+    shape (NC, 3, 2), dtype = np.int8
+
     Topological order of the faces of each connected cell.
 
   """

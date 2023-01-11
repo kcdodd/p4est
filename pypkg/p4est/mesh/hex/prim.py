@@ -47,7 +47,7 @@ def icosahedron_spherical_shell(r1 = 0.5, r2 = 1.0):
 
   Returns
   -------
-  QuadMesh
+  HexMesh
   """
 
   c3 = np.cos(np.pi/3)
@@ -125,7 +125,7 @@ def icosahedron_shell(r1 = 0.5, r2 = 1.0):
 
   Returns
   -------
-  QuadMesh
+  HexMesh
   """
   mesh = icosahedron_spherical_shell(r1 = r1, r2 = r2)
 
