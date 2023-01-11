@@ -1,8 +1,10 @@
 import numpy as np
 from ...geom import (
   trans_sphere_to_cart )
-
-from .mesh import QuadMesh
+from .mesh import (
+  QuadMesh,
+  QuadMeshSpherical,
+  QuadMeshCartesianSpherical )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def unit_square():
@@ -64,6 +66,47 @@ def cube(length = 1.0):
     [[5, 7], [4, 6]]])  #Top Cell
 
   return QuadMesh(
+    verts = verts,
+    cells = cells )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def spherical_cube(length = 1.0):
+  """Factory method to create the surface of a cube
+
+  Parameters
+  ----------
+  length : float
+
+  Returns
+  -------
+  QuadMesh
+  """
+
+  half = 0.5*length
+
+  verts = np.stack(
+    np.meshgrid(
+      [-half, half],
+      [-half, half],
+      [-half, half],
+      indexing = 'ij'),
+    axis = -1).transpose(2,1,0,3).reshape(-1, 3)
+
+  #Cell with vertex ordering [V0, V1] , [V2, V3]
+  cells = np.array([
+    [[0, 1], [4, 5]], #Origin Cell
+
+    [[1, 3], [5, 7]],  #Right of Origin Cell
+
+    [[2, 0], [6, 4]],  #Left of Origin Cell
+
+    [[3, 2], [7, 6]],  #Opposite of Origin Cell
+
+    [[1, 3], [0, 2]],  #Bottom Cell
+
+    [[5, 7], [4, 6]]])  #Top Cell
+
+  return QuadMeshCartesianSpherical(
     verts = verts,
     cells = cells )
 
@@ -301,7 +344,7 @@ def icosahedron_spherical(radius = 1.0):
     [[15, 21], [10, 16]]],
     dtype = np.int32 )
 
-  return QuadMesh(
+  return QuadMeshSpherical(
     verts = verts,
     cells = cells,
     vert_nodes = vert_nodes)
@@ -321,7 +364,7 @@ def icosahedron(radius = 1.0):
   """
   mesh = icosahedron_spherical(radius = radius)
 
-  return QuadMesh(
+  return QuadMeshCartesianSpherical(
     verts = trans_sphere_to_cart(mesh.verts),
     cells = mesh.cells,
     vert_nodes = mesh.vert_nodes)

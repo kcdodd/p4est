@@ -10,10 +10,11 @@ from p4est.mesh.quad import (
   icosahedron_golden,
   icosahedron_spherical,
   icosahedron,
-  cube)
+  cube,
+  spherical_cube)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def plot_grid(grid, interp = None):
+def plot_grid(grid):
   scale = 0.99
   _scale = 1.0 - scale
 
@@ -22,10 +23,10 @@ def plot_grid(grid, interp = None):
 
   nc = len(grid.leaf_info)
   verts = np.empty((4*nc, 3))
-  verts[:nc] = grid.leaf_coord(uv = (_scale, _scale), interp = interp)
-  verts[nc:2*nc] = grid.leaf_coord(uv = (_scale, scale), interp = interp)
-  verts[2*nc:3*nc] = grid.leaf_coord(uv = (scale, scale), interp = interp)
-  verts[3*nc:] = grid.leaf_coord(uv = (scale, _scale), interp = interp)
+  verts[:nc] = grid.coord(offset = (_scale, _scale))
+  verts[nc:2*nc] = grid.coord(offset = (_scale, scale))
+  verts[2*nc:3*nc] = grid.coord(offset = (scale, scale))
+  verts[3*nc:] = grid.coord(offset = (scale, _scale))
 
   idx = np.arange(nc)
 
@@ -42,7 +43,6 @@ def plot_grid(grid, interp = None):
     show_edges = True,
     line_width = 1,
     point_size = 3 )
-
 
   p.add_axes()
   p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
@@ -75,7 +75,7 @@ def run_icosahedron_spherical():
     grid.leaf_info.adapt = 1
     grid.adapt()
 
-  plot_grid(grid, interp = interp_sphere_to_cart_slerp)
+  plot_grid(grid)
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -91,7 +91,7 @@ def run_icosahedron():
     grid.leaf_info.adapt = 1
     grid.adapt()
 
-  plot_grid(grid, interp = interp_slerp_quad)
+  plot_grid(grid)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_cube():
@@ -105,7 +105,21 @@ def run_cube():
     grid.leaf_info.adapt = 1
     grid.adapt()
 
-  plot_grid(grid, interp = interp_slerp_quad)
+  plot_grid(grid)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def run_spherical_cube():
+  mesh = spherical_cube()
+
+  grid = P4est(
+    mesh = mesh,
+    min_level = 0)
+
+  for r in range(4):
+    grid.leaf_info.adapt = 1
+    grid.adapt()
+
+  plot_grid(grid)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 if __name__ == '__main__':

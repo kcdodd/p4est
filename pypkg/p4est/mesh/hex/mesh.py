@@ -1,6 +1,10 @@
 import numpy as np
 
 from .base import HexMeshBase
+from ...geom import (
+  interp_trilinear,
+  interp_slerp_quad,
+  interp_sphere_to_cart_slerp )
 from .topo import (
   hex_cell_nodes,
   hex_cell_edges,
@@ -120,6 +124,20 @@ class HexMesh(HexMeshBase):
     return self._vert_nodes
 
   #-----------------------------------------------------------------------------
+  def coord(self,
+    offset,
+    where = None ):
+
+    if where is None:
+      where = slice(None)
+
+    cell_verts = self.verts[ self.cells[ where ] ]
+
+    uv = np.clip(np.asarray(offset), 0.0, 1.0)
+
+    return interp_trilinear(cell_verts, uv)
+
+  #-----------------------------------------------------------------------------
   def show(self):
     import pyvista as pv
 
@@ -170,3 +188,34 @@ class HexMesh(HexMeshBase):
     p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
     p.show()
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class HexMeshSpherical(HexMesh):
+  #-----------------------------------------------------------------------------
+  def coord(self,
+    offset,
+    where = None ):
+
+    if where is None:
+      where = slice(None)
+
+    cell_verts = self.verts[ self.cells[ where ] ]
+
+    uv = np.clip(np.asarray(offset), 0.0, 1.0)
+
+    return interp_sphere_to_cart_slerp(cell_verts, uv)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class HexMeshCartesianSpherical(HexMesh):
+  #-----------------------------------------------------------------------------
+  def coord(self,
+    offset,
+    where = None ):
+
+    if where is None:
+      where = slice(None)
+
+    cell_verts = self.verts[ self.cells[ where ] ]
+
+    uv = np.clip(np.asarray(offset), 0.0, 1.0)
+
+    return interp_slerp_quad(cell_verts, uv)

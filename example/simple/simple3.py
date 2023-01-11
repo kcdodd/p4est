@@ -13,7 +13,7 @@ from p4est.mesh.hex import (
   icosahedron_shell)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def plot_grid(grid, interp = None):
+def plot_grid(grid):
   scale = 0.99
   _scale = 1.0 - scale
 
@@ -22,7 +22,7 @@ def plot_grid(grid, interp = None):
   pv.set_plot_theme('paraview')
   p = pv.Plotter()
 
-  # points = grid.leaf_coord(
+  # points = grid.coord(
   #   uv = (0.5, 0.5, 0.5))
 
   # p.add_points(
@@ -45,9 +45,8 @@ def plot_grid(grid, interp = None):
     (1,1,0) ]
 
   for k,j,i in kji:
-    verts[:,k,j,i] = grid.leaf_coord(
-      uv = (scales[k], scales[j], scales[i]),
-      interp = interp)
+    verts[:,k,j,i] = grid.coord(
+      offset = (scales[k], scales[j], scales[i]) )
 
   vidx = (8*np.arange(nc)[:,None] + np.arange(8)[None,:]).reshape(-1,2,2,2)
 
@@ -87,7 +86,7 @@ def run_cube():
     grid.leaf_info.adapt = 1
     grid.adapt()
 
-  plot_grid(grid, interp = None)
+  plot_grid(grid)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_icosahedron_spherical():
@@ -102,7 +101,7 @@ def run_icosahedron_spherical():
     grid.leaf_info.adapt = 1
     grid.adapt()
 
-  plot_grid(grid, interp = interp_sphere_to_cart_slerp)
+  plot_grid(grid)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_icosahedron():
@@ -117,7 +116,7 @@ def run_icosahedron():
     grid.leaf_info.adapt = 1
     grid.adapt()
 
-  plot_grid(grid, interp = interp_slerp_quad)
+  plot_grid(grid)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 if __name__ == '__main__':

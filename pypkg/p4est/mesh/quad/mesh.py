@@ -1,7 +1,10 @@
 import numpy as np
 from ...utils import (
   jagged_array )
-
+from ...geom import (
+  interp_bilinear,
+  interp_slerp_quad,
+  interp_sphere_to_cart_slerp )
 from .base import QuadMeshBase
 from .topo import (
   quad_cell_nodes,
@@ -90,6 +93,20 @@ class QuadMesh(QuadMeshBase):
     return self._vert_nodes
 
   #-----------------------------------------------------------------------------
+  def coord(self,
+    offset,
+    where = None ):
+
+    if where is None:
+      where = slice(None)
+
+    cell_verts = self.verts[ self.cells[ where ] ]
+
+    uv = np.clip(np.asarray(offset), 0.0, 1.0)
+
+    return interp_bilinear(cell_verts, uv)
+
+  #-----------------------------------------------------------------------------
   def show(self):
     import pyvista as pv
 
@@ -135,3 +152,35 @@ class QuadMesh(QuadMeshBase):
     p.add_axes()
     p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
     p.show()
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class QuadMeshSpherical(QuadMesh):
+  #-----------------------------------------------------------------------------
+  def coord(self,
+    offset,
+    where = None ):
+
+    if where is None:
+      where = slice(None)
+
+    cell_verts = self.verts[ self.cells[ where ] ]
+
+    uv = np.clip(np.asarray(offset), 0.0, 1.0)
+
+    return interp_sphere_to_cart_slerp(cell_verts, uv)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class QuadMeshCartesianSpherical(QuadMesh):
+  #-----------------------------------------------------------------------------
+  def coord(self,
+    offset,
+    where = None ):
+
+    if where is None:
+      where = slice(None)
+
+    cell_verts = self.verts[ self.cells[ where ] ]
+
+    uv = np.clip(np.asarray(offset), 0.0, 1.0)
+
+    return interp_slerp_quad(cell_verts, uv)

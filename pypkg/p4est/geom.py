@@ -68,6 +68,39 @@ def interp_linear(eta, x0, x1):
   return (1.0 - eta)[...,None] * x0 + eta[...,None] * x1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def interp_bilinear(verts, uv):
+  """Bi-linear interpolation
+  """
+
+  m = np.prod(verts.shape[-2:])
+  s = verts.shape[:-3] + verts.shape[-2:]
+
+  verts = interp_linear(
+    eta = uv[...,1],
+    x0 = verts[...,0,:,:].reshape(-1, m),
+    x1 = verts[...,1,:,:].reshape(-1, m)).reshape(s)
+
+  return interp_linear(
+      eta = uv[...,0],
+      x0 = verts[...,0,:],
+      x1 = verts[...,1,:])
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def interp_trilinear(verts, uv):
+  """Tri-inear interpolation
+  """
+
+  m = np.prod(verts.shape[-3:])
+  s = verts.shape[:-4] + verts.shape[-3:]
+
+  verts = interp_linear(
+    eta = uv[...,2],
+    x0 = verts[...,0,:,:,:].reshape(-1, m),
+    x1 = verts[...,1,:,:,:].reshape(-1, m)).reshape(s)
+
+  return interp_bilinear(verts = verts, uv = uv)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def interp_slerp(eta, x0, x1):
   """Spherical linear interpolation
   """

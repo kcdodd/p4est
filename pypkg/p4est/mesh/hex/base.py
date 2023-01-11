@@ -310,7 +310,7 @@ class HexMeshBase:
     Parameters
     ----------
     offset : numpy.ndarray
-      shape = (3,) | (NC, 3)
+      shape = (*,3)
 
       Relative coordinates from each cell origin to compute the coordinates,
       normalized :math:`\rankone{q} \in [0.0, 1.0]^3` along each edge of the cell.
@@ -342,7 +342,7 @@ class HexMeshBase:
     Parameters
     ----------
     offset : numpy.ndarray
-      shape = (3,) | (NC, 3)
+      shape = (*,3)
 
       Relative coordinates from each cell origin to compute the coordinates,
       normalized :math:`\rankone{q} \in [0.0, 1.0]^3` along each edge of the cell.

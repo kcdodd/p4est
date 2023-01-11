@@ -149,3 +149,68 @@ class QuadMeshBase:
   @property
   def node_cells_inv(self):
     return self._node_cells_inv
+
+
+  #-----------------------------------------------------------------------------
+  def coord(self,
+    offset,
+    where = None ):
+    r"""Transform to (physical/global) coordinates of a point relative to each cell
+
+    .. math::
+
+      \func{\rankone{r}}{\rankone{q}} =
+      \begin{bmatrix}
+        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1} \\
+        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1} \\
+        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1}
+      \end{bmatrix}
+
+    Parameters
+    ----------
+    offset : numpy.ndarray
+      shape = (*,2)
+
+      Relative coordinates from each cell origin to compute the coordinates,
+      normalized :math:`\rankone{q} \in [0.0, 1.0]^2` along each edge of the cell.
+    where : None | slice | numpy.ndarray
+      Subset of cells. (default: slice(None))
+
+
+    Returns
+    -------
+    coord: array of shape = (NC, 3)
+    """
+    raise NotImplementedError
+
+  #-----------------------------------------------------------------------------
+  def coord_jac(self,
+    offset,
+    where = None ):
+    r"""Jacobian of the absolute coordinates w.r.t local coordinates
+
+    .. math::
+
+      \ranktwo{J}_\rankone{r} = \nabla_{\rankone{q}} \rankone{r} =
+      \begin{bmatrix}
+        \frac{\partial x}{\partial q_0} & \frac{\partial x}{\partial q_1} \\
+        \frac{\partial y}{\partial q_0} & \frac{\partial y}{\partial q_1} \\
+        \frac{\partial z}{\partial q_0} & \frac{\partial z}{\partial q_1}
+      \end{bmatrix}
+
+    Parameters
+    ----------
+    offset : numpy.ndarray
+      shape = (*,2)
+
+      Relative coordinates from each cell origin to compute the coordinates,
+      normalized :math:`\rankone{q} \in [0.0, 1.0]^2` along each edge of the cell.
+    where : None | slice | numpy.ndarray
+      Subset of cells. (default: slice(None))
+
+    Returns
+    -------
+    coord_jac: numpy.ndarray
+      shape = (NC, 3, 2)
+    """
+    raise NotImplementedError

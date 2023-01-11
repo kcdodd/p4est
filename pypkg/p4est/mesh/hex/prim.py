@@ -1,11 +1,10 @@
 import numpy as np
-from ...utils import (
-  jagged_array,
-  unique_full )
 from ...geom import (
   trans_sphere_to_cart )
-
-from .mesh import HexMesh
+from .mesh import (
+  HexMesh,
+  HexMeshSpherical,
+  HexMeshCartesianSpherical )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def cube(length = 1.0):
@@ -33,6 +32,35 @@ def cube(length = 1.0):
   cells = np.arange(8).reshape(1,2,2,2)
 
   return HexMesh(
+    verts = verts,
+    cells = cells )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def spherical_cube(length = 1.0):
+  """Factory method to create the volume of a cube
+
+  Parameters
+  ----------
+  length : float
+
+  Returns
+  -------
+  HexMesh
+  """
+
+  half = 0.5*length
+
+  verts = np.stack(
+    np.meshgrid(
+      [-half, half],
+      [-half, half],
+      [-half, half],
+      indexing = 'ij'),
+    axis = -1).transpose(2,1,0,3).reshape(-1, 3)
+
+  cells = np.arange(8).reshape(1,2,2,2)
+
+  return HexMeshCartesianSpherical(
     verts = verts,
     cells = cells )
 
@@ -109,7 +137,7 @@ def icosahedron_spherical_shell(r1 = 0.5, r2 = 1.0):
     _cells + len(_verts)],
     axis = 1 )
 
-  return HexMesh(
+  return HexMeshSpherical(
     verts = verts,
     cells = cells,
     vert_nodes = vert_nodes)
@@ -129,7 +157,7 @@ def icosahedron_shell(r1 = 0.5, r2 = 1.0):
   """
   mesh = icosahedron_spherical_shell(r1 = r1, r2 = r2)
 
-  return HexMesh(
+  return HexMeshCartesianSpherical(
     verts = trans_sphere_to_cart(mesh.verts),
     cells = mesh.cells,
     vert_nodes = mesh.vert_nodes)
