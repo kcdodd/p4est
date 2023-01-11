@@ -28,7 +28,7 @@ cdef class P4est:
 
   Parameters
   ----------
-  mesh : QuadMesh
+  mesh : QuadMeshBase
   min_level : None | int
     (default: 0)
   max_level : None | int
@@ -198,70 +198,49 @@ cdef class P4est:
     return self._rank_mirrors
 
   #-----------------------------------------------------------------------------
-  def leaf_coord(self,
-    uv = None,
-    idx = None,
-    interp = None ):
+  def coord(self,
+    offset = None,
+    where = None ):
     r"""
 
     Parameters
     ----------
-    uv : None | array of shape = (2,)
-      Relative position within each leaf to compute the coordinates, normalized
-      to the range [0.0, 1.0] along each edge of the leaf.
-      (default: (0.0, 0.0))
-    idx : None | any single-dimension ndarray index
-      Computes coordinates only for this subset of leaves. (default: slice(None))
-    interp : None | callable
-      Interpolation function ()
+    offset : None | numpy.ndarray
+      shape = (*,2)
+
+      Relative coordinates from each cell origin to compute the coordinates,
+      normalized :math:`\rankone{q} \in [0.0, 1.0]^2` along each edge of the cell.
+      (default: (0.5, 0.5))
+
+    where : None | slice | numpy.ndarray
+      Subset of cells. (default: slice(None))
 
     Returns
     -------
-    coords: array of shape = (len(leaf_info), 3)
-      Absolute coordinates of the given relative position in each leaf
+    coord: array of shape = (NC, 3)
     """
 
-    if uv is None:
-      uv = np.zeros((2,), dtype = np.float64)
+    if offset is None:
+      offset = 0.5*np.ones((2,), dtype = np.float64)
 
     else:
-      uv = np.asarray(uv, dtype = np.float64)
+      offset = np.asarray(offset, dtype = np.float64)
 
-    if idx is None:
-      idx = slice(None)
+    if where is None:
+      where = slice(None)
 
-    info = self._leaf_info[idx]
+    info = self._leaf_info[where]
 
     # compute the local discrete width of the leaf within the root cell
     # NOTE: the root level = 0 is 2**P4EST_MAXLEVEL wide, and all refinement
     # levels are smaller by factors that are powers of 2.
     qwidth = np.left_shift(1, P4EST_MAXLEVEL - info.level.astype(np.int32))
 
-    cell_verts = self.mesh.verts[ self.mesh.cells[ info.root ] ]
+    leaf_offset = ( info.origin + offset[None,:] * qwidth[:,None] ) / P4EST_ROOT_LEN
 
-    # compute the relative position within the root cell
-    UV = np.clip(
-      ( info.origin + uv[None,:] * qwidth[:,None] ) / P4EST_ROOT_LEN,
-      0.0, 1.0)
-
-    # Compute the coefficients for bilinear interpolation of the root cells
-    # vertices absolute position onto the desired position relative to the leaf.
-
-    if interp is None:
-      _UV = 1.0 - UV
-
-      # bi-linear interpolation
-      c = np.empty(cell_verts.shape[:3])
-      c[:,0,0] = _UV[:,0]*_UV[:,1]
-      c[:,0,1] = UV[:,0]*_UV[:,1]
-      c[:,1,0] = _UV[:,0]*UV[:,1]
-      c[:,1,1] = UV[:,0]*UV[:,1]
-
-      # Perform the interpolation
-      return np.sum(c[:,:,:,None] * cell_verts, axis = (1,2))
-
-    else:
-      return interp(cell_verts, UV)
+    return self.mesh.coord(
+      offset = leaf_offset,
+      where = info.root )
 
   #-----------------------------------------------------------------------------
   def adapt(self):
