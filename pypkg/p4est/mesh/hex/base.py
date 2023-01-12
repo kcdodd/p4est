@@ -1,3 +1,4 @@
+from copy import copy
 import numpy as np
 from p4est.utils import (
   jagged_array )
@@ -241,6 +242,24 @@ class HexMeshBase:
 
     self._node_cells = node_cells
     self._node_cells_inv = node_cells_inv
+
+  #-----------------------------------------------------------------------------
+  def __copy__(self):
+    cls = type(self)
+    mesh = cls.__new__(cls)
+
+    mesh._verts = copy(self._verts)
+    mesh._cells = copy(self._cells)
+    mesh._cell_adj = copy(self._cell_adj)
+    mesh._cell_adj_face = copy(self._cell_adj_face)
+    mesh._cell_edges = copy(self._cell_edges)
+    mesh._cell_nodes = copy(self._cell_nodes)
+    mesh._edge_cells = copy(self._edge_cells)
+    mesh._edge_cells_inv = copy(self._edge_cells_inv)
+    mesh._node_cells = copy(self._node_cells)
+    mesh._node_cells_inv = copy(self._node_cells_inv)
+
+    return mesh
 
   #-----------------------------------------------------------------------------
   @property

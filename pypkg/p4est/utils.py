@@ -1,3 +1,4 @@
+from copy import copy
 import numpy as np
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -49,6 +50,17 @@ class jagged_array:
     self._row_counts = row_counts
 
   #-----------------------------------------------------------------------------
+  def __copy__(self):
+    cls = type(self)
+    arr = cls.__new__(cls)
+
+    arr._data = copy(self._data)
+    arr._row_idx = copy(self._row_idx)
+    arr._row_counts = copy(self._row_counts)
+
+    return arr
+
+  #-----------------------------------------------------------------------------
   @property
   def flat(self):
     return self._data
@@ -79,7 +91,18 @@ class jagged_array:
 
   #-----------------------------------------------------------------------------
   def __getitem__( self, idx ):
-    return self._data[self.row_idx[idx]:self.row_idx[idx+1]]
+
+    if isinstance(idx, int):
+      return self._data[self.row_idx[idx]:self.row_idx[idx+1]]
+
+    mask = np.zeros(len(self), dtype = bool)
+    mask[idx] = True
+
+    data_mask = np.repeat( mask, self._row_counts )
+
+    return type(self)(
+      data = self._data[data_mask],
+      row_idx = np.concatenate(([0],np.cumsum(self._row_counts[mask]))).astype(np.int32) )
 
   #-----------------------------------------------------------------------------
   def __setitem__( self, idx, row_data ):
