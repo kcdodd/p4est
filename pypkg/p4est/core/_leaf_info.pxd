@@ -6,26 +6,26 @@ cdef class LeafInfo:
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class QuadInfo(LeafInfo):
-  cdef public np.ndarray _root
-  cdef public np.ndarray _idx
-  cdef public np.ndarray _level
-  cdef public np.ndarray _origin
-  cdef public np.ndarray _weight
-  cdef public np.ndarray _adapt
-  cdef public np.ndarray _cell_adj
-  cdef public np.ndarray _cell_adj_face
-  cdef public np.ndarray _cell_adj_subface
-  cdef public np.ndarray _cell_adj_order
-  cdef public np.ndarray _cell_adj_level
-  cdef public np.ndarray _cell_adj_rank
+  cdef public _root
+  cdef public _idx
+  cdef public _level
+  cdef public _origin
+  cdef public _weight
+  cdef public _adapt
+  cdef public _cell_adj
+  cdef public _cell_adj_face
+  cdef public _cell_adj_subface
+  cdef public _cell_adj_order
+  cdef public _cell_adj_level
+  cdef public _cell_adj_rank
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class QuadGhostInfo(LeafInfo):
-  cdef public np.ndarray _rank
-  cdef public np.ndarray _root
-  cdef public np.ndarray _idx
-  cdef public np.ndarray _level
-  cdef public np.ndarray _origin
+  cdef public _rank
+  cdef public _root
+  cdef public _idx
+  cdef public _level
+  cdef public _origin
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

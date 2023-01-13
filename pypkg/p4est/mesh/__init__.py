@@ -3,5 +3,5 @@ from .quad import (
   QuadMesh )
 
 from .hex import (
-  HexMeshBase,
+  HexMesh,
   HexMesh )

@@ -2,8 +2,8 @@ import numpy as np
 import pyvista as pv
 from p4est import (
   P4est,
-  interp_sphere_to_cart_slerp,
-  interp_slerp_quad)
+  interp_sphere_to_cart_slerp2,
+  interp_slerp2)
 
 from p4est.mesh.quad import (
   QuadMesh,
@@ -51,10 +51,10 @@ def plot_grid(grid):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_icosahedron_golden():
   mesh = icosahedron_golden()
+  mesh.show()
 
   grid = P4est(
-    mesh = mesh,
-    min_level = 0)
+    mesh = mesh)
 
   for r in range(3):
     grid.leaf_info.adapt = 1

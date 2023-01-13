@@ -10,9 +10,14 @@ from .mesh import (
 from .geom import (
   trans_sphere_to_cart,
   trans_cart_to_sphere,
+  interp_linear,
+  interp_linear2,
+  interp_linear3,
   interp_slerp,
-  interp_slerp_quad,
-  interp_sphere_to_cart_slerp )
+  interp_slerp2,
+  interp_slerp3,
+  interp_sphere_to_cart_slerp2,
+  interp_sphere_to_cart_slerp3)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def get_include():

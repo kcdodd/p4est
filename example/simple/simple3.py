@@ -2,14 +2,14 @@ import numpy as np
 import itertools
 import pyvista as pv
 from p4est import (
-  P8est,
-  interp_sphere_to_cart_slerp,
-  interp_slerp_quad)
+  P8est)
 
 from p4est.mesh.hex import (
   HexMesh,
   cube,
   spherical_cube_shell,
+  spherical_cube,
+  slab_spherical_cube_hole,
   icosahedron_spherical_shell,
   icosahedron_shell)
 
@@ -90,8 +90,38 @@ def run_cube():
   plot_grid(grid)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def run_spherical_cube():
+def run_spherical_cube_shell():
   mesh = spherical_cube_shell()
+  # mesh.show()
+
+  grid = P8est(
+    mesh = mesh,
+    min_level = 0)
+
+  for r in range(4):
+    grid.leaf_info.adapt = 1
+    grid.adapt()
+
+  plot_grid(grid)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def run_spherical_cube():
+  mesh = spherical_cube()
+  # mesh.show()
+
+  grid = P8est(
+    mesh = mesh,
+    min_level = 0)
+
+  for r in range(4):
+    grid.leaf_info.adapt = 1
+    grid.adapt()
+
+  plot_grid(grid)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def run_slab_spherical_cube_hole():
+  mesh = slab_spherical_cube_hole()
   # mesh.show()
 
   grid = P8est(
@@ -137,6 +167,11 @@ def run_icosahedron():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 if __name__ == '__main__':
   run_cube()
+  run_spherical_cube_shell()
   run_spherical_cube()
+
+  # NOTE: mixing geometries not quite working
+  run_slab_spherical_cube_hole()
+
   run_icosahedron_spherical()
   run_icosahedron()

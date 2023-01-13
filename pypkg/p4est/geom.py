@@ -1,6 +1,116 @@
 import numpy as np
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class HexGeometry:
+  #-----------------------------------------------------------------------------
+  def __init__(self):
+    pass
+
+  #-----------------------------------------------------------------------------
+  def coord(self,
+    cell_verts,
+    offset ):
+    r"""Transform to (physical/global) coordinates of a point relative to each cell
+
+    .. math::
+
+      \func{\rankone{r}}{\rankone{q}} =
+      \begin{bmatrix}
+        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
+        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
+        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2}
+      \end{bmatrix}
+
+    Parameters
+    ----------
+    cell_verts : numpy.ndarray
+      shape = (..., 2, 2, 2, 3)
+
+    offset : numpy.ndarray
+      shape = (..., 3)
+
+      Relative coordinates from each cell origin to compute the coordinates,
+      normalized :math:`\rankone{q} \in [0.0, 1.0]^3` along each edge of the cell.
+
+
+    Returns
+    -------
+    coord: array of shape = (..., 3)
+    """
+
+    raise NotImplementedError()
+
+  #-----------------------------------------------------------------------------
+  def coord_jac(self,
+    cell_verts,
+    offset ):
+    r"""Jacobian of the absolute coordinates w.r.t local coordinates
+
+    .. math::
+
+      \ranktwo{J}_\rankone{r} = \nabla_{\rankone{q}} \rankone{r} =
+      \begin{bmatrix}
+        \frac{\partial x}{\partial q_0} & \frac{\partial x}{\partial q_1} & \frac{\partial x}{\partial q_2} \\
+        \frac{\partial y}{\partial q_0} & \frac{\partial y}{\partial q_1} & \frac{\partial y}{\partial q_2} \\
+        \frac{\partial z}{\partial q_0} & \frac{\partial z}{\partial q_1} & \frac{\partial z}{\partial q_2}
+      \end{bmatrix}
+
+    Parameters
+    ----------
+    cell_verts : numpy.ndarray
+      shape = (..., 2, 2, 2, 3)
+
+    offset : numpy.ndarray
+      shape = (..., 3)
+
+      Relative coordinates from each cell origin to compute the coordinates,
+      normalized :math:`\rankone{q} \in [0.0, 1.0]^3` along each edge of the cell.
+
+
+    Returns
+    -------
+    coord_jac: numpy.ndarray
+      shape = (..., 3, 3)
+    """
+    raise NotImplementedError()
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class HexLinear(HexGeometry):
+  #-----------------------------------------------------------------------------
+  def coord(self,
+    cell_verts,
+    offset ):
+
+    return interp_linear3(cell_verts, offset)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class HexSpherical(HexGeometry):
+  #-----------------------------------------------------------------------------
+  def coord(self,
+    cell_verts,
+    offset ):
+
+    return interp_sphere_to_cart_slerp3(cell_verts, offset)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class HexCartesianSpherical(HexGeometry):
+  #-----------------------------------------------------------------------------
+  def __init__(self, origin = None):
+    super().__init__()
+
+    if origin is None:
+      origin = (0.0, 0.0, 0.0)
+
+    self.origin = np.array(origin, dtype = np.float64)
+
+  #-----------------------------------------------------------------------------
+  def coord(self,
+    cell_verts,
+    offset ):
+
+    return interp_slerp3(cell_verts - self.origin, offset) + self.origin
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def trans_sphere_to_cart(uvr):
   """Transforms coordinates from spherical to cartesian
 
@@ -65,10 +175,14 @@ def trans_cart_to_sphere(xyz):
 def interp_linear(eta, x0, x1):
   """Linear interpolation
   """
-  return (1.0 - eta)[...,None] * x0 + eta[...,None] * x1
+
+  if eta.ndim < x0.ndim:
+    eta = eta[...,None]
+
+  return (1.0 - eta) * x0 + eta * x1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_bilinear(verts, uv):
+def interp_linear2(verts, uv):
   """Bi-linear interpolation
   """
 
@@ -86,7 +200,7 @@ def interp_bilinear(verts, uv):
       x1 = verts[...,1,:])
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_trilinear(verts, uv):
+def interp_linear3(verts, uv):
   """Tri-inear interpolation
   """
 
@@ -98,12 +212,13 @@ def interp_trilinear(verts, uv):
     x0 = verts[...,0,:,:,:].reshape(-1, m),
     x1 = verts[...,1,:,:,:].reshape(-1, m)).reshape(s)
 
-  return interp_bilinear(verts = verts, uv = uv)
+  return interp_linear2(verts = verts, uv = uv)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def interp_slerp(eta, x0, x1):
   """Spherical linear interpolation
   """
+
   _x0 = np.linalg.norm(x0, axis = -1)
   _x1 = np.linalg.norm(x1, axis = -1)
 
@@ -117,19 +232,9 @@ def interp_slerp(eta, x0, x1):
   return c0[...,None] * x0 + c1[...,None] * x1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_slerp_quad(verts, uv):
-  """Spherical linear interpolation of quadrilateral vertices, assumes third axis
-  is 'radial'.
+def interp_slerp2(verts, uv):
+  """Spherical linear interpolation of quadrilateral vertices
   """
-
-  if uv.shape[-1] == 3:
-    m = np.prod(verts.shape[-3:])
-    s = verts.shape[:-4] + verts.shape[-3:]
-
-    verts = interp_linear(
-      eta = uv[...,2],
-      x0 = verts[...,0,:,:,:].reshape(-1, m),
-      x1 = verts[...,1,:,:,:].reshape(-1, m)).reshape(s)
 
   return interp_slerp(
     eta = uv[...,1],
@@ -143,9 +248,33 @@ def interp_slerp_quad(verts, uv):
       x1 = verts[...,1,1,:]) )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_sphere_to_cart_slerp(verts, uv):
+def interp_slerp3(verts, uv):
+  """Spherical linear interpolation of quadrilateral vertices, assumes third axis
+  is 'radial'.
+  """
+
+  m = np.prod(verts.shape[-3:])
+  s = verts.shape[:-4] + verts.shape[-3:]
+
+  verts = interp_linear(
+    eta = uv[...,2],
+    x0 = verts[...,0,:,:,:].reshape(-1, m),
+    x1 = verts[...,1,:,:,:].reshape(-1, m)).reshape(s)
+
+  return interp_slerp2(verts, uv)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def interp_sphere_to_cart_slerp2(verts, uv):
   """Spherical linear interpolation applied after transforming to cartesian
   """
-  return interp_slerp_quad(
+  return interp_slerp2(
+    verts = trans_sphere_to_cart(verts),
+    uv = uv )
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def interp_sphere_to_cart_slerp3(verts, uv):
+  """Spherical linear interpolation applied after transforming to cartesian
+  """
+  return interp_slerp3(
     verts = trans_sphere_to_cart(verts),
     uv = uv )

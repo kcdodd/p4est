@@ -1,5 +1,5 @@
 import numpy as np
-from p4est.utils import (
+from ...utils import (
   jagged_array,
   unique_full )
 

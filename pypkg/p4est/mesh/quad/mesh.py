@@ -2,9 +2,9 @@ import numpy as np
 from ...utils import (
   jagged_array )
 from ...geom import (
-  interp_bilinear,
-  interp_slerp_quad,
-  interp_sphere_to_cart_slerp )
+  interp_linear2,
+  interp_slerp2,
+  interp_sphere_to_cart_slerp2 )
 from .base import QuadMeshBase
 from .topo import (
   quad_cell_nodes,
@@ -104,7 +104,7 @@ class QuadMesh(QuadMeshBase):
 
     uv = np.clip(np.asarray(offset), 0.0, 1.0)
 
-    return interp_bilinear(cell_verts, uv)
+    return interp_linear2(cell_verts, uv)
 
   #-----------------------------------------------------------------------------
   def show(self):
@@ -167,7 +167,7 @@ class QuadMeshSpherical(QuadMesh):
 
     uv = np.clip(np.asarray(offset), 0.0, 1.0)
 
-    return interp_sphere_to_cart_slerp(cell_verts, uv)
+    return interp_sphere_to_cart_slerp2(cell_verts, uv)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class QuadMeshCartesianSpherical(QuadMesh):
@@ -183,4 +183,4 @@ class QuadMeshCartesianSpherical(QuadMesh):
 
     uv = np.clip(np.asarray(offset), 0.0, 1.0)
 
-    return interp_slerp_quad(cell_verts, uv)
+    return interp_slerp2(cell_verts, uv)
