@@ -78,7 +78,16 @@ cdef class P4est:
 
   #-----------------------------------------------------------------------------
   cdef _init(P4est self):
-
+    #TODO: Create a nodes array object
+    #TODO: Load the nodes array object with nodes
+    #TODO: Gather the Indep nodes element count
+    #TODO: Gather the Face hanging element counts
+    #TODO: Create a Local nodes table
+    #TODO: Create an array of shared independent nodes
+    #TODO: Create a member that holds the number of sharerers for each independent node
+    #TODO: Have Processor own stored independent nodes
+    #TODO: Update leaf_info and header files
+    #TODO: Run program without it seg faulting
     memset(&self._connectivity, 0, sizeof(p4est_connectivity_t));
 
     cdef np.ndarray[double, ndim=2] verts = self._mesh.verts
