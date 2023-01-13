@@ -9,6 +9,7 @@ from p4est import (
 from p4est.mesh.hex import (
   HexMesh,
   cube,
+  spherical_cube_shell,
   icosahedron_spherical_shell,
   icosahedron_shell)
 
@@ -70,12 +71,27 @@ def plot_grid(grid):
     crinkle = True)
 
   p.add_axes()
-  p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
+  # p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
   p.show()
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_cube():
   mesh = cube()
+  # mesh.show()
+
+  grid = P8est(
+    mesh = mesh,
+    min_level = 0)
+
+  for r in range(4):
+    grid.leaf_info.adapt = 1
+    grid.adapt()
+
+  plot_grid(grid)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def run_spherical_cube():
+  mesh = spherical_cube_shell()
   # mesh.show()
 
   grid = P8est(
@@ -121,5 +137,6 @@ def run_icosahedron():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 if __name__ == '__main__':
   run_cube()
+  run_spherical_cube()
   run_icosahedron_spherical()
   run_icosahedron()

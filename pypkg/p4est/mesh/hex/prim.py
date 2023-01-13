@@ -36,29 +36,58 @@ def cube(length = 1.0):
     cells = cells )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def spherical_cube(length = 1.0):
+def spherical_cube_shell(r1 = 0.5, r2 = 1.0):
   """Factory method to create the volume of a cube
 
   Parameters
   ----------
-  length : float
+  r1 : float
+    Inner radius
+  r2 : float
+    Outer radius
 
   Returns
   -------
   HexMesh
   """
 
-  half = 0.5*length
+  # half-length of cube edges for distance (radius) to the vertices
+  # r = (l**2 + l**2 + l**2)**0.5 = l * 3**0.5
+  l1 = r1 / 3**0.5
+  l2 = r2 / 3**0.5
 
-  verts = np.stack(
+  inner = np.stack(
     np.meshgrid(
-      [-half, half],
-      [-half, half],
-      [-half, half],
+      [-l1, l1],
+      [-l1, l1],
+      [-l1, l1],
       indexing = 'ij'),
     axis = -1).transpose(2,1,0,3).reshape(-1, 3)
 
-  cells = np.arange(8).reshape(1,2,2,2)
+  outer = np.stack(
+    np.meshgrid(
+      [-l2, l2],
+      [-l2, l2],
+      [-l2, l2],
+      indexing = 'ij'),
+    axis = -1).transpose(2,1,0,3).reshape(-1, 3)
+
+  verts = np.concatenate([inner, outer])
+
+  cells = np.array([
+      # -x
+      [0, 2, 4, 6, 8, 10, 12, 14],
+      # +x
+      [1, 3, 5, 7, 9, 11, 13, 15],
+      # -y
+      [0, 1, 4, 5, 8, 9, 12, 13],
+      # +y
+      [2, 3, 6, 7, 10, 11, 14, 15],
+      # -z
+      [0, 1, 2, 3, 8, 9, 10, 11],
+      # +z
+      [4, 5, 6, 7, 12, 13, 14, 15] ],
+    dtype = np.int32 ).reshape(-1, 2,2,2)
 
   return HexMeshCartesianSpherical(
     verts = verts,

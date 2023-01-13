@@ -38,23 +38,14 @@ def hex_cell_nodes(cells, vert_nodes):
     node_cells_inv.row_idx == node_cells.row_idx
   """
 
-  # count number of cells sharing each vertex to find if there are any singularities
-  # that haven't been added to a 'node'
-  # NOTE: assumes a vertex is in a cell at most 1 time
-  _verts, _count = np.unique(
-    cells.ravel(),
-    return_counts = True )
-
-  vert_cells_count = np.zeros((len(vert_nodes),), dtype = np.int32)
-  vert_cells_count[_verts] = _count
-  naked_singularities = (vert_cells_count > 8) & (vert_nodes == -1)
-  ns = np.count_nonzero(naked_singularities)
+  independent = (vert_nodes == -1)
+  ns = np.count_nonzero(independent)
 
   if ns > 0:
     # add new nodes for any that need them
     vert_nodes = np.copy(vert_nodes)
     new_nodes = np.arange(ns) + np.amax(vert_nodes) + 1
-    vert_nodes[naked_singularities] = new_nodes
+    vert_nodes[independent] = new_nodes
 
   # get unique nodes, and the number of vertices associated with each one
   nodes, node_verts_count = np.unique(
@@ -112,32 +103,6 @@ def hex_cell_nodes(cells, vert_nodes):
   # NOTE: 0 < len(node_cells_idx) <= len(nodes)+1
   node_cells_idx = np.concatenate(np.nonzero(_mask) + ([_mask.size],)).astype(np.int32)
 
-  # the difference between these indices is the count of repeats of the node
-  _counts = np.diff(node_cells_idx)
-  _nodes = _nodes[_mask]
-
-
-  # NOTE: this is back to len(nodes), with all 'unused' node counts set to zero
-  node_cells_count = np.zeros((len(nodes),), dtype = np.int32)
-  node_cells_count[_nodes] = _counts
-
-  # Only store nodes that:
-  # Are associated with 2 or more vertices ("non-local" connections),
-  # or connect 5 or more cells (mesh singularities )
-  node_keep = (nodes != -1) & ((node_cells_count > 8) | (node_verts_count > 1))
-
-  _node_keep = np.repeat( node_keep, node_cells_count )
-
-  node_cells_count = np.ascontiguousarray(node_cells_count[node_keep])
-  node_cells = np.ascontiguousarray(node_cells[_node_keep])
-  node_cells_inv = np.ascontiguousarray(node_cells_inv[_node_keep])
-
-  # NOTE: this still points to the memoryview of un-raveled cell_nodes
-  _cell_nodes[sort_idx[~_node_keep]] = -1
-
-  # recompute the offsets after masking
-  node_cells_idx = np.concatenate(([0],np.cumsum(node_cells_count))).astype(np.int32)
-
   node_cells = jagged_array(node_cells, node_cells_idx)
   node_cells_inv = jagged_array(node_cells_inv, node_cells_idx)
 
@@ -158,10 +123,18 @@ def hex_cell_edges(cell_nodes):
 
   Returns
   -------
-  cell_edges : ndarray with shape (NC, 3, 2, 2) and dtype np.int32
+  cell_edges : numpy.ndarray
+    shape = (NC, 3, 2, 2), dtype = numpy.int32
   edge_cells : jagged_array
   edge_cells_inv : jagged_array
+  node_edge_counts : numpy.ndarray
+    shape = (NN,), dtype = numpy.int8
 
+    Number of edges incident upon each node.
+  edge_cell_counts : numpy.ndarray
+    shape = (NE,), dtype = numpy.int8
+
+    Number of cells incident upon each edge.
   """
   nc = len(cell_nodes)
   cidx = np.arange(nc)
@@ -186,16 +159,20 @@ def hex_cell_edges(cell_nodes):
     # NOTE: put the new face index as axis = 1, instead of axis = 0,
     axis = 1 )
 
+  # sort nodes for each face, removing differences in node order
+  _cell_edge_nodes = np.sort(
+    # also reshape to a list of 4-node faces (NC,12,2) -> (12*NC,2)
+    cell_edge_nodes.reshape(12*nc, 2),
+    # sort over the 2 nodes of each edge
+    axis = 1 )
+
   # reduce edges down to unique sets of 2 nodes
   sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
-    # sort nodes for each face, removing differences in node order
-    np.sort(
-      # also reshape to a list of 4-node faces (NC,12,2) -> (12*NC,2)
-      cell_edge_nodes.reshape(12*nc, 2),
-      # sort over the 2 nodes of each edge
-      axis = 1 ),
+    _cell_edge_nodes,
     # unique over all cells
     axis = 0 )
+
+  edge_nodes = _cell_edge_nodes[sort_idx[unique_mask]]
 
   # mapping of cell to unique edges
   _cell_edges = inv_idx
@@ -204,20 +181,8 @@ def hex_cell_edges(cell_nodes):
   # mapping to cell's local index of each edge
   edge_cells_inv = (sort_idx % 12).astype(np.int8)
 
-  # keep only edges shared by more than one cell
   edge_cell_counts = np.diff(unique_idx)
-  edge_keep = edge_cell_counts > 1
-  _edge_keep = np.repeat( edge_keep, edge_cell_counts )
-
-  # set un-used edge indices to -1
-  _cell_edges[sort_idx[~_edge_keep]] = -1
-
-  edge_cell_counts = np.ascontiguousarray(edge_cell_counts[edge_keep])
-  edge_cells = np.ascontiguousarray(edge_cells[_edge_keep])
-  edge_cells_inv = np.ascontiguousarray(edge_cells_inv[_edge_keep])
-
-  # recompute offsets after filtering kept edges
-  edge_cells_idx = np.concatenate(([0],np.cumsum(edge_cell_counts))).astype(np.int32)
+  edge_cells_idx = unique_idx
 
   # (12*NC,) -> (NC, 3, 2, 2)
   cell_edges = _cell_edges.reshape(nc, 3, 2, 2)
@@ -230,10 +195,18 @@ def hex_cell_edges(cell_nodes):
     data = edge_cells_inv,
     row_idx = edge_cells_idx )
 
+  # compute the number of edges incident on each node
+  nodes, node_edge_counts = np.unique(edge_nodes, return_counts = True)
+
+  if nodes[0] == -1:
+    node_edge_counts = np.ascontiguousarray(node_edge_counts[1:])
+
   return (
     cell_edges,
     edge_cells,
-    edge_cells_inv )
+    edge_cells_inv,
+    edge_cell_counts,
+    node_edge_counts )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def hex_cell_adj(cell_nodes):

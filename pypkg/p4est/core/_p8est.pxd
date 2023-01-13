@@ -415,6 +415,28 @@ ctypedef struct aux_quadrant_data_t:
   np.npy_int32 replaced_idx[8]
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class P8estConnectivity:
+  cdef vertices
+  cdef tree_to_vertex
+  cdef tree_to_tree
+  cdef tree_to_face
+  cdef tree_to_edge
+  cdef tree_to_corner
+
+  cdef ett_offset
+  cdef edge_to_tree
+  cdef edge_to_edge
+
+  cdef ctt_offset
+  cdef corner_to_tree
+  cdef corner_to_corner
+
+  cdef p8est_connectivity_t _cdata
+
+  #-----------------------------------------------------------------------------
+  cdef _init(P8estConnectivity self)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P8est:
 
   cdef _comm
@@ -427,7 +449,7 @@ cdef class P8est:
   cdef _rank_ghosts
   cdef _rank_mirrors
 
-  cdef p8est_connectivity_t _connectivity
+  cdef P8estConnectivity _connectivity
   cdef p8est_t* _p4est
 
   #-----------------------------------------------------------------------------

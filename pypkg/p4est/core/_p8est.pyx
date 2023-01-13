@@ -5,6 +5,7 @@ from collections.abc import (
   Iterable,
   Sequence,
   Mapping )
+from copy import copy
 cimport numpy as npy
 import numpy as np
 from mpi4py import MPI
@@ -22,6 +23,143 @@ from p4est.core._utils cimport (
 from p4est.core._sc cimport (
   ndarray_from_sc_array )
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class P8estConnectivity:
+  #-----------------------------------------------------------------------------
+  def __init__(self, mesh):
+
+    # The edges are only stored when they connect trees.
+    cell_edges = mesh.cell_edges
+    edge_cells = mesh.edge_cells
+    edge_cells_inv = mesh.edge_cells_inv
+
+    edge_keep = mesh.edge_cells.row_counts > 1
+    num_edges = np.count_nonzero(edge_keep)
+
+    if num_edges < len(edge_cells):
+      cell_edges = -np.ones_like(cell_edges)
+      edge_cells = edge_cells[edge_keep]
+      edge_cells_inv = edge_cells_inv[edge_keep]
+
+      edges = np.repeat(np.arange(len(edge_cells)), edge_cells.row_counts)
+      cell_edges.reshape(-1,12)[(edge_cells.flat, edge_cells_inv.flat)] = edges
+
+
+    # The corners are only stored when they connect trees.
+    cell_nodes = mesh.cell_nodes
+    node_cells = mesh.node_cells
+    node_cells_inv = mesh.node_cells_inv
+
+    node_keep = node_cells.row_counts > 1
+    num_nodes = np.count_nonzero(node_keep)
+
+    if num_nodes < len(node_cells):
+      cell_nodes = -np.ones_like(cell_nodes)
+      node_cells = node_cells[node_keep]
+      node_cells_inv = node_cells_inv[node_keep]
+
+      nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
+      cell_nodes.reshape(-1,8)[(node_cells.flat, node_cells_inv.flat)] = nodes
+
+    requirements = ['C_CONTIGUOUS', 'ALIGNED', 'OWNDATA']
+
+    self.vertices = np.require(
+      mesh.verts,
+      dtype = np.double,
+      requirements = requirements)
+    self.tree_to_vertex = np.require(
+      mesh.cells,
+      dtype = np.int32,
+      requirements = requirements)
+    self.tree_to_tree = np.require(
+      mesh.cell_adj,
+      dtype = np.int32,
+      requirements = requirements)
+    self.tree_to_face = np.require(
+      mesh.cell_adj_face,
+      dtype = np.int8,
+      requirements = requirements)
+
+    self.tree_to_edge = np.require(
+      cell_edges,
+      dtype = np.int32,
+      requirements = requirements)
+    self.ett_offset = np.require(
+      edge_cells.row_idx,
+      dtype = np.int32,
+      requirements = requirements)
+    self.edge_to_tree = np.require(
+      edge_cells.flat,
+      dtype = np.int32,
+      requirements = requirements)
+    self.edge_to_edge = np.require(
+      edge_cells_inv.flat,
+      dtype = np.int8,
+      requirements = requirements)
+
+    self.tree_to_corner = np.require(
+      cell_nodes,
+      dtype = np.int32,
+      requirements = requirements)
+    self.ctt_offset = np.require(
+      node_cells.row_idx,
+      dtype = np.int32,
+      requirements = requirements)
+    self.corner_to_tree = np.require(
+      node_cells.flat,
+      dtype = np.int32,
+      requirements = requirements)
+    self.corner_to_corner = np.require(
+      node_cells_inv.flat,
+      dtype = np.int8,
+      requirements = requirements)
+
+    self._init()
+
+  #-----------------------------------------------------------------------------
+  cdef _init(P8estConnectivity self):
+    memset(&self._cdata, 0, sizeof(p8est_connectivity_t))
+
+    cdef np.ndarray[double, ndim=2] vertices = self.vertices
+    cdef np.ndarray[np.npy_int32, ndim=4] tree_to_vertex = self.tree_to_vertex
+    cdef np.ndarray[np.npy_int32, ndim=3] tree_to_tree = self.tree_to_tree
+    cdef np.ndarray[np.npy_int8, ndim=3] tree_to_face = self.tree_to_face
+    cdef np.ndarray[np.npy_int32, ndim=4] tree_to_edge = self.tree_to_edge
+    cdef np.ndarray[np.npy_int32, ndim=4] tree_to_corner = self.tree_to_corner
+
+    cdef np.ndarray[np.npy_int32, ndim=1] ett_offset = self.ett_offset
+    cdef np.ndarray[np.npy_int32, ndim=1] edge_to_tree = self.edge_to_tree
+    cdef np.ndarray[np.npy_int8, ndim=1] edge_to_edge = self.edge_to_edge
+
+    cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = self.ctt_offset
+    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = self.corner_to_tree
+    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = self.corner_to_corner
+
+    self._cdata.num_vertices = len(vertices)
+    self._cdata.vertices = <double*>vertices.data
+
+    self._cdata.num_trees = len(tree_to_vertex)
+    self._cdata.tree_to_vertex = <np.npy_int32*>(tree_to_vertex.data)
+    self._cdata.tree_to_tree = <np.npy_int32*>(tree_to_tree.data)
+    self._cdata.tree_to_face = <np.npy_int8*>(tree_to_face.data)
+
+    self._cdata.num_edges = len(ett_offset)-1
+    self._cdata.ett_offset = <np.npy_int32*>(ett_offset.data)
+
+    if self._cdata.num_edges > 0:
+      # NOTE: intially NULL from memset
+      self._cdata.tree_to_edge = <np.npy_int32*>(tree_to_edge.data)
+      self._cdata.edge_to_tree = <np.npy_int32*>(edge_to_tree.data)
+      self._cdata.edge_to_edge = <np.npy_int8*>(edge_to_edge.data)
+
+    self._cdata.num_corners = len(ctt_offset)-1
+    self._cdata.ctt_offset = <np.npy_int32*>(ctt_offset.data)
+
+    if self._cdata.num_corners > 0:
+      # NOTE: intially NULL from memset
+      self._cdata.tree_to_corner = <np.npy_int32*>(tree_to_corner.data)
+      self._cdata.corner_to_tree = <np.npy_int32*>(corner_to_tree.data)
+      self._cdata.corner_to_corner = <np.npy_int8*>(corner_to_corner.data)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P8est:
@@ -74,59 +212,16 @@ cdef class P8est:
     self._ghost_info = HexGhostInfo(0)
     self._rank_ghosts = None
     self._rank_mirrors = None
+    self._connectivity = P8estConnectivity(self._mesh)
 
     self._init()
 
   #-----------------------------------------------------------------------------
   cdef _init(P8est self):
 
-    memset(&self._connectivity, 0, sizeof(p8est_connectivity_t))
-
-    cdef np.ndarray[double, ndim=2] vertices = self._mesh.verts
-    cdef np.ndarray[np.npy_int32, ndim=4] tree_to_vertex = self._mesh.cells
-    cdef np.ndarray[np.npy_int32, ndim=3] tree_to_tree = self._mesh.cell_adj
-    cdef np.ndarray[np.npy_int8, ndim=3] tree_to_face = self._mesh.cell_adj_face
-    cdef np.ndarray[np.npy_int32, ndim=4] tree_to_edge = self._mesh.cell_edges
-    cdef np.ndarray[np.npy_int32, ndim=4] tree_to_corner = self._mesh.cell_nodes
-
-    cdef np.ndarray[np.npy_int32, ndim=1] ett_offset = np.ascontiguousarray(self._mesh.edge_cells.row_idx)
-    cdef np.ndarray[np.npy_int32, ndim=1] edge_to_tree = np.ascontiguousarray(self._mesh.edge_cells.flat)
-    cdef np.ndarray[np.npy_int8, ndim=1] edge_to_edge = np.ascontiguousarray(self._mesh.edge_cells_inv.flat)
-
-    cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = np.ascontiguousarray(self._mesh.node_cells.row_idx)
-    cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = np.ascontiguousarray(self._mesh.node_cells.flat)
-    cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = np.ascontiguousarray(self._mesh.node_cells_inv.flat)
-
-    self._connectivity.num_vertices = len(vertices)
-    self._connectivity.vertices = <double*>vertices.data
-
-    self._connectivity.num_trees = len(tree_to_vertex)
-    self._connectivity.tree_to_vertex = <np.npy_int32*>(tree_to_vertex.data)
-    self._connectivity.tree_to_tree = <np.npy_int32*>(tree_to_tree.data)
-    self._connectivity.tree_to_face = <np.npy_int8*>(tree_to_face.data)
-
-    self._connectivity.num_edges = len(ett_offset)-1
-    self._connectivity.ett_offset = <np.npy_int32*>(ett_offset.data)
-
-    if self._connectivity.num_edges > 0:
-      # NOTE: intially NULL from memset
-      self._connectivity.tree_to_edge = <np.npy_int32*>(tree_to_edge.data)
-      self._connectivity.edge_to_tree = <np.npy_int32*>(edge_to_tree.data)
-      self._connectivity.edge_to_edge = <np.npy_int8*>(edge_to_edge.data)
-
-    self._connectivity.num_corners = len(ctt_offset)-1
-    self._connectivity.ctt_offset = <np.npy_int32*>(ctt_offset.data)
-
-    if self._connectivity.num_corners > 0:
-      # NOTE: intially NULL from memset
-      self._connectivity.tree_to_corner = <np.npy_int32*>(tree_to_corner.data)
-      self._connectivity.corner_to_tree = <np.npy_int32*>(corner_to_tree.data)
-      self._connectivity.corner_to_corner = <np.npy_int8*>(corner_to_corner.data)
-
-
     cdef p8est_t* p4est = NULL
     cdef sc_MPI_Comm comm = <sc_MPI_Comm> (<Comm>self.comm).ob_mpi
-    cdef p8est_connectivity_t* connectivity = &(self._connectivity)
+    cdef p8est_connectivity_t* connectivity = &(self._connectivity._cdata)
 
     with nogil:
       p4est = p8est_new_ext(
@@ -155,6 +250,7 @@ cdef class P8est:
 
     p8est_destroy(self._p4est)
     self._p4est = NULL
+    self._connectivity = None
     self._mesh = None
 
   #-----------------------------------------------------------------------------
