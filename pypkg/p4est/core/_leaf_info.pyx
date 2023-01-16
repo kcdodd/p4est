@@ -135,7 +135,7 @@ cdef class LeafInfo:
     self._shape = base_shape
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class QuadInfo(LeafInfo):
+cdef class QuadLocalInfo(LeafInfo):
   #-----------------------------------------------------------------------------
   @lru_cache(maxsize = 1)
   def _fields(self):
@@ -379,7 +379,7 @@ cdef class QuadGhostInfo(LeafInfo):
     self._origin[:] = val
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class HexInfo(QuadInfo):
+cdef class HexLocalInfo(QuadLocalInfo):
   #-----------------------------------------------------------------------------
   @lru_cache(maxsize = 1)
   def _fields(self):

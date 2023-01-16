@@ -69,3 +69,4 @@ html_theme_options = {
     'color-highlight-on-target' : '#7c5418',
     'color-problematic' : '#e6c07b'
   } }
+

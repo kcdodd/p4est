@@ -1,10 +1,10 @@
 import numpy as np
 from ...geom import (
+  QuadLinear,
+  QuadSpherical,
+  QuadCartesianSpherical,
   trans_sphere_to_cart )
-from .mesh import (
-  QuadMesh,
-  QuadMeshSpherical,
-  QuadMeshCartesianSpherical )
+from .base import QuadMesh
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def unit_square():
@@ -106,9 +106,10 @@ def spherical_cube(length = 1.0):
 
     [[5, 7], [4, 6]]])  #Top Cell
 
-  return QuadMeshCartesianSpherical(
+  return QuadMesh(
     verts = verts,
-    cells = cells )
+    cells = cells,
+    geoms = QuadCartesianSpherical() )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def stack_o_squares():
@@ -344,10 +345,11 @@ def icosahedron_spherical(radius = 1.0):
     [[15, 21], [10, 16]]],
     dtype = np.int32 )
 
-  return QuadMeshSpherical(
+  return QuadMesh(
     verts = verts,
     cells = cells,
-    vert_nodes = vert_nodes)
+    vert_nodes = vert_nodes,
+    geoms = QuadSpherical() )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def icosahedron(radius = 1.0):
@@ -364,7 +366,8 @@ def icosahedron(radius = 1.0):
   """
   mesh = icosahedron_spherical(radius = radius)
 
-  return QuadMeshCartesianSpherical(
+  return QuadMesh(
     verts = trans_sphere_to_cart(mesh.verts),
     cells = mesh.cells,
-    vert_nodes = mesh.vert_nodes)
+    vert_nodes = mesh.vert_nodes,
+    geoms = QuadCartesianSpherical() )

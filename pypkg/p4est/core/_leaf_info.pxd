@@ -5,7 +5,7 @@ cdef class LeafInfo:
   cdef tuple _shape
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class QuadInfo(LeafInfo):
+cdef class QuadLocalInfo(LeafInfo):
   cdef public _root
   cdef public _idx
   cdef public _level
@@ -29,7 +29,7 @@ cdef class QuadGhostInfo(LeafInfo):
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class HexInfo(QuadInfo):
+cdef class HexLocalInfo(QuadLocalInfo):
   pass
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

@@ -14,7 +14,7 @@ from .topo import (
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class HexMesh:
-  """Base container for hexahedral mesh
+  r"""Base container for hexahedral mesh
 
   Parameters
   ----------
@@ -67,10 +67,12 @@ class HexMesh:
     Indices into 'geoms' to get the geometry associated with each vertex.
     (default: zeros(NV))
 
+
+
   .. partis_attr:: cell_adj
     :prefix: property
     :type: numpy.ndarray
-    :subscript: shape = (NC, 3, 2), dtype = int32
+    :subscript: (NC, 3, 2), int32
 
     Mapping of cells to the indices of their (up to) 6 face-adjacent neighbors.
     (AKA :c:var:`p8est_connectivity_t.tree_to_tree`)
@@ -91,7 +93,7 @@ class HexMesh:
   .. partis_attr:: cell_adj_face
     :prefix: property
     :type: numpy.ndarray
-    :subscript: shape = (NC, 3, 2), dtype = int8
+    :subscript: (NC, 3, 2), int8
 
     Topological order of the faces of each connected cell.
     (AKA :c:var:`p8est_connectivity_t.tree_to_face`)
@@ -101,7 +103,7 @@ class HexMesh:
   .. partis_attr:: cell_edges
     :prefix: property
     :type: numpy.ndarray
-    :subscript: shape = (NC, 3, 2, 2), dtype = int32
+    :subscript: (NC, 3, 2, 2), int32
 
     Mapping of cells to the indices of their (up to) 12 edges
     in ``edge_cells`` and ``edge_cells_``,
@@ -129,7 +131,7 @@ class HexMesh:
   .. partis_attr:: edge_cells
     :prefix: property
     :type: jagged_array
-    :subscript: shape = (NE, *), dtype = int32
+    :subscript: (NE, *), int32
 
     Mapping to cells sharing each edge, all ``len(edge_cells[i]) > 1``.
     (AKA :c:var:`p8est_connectivity_t.edge_to_tree`)
@@ -139,7 +141,7 @@ class HexMesh:
   .. partis_attr:: edge_cells_inv
     :prefix: property
     :type: jagged_array
-    :subscript: shape = (NE, *), dtype = int32
+    :subscript: (NE, *), int32
 
     Mapping to the cell's local edge {0,...11} in ``cell_edges``  which maps
     back to the edge.
@@ -156,7 +158,7 @@ class HexMesh:
   .. partis_attr:: cell_nodes
     :prefix: property
     :type: numpy.ndarray
-    :subscript: shape = (NC, 2, 2, 2), dtype = int32
+    :subscript: (NC, 2, 2, 2), int32
 
     Mapping of cells to the indices of their (up to) 8 nodes
     in ``node_cells`` and ``node_cells_inv``,
@@ -182,7 +184,7 @@ class HexMesh:
   .. partis_attr:: node_cells
     :prefix: property
     :type: jagged_array
-    :subscript: shape = (NN, *), dtype = int32
+    :subscript: (NN, *), int32
 
     Mapping to cells sharing each node, all ``len(node_cells[i]) > 1``.
     (AKA :c:var:`p8est_connectivity_t.corner_to_tree`)
@@ -192,7 +194,7 @@ class HexMesh:
   .. partis_attr:: node_cells_inv
     :prefix: property
     :type: jagged_array
-    :subscript: shape = (NN, *), dtype = numpy.int32
+    :subscript: (NN, *), numpy.int32
 
     Mapping to the cell's local vertex {0,...7} in ``cell_nodes`` which maps
     back to the node.
@@ -394,6 +396,11 @@ class HexMesh:
   def verts(self):
     return self._verts
 
+ #-----------------------------------------------------------------------------
+  @property
+  def vert_nodes(self):
+    return self._vert_nodes
+
   #-----------------------------------------------------------------------------
   @property
   def cells(self):
@@ -438,11 +445,6 @@ class HexMesh:
   @property
   def node_cells_inv(self):
     return self._node_cells_inv
-
- #-----------------------------------------------------------------------------
-  @property
-  def vert_nodes(self):
-    return self._vert_nodes
 
   #-----------------------------------------------------------------------------
   @property

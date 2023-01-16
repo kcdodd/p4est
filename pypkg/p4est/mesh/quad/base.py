@@ -1,17 +1,24 @@
 import numpy as np
+from collections.abc import Sequence
 from ...utils import (
   jagged_array )
+from ...geom import (
+  QuadGeometry,
+  QuadLinear )
+from .topo import (
+  quad_cell_nodes,
+  quad_cell_adj )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-class QuadMeshBase:
-  """Base container for quadrilateral mesh
+class QuadMesh:
+  r"""Base container for quadrilateral mesh
 
   Parameters
   ----------
-  verts : ndarray with shape = (NV, 2 or 3), dtype = np.float64
+  verts : numpy.ndarray[float64, (NV, 2 or 3)]
     Position of each vertex.
     (AKA :c:var:`p4est_connectivity_t.vertices`)
-  cells : ndarray with shape = (NC, 2, 2), dtype = np.int32
+  cells : numpy.ndarray[int32, (NC, 2, 2)]
     Mapping of quadrilateral cells to the indices of their 4 vertices.
     (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
 
@@ -22,7 +29,30 @@ class QuadMeshBase:
       cells[:,1,0] -> Vertex(+y, -x)
       cells[:,1,1] -> Vertex(+y, +x)
 
-  cell_adj : ndarray with shape = (NC, 2, 2), dtype = np.int32
+  vert_nodes : None | numpy.ndarray[int32, (NV,)]
+    The topological node associated with each vertex, causing cells to be connected
+    by having vertices associated with the same node in addition to directly
+    sharing vertices.
+    A value of ``-1`` is used to indicate independent vertices.
+    If not given, each vertex is assumed to be independent, and cells are only
+    connected by shared vertices.
+
+  geoms : None | Sequence[QuadGeometry]
+    The available geometries that may be referenced by 'vert_geom'.
+    (default: [QuadLinear])
+
+  vert_geom : None | numpy.ndarray[int32, (NV,)]
+
+    Indices into 'geoms' to get the geometry associated with each vertex.
+    (default: zeros(NV))
+
+
+
+  .. partis_attr:: cell_adj
+    :prefix: property
+    :type: numpy.ndarray
+    :subscript: int32, (NC, 2, 2)
+
     Mapping of cells to the indices of their (up to) 4 face-adjacent neighbors.
     (AKA :c:var:`p4est_connectivity_t.tree_to_tree`)
 
@@ -33,11 +63,19 @@ class QuadMeshBase:
       cell_adj[:,1,0] -> Cell(-yface)
       cell_adj[:,1,1] -> Cell(+yface)
 
-  cell_adj_face : ndarray with shape = (NC, 2, 2), dtype = np.int8
+  .. partis_attr:: cell_adj_face
+    :prefix: property
+    :type: numpy.ndarray
+    :subscript: int8, (NC, 2, 2)
+
     Topological order of the faces of each connected cell.
     (AKA :c:var:`p4est_connectivity_t.tree_to_face`)
 
-  cell_nodes : ndarray with shape = (NC, 2, 2), dtype = np.int32
+  .. partis_attr:: cell_nodes
+    :prefix: property
+    :type: numpy.ndarray
+    :subscript: int32, (NC, 2, 2)
+
     Mapping of cells to the indices of their (up to) 4 nodes
     in ``node_cells`` and ``node_cells_inv``,
     ``-1`` used where nodes are not specified.
@@ -50,10 +88,19 @@ class QuadMeshBase:
       cell_nodes[:,1,0] -> Node(+y, -x)
       cell_nodes[:,1,1] -> Node(+y, +x)
 
-  node_cells : jagged_array with shape = (NN, *, 1), dtype = np.int32
+  .. partis_attr:: node_cells
+    :prefix: property
+    :type: jagged_array
+    :subscript: int32, (NN, *)
+
     Mapping to cells sharing each node, all ``len(node_cells[i]) > 1``.
     (AKA :c:var:`p4est_connectivity_t.corner_to_tree`)
-  node_cells_inv : jagged_array with shape = (NN, *, 1), dtype = np.int32
+
+  .. partis_attr:: node_cells_inv
+    :prefix: property
+    :type: jagged_array
+    :subscript: int32, (NN, *, 1)
+
     Mapping to the cell's local vertex {0,1,2,3} in ``cell_nodes`` which maps
     back to the node.
     (AKA :c:var:`p4est_connectivity_t.corner_to_corner`)
@@ -68,11 +115,83 @@ class QuadMeshBase:
   def __init__(self,
     verts,
     cells,
-    cell_adj,
-    cell_adj_face,
-    cell_nodes,
-    node_cells,
-    node_cells_inv ):
+    vert_nodes = None,
+    geoms = None,
+    vert_geom = None ):
+
+    #...........................................................................
+    if vert_nodes is None:
+      vert_nodes = -np.ones(len(verts), dtype = np.int32)
+
+    vert_nodes = np.ascontiguousarray(
+      vert_nodes,
+      dtype = np.int32 )
+
+    if not (
+      vert_nodes.ndim == 1
+      and vert_nodes.shape[0] == len(verts) ):
+
+      raise ValueError(f"'vert_nodes' must have shape ({len(verts)},): {vert_nodes.shape}")
+
+    _min = np.amin(vert_nodes)
+    _max = np.amax(vert_nodes)
+
+    if _min < -1 or _max >= len(verts):
+      raise ValueError(f"'vert_nodes' values must be in the range [-1,{len(verts)-1}]: [{_min},{_max}]")
+
+    #...........................................................................
+    if geoms is None:
+      geoms = [QuadLinear()]
+
+    if not isinstance(geoms, Sequence):
+      # raise ValueError(f"'geoms' must be list of QuadGeometry: {type(geoms)}")
+      geoms = [geoms]
+
+    if len(geoms) == 0:
+      raise ValueError(f"'geoms' must have at least one QuadGeometry")
+
+    for i, geom in enumerate(geoms):
+      if not isinstance(geom, QuadGeometry):
+        raise ValueError(f"'geoms' must be list of QuadGeometry: {type(geom)}")
+
+    # TODO: remove when implementing inhomogenous geometry
+    if len(geoms) != 1:
+      raise NotImplementedError(f"Inhomogenous geometry not implemented")
+
+    #...........................................................................
+    if vert_geom is None:
+      vert_geom = np.zeros(len(verts), dtype = np.int32)
+
+    vert_geom = np.ascontiguousarray(
+      vert_geom,
+      dtype = np.int32 )
+
+    if not (
+      vert_geom.ndim == 1
+      and vert_geom.shape[0] == len(verts) ):
+
+      raise ValueError(f"'vert_geom' must have shape ({len(verts)},): {vert_geom.shape}")
+
+    _min = np.amin(vert_geom)
+    _max = np.amax(vert_geom)
+
+    if _min < 0 or _max >= len(geoms):
+      raise ValueError(f"'vert_geom' values must be in the range [0,{len(geoms)-1}]: [{_min},{_max}]")
+
+    #...........................................................................
+    ( self._vert_nodes,
+      cell_nodes,
+      node_cells,
+      node_cells_inv ) = quad_cell_nodes(cells, vert_nodes)
+
+    independent = self._vert_nodes == -1
+    ni = np.count_nonzero(independent)
+
+    full_vert_nodes = np.copy(self._vert_nodes)
+    full_vert_nodes[independent] = np.arange(ni) + np.amax(self._vert_nodes) + 1
+
+    ( cell_adj,
+      cell_adj_face ) = quad_cell_adj(full_vert_nodes[cells])
 
     if not (
       isinstance(node_cells, jagged_array)
@@ -104,6 +223,9 @@ class QuadMeshBase:
       cell_nodes,
       dtype = np.int32 )
 
+    self._geoms = tuple(geoms)
+    self._vert_geom = vert_geom
+
     nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
     _nodes = self._cell_nodes.reshape(-1,4)[(node_cells.flat, node_cells_inv.flat)]
 
@@ -119,6 +241,11 @@ class QuadMeshBase:
   @property
   def verts(self):
     return self._verts
+
+  #-----------------------------------------------------------------------------
+  @property
+  def vert_nodes(self):
+    return self._vert_nodes
 
   #-----------------------------------------------------------------------------
   @property
@@ -150,6 +277,16 @@ class QuadMeshBase:
   def node_cells_inv(self):
     return self._node_cells_inv
 
+  #-----------------------------------------------------------------------------
+  @property
+  def geoms(self):
+    return self._geoms
+
+  #-----------------------------------------------------------------------------
+  @property
+  def vert_geom(self):
+    return self._vert_geom
+
 
   #-----------------------------------------------------------------------------
   def coord(self,
@@ -168,49 +305,92 @@ class QuadMeshBase:
 
     Parameters
     ----------
-    offset : numpy.ndarray
-      shape = (*,2)
+    offset : numpy.ndarray[float64, (N | 1, ..., 2)]
 
       Relative coordinates from each cell origin to compute the coordinates,
       normalized :math:`\rankone{q} \in [0.0, 1.0]^2` along each edge of the cell.
     where : None | slice | numpy.ndarray
       Subset of cells. (default: slice(None))
 
-
     Returns
     -------
-    coord: array of shape = (NC, 3)
+    coord: numpy.ndarray[float64, (N, ..., 3)]
     """
-    raise NotImplementedError
+
+    if where is None:
+      where = slice(None)
+
+    offset = np.clip(np.asarray(offset), 0.0, 1.0)
+    offset = np.atleast_2d(offset)
+    shape = offset.shape
+    offset = offset.reshape(shape[0], int(np.prod(shape[1:-1])), shape[-1])
+
+    idx = np.atleast_1d(np.arange(len(self.cells))[where])
+    _shape = idx.shape
+    idx = idx.reshape(_shape[0], int(np.prod(_shape[1:])))
+
+    out_shape = (*_shape, 3)
+
+    assert idx.shape[1] == offset.shape[1]
+    assert idx.shape[0] == 1 or offset.shape[0] == 1 or idx.shape[0] == offset.shape[0]
+
+    # (:,:,2,2)
+    cells = self.cells[idx]
+    # (:,:,2,2,3)
+    cell_verts = self.verts[cells]
+
+    cell_geoms = self.vert_geom[cells]
+
+    if len(self.geoms) == 1:
+      # homogenous geometry
+      return self.geoms[0].coord(cell_verts, offset).reshape(out_shape)
+
+    raise NotImplementedError(f"Inhomogenous geometry not implemented")
 
   #-----------------------------------------------------------------------------
-  def coord_jac(self,
-    offset,
-    where = None ):
-    r"""Jacobian of the absolute coordinates w.r.t local coordinates
+  def show(self):
+    import pyvista as pv
 
-    .. math::
+    pv.set_plot_theme('paraview')
+    p = pv.Plotter()
 
-      \ranktwo{J}_\rankone{r} = \nabla_{\rankone{q}} \rankone{r} =
-      \begin{bmatrix}
-        \frac{\partial x}{\partial q_0} & \frac{\partial x}{\partial q_1} \\
-        \frac{\partial y}{\partial q_0} & \frac{\partial y}{\partial q_1} \\
-        \frac{\partial z}{\partial q_0} & \frac{\partial z}{\partial q_1}
-      \end{bmatrix}
+    nc = len(self.cells)
 
-    Parameters
-    ----------
-    offset : numpy.ndarray
-      shape = (*,2)
+    faces = np.empty((nc, 5), dtype = self.cells.dtype)
+    faces[:,0] = 4
+    faces[:nc,1] = self.cells[:,0,0]
+    faces[:nc,2] = self.cells[:,0,1]
+    faces[:nc,3] = self.cells[:,1,1]
+    faces[:nc,4] = self.cells[:,1,0]
 
-      Relative coordinates from each cell origin to compute the coordinates,
-      normalized :math:`\rankone{q} \in [0.0, 1.0]^2` along each edge of the cell.
-    where : None | slice | numpy.ndarray
-      Subset of cells. (default: slice(None))
+    verts = self.verts
 
-    Returns
-    -------
-    coord_jac: numpy.ndarray
-      shape = (NC, 3, 2)
-    """
-    raise NotImplementedError
+    p.add_mesh(
+      pv.PolyData(verts, faces = faces.ravel()),
+      scalars = np.arange(nc),
+      show_edges = True,
+      line_width = 1,
+      point_size = 3 )
+
+    for i in range(len(self.node_cells)):
+      m = self.vert_nodes == i
+      node_verts = verts[m]
+
+      if len(node_verts):
+        p.add_points(
+          node_verts,
+          point_size = 7,
+          color = 'red',
+          opacity = 0.75 )
+
+        p.add_point_labels(
+          node_verts,
+          labels = [ str(i) ]*len(node_verts),
+          text_color = 'yellow',
+          font_size = 30,
+          fill_shape = False )
+
+    p.add_axes()
+    p.add_cursor(bounds=(0.0, 1.0, 0.0, 1.0, 0.0, 1.0))
+    p.show()
+

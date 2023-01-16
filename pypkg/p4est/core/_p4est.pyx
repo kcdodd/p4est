@@ -10,11 +10,9 @@ import numpy as np
 from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
 from p4est.utils import jagged_array
-from p4est.mesh.quad import (
-  QuadMeshBase,
-  QuadMesh )
+from p4est.mesh.quad import QuadMesh
 from p4est.core._leaf_info import (
-  QuadInfo,
+  QuadLocalInfo,
   QuadGhostInfo )
 from p4est.core._adapted import QuadAdapted
 from p4est.core._utils cimport (
@@ -24,11 +22,11 @@ from p4est.core._sc cimport (
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
-  """
+  r"""__init__(mesh, min_level = None, max_level = None, comm = None )
 
   Parameters
   ----------
-  mesh : QuadMeshBase
+  mesh : QuadMesh
   min_level : None | int
     (default: 0)
   max_level : None | int
@@ -36,6 +34,45 @@ cdef class P4est:
   comm : None | mpi4py.MPI.Comm
     (default: mpi4py.MPI.COMM_WORLD)
 
+
+  .. partis_attr:: mesh
+    :prefix: property
+    :type: QuadMesh
+
+    Mesh for the root-level cells.
+
+  .. partis_attr:: max_level
+    :prefix: property
+    :type: int
+
+  .. partis_attr:: comm
+    :prefix: property
+    :type: mpi4py.MPI.Comm
+
+    ``NP = comm.size``
+
+  .. partis_attr:: local
+    :prefix: property
+    :type: QuadLocalInfo
+    :subscript: shape = (NC,)
+
+    Cells local to the process ``comm.rank``.
+
+  .. partis_attr:: ghost
+    :prefix: property
+    :type: jagged_array
+    :subscript: (NP, *), QuadGhostInfo
+
+    Cells outside the process boundary (*not* local) that neighbor one or more
+    local cells, grouped by the rank of the *ghost's* local process.
+
+  .. partis_attr:: mirror
+    :prefix: property
+    :type: jagged_array
+    :subscript: (NP, *), int32
+
+    Indicies into ``local`` for cells that touch the parallel boundary
+    of each rank.
   """
 
   #-----------------------------------------------------------------------------
@@ -46,8 +83,8 @@ cdef class P4est:
     comm = None ):
 
     #...........................................................................
-    if not isinstance(mesh, QuadMeshBase):
-      raise ValueError(f"mesh must be a QuadMeshBase: {type(mesh)}")
+    if not isinstance(mesh, QuadMesh):
+      raise ValueError(f"mesh must be a QuadMesh: {type(mesh)}")
 
     if min_level is None:
       min_level = 0
@@ -69,10 +106,14 @@ cdef class P4est:
     self._mesh = mesh
     self._min_level = min_level
 
-    self._leaf_info = QuadInfo(0)
-    self._ghost_info = QuadGhostInfo(0)
-    self._rank_ghosts = None
-    self._rank_mirrors = None
+    self._local = QuadLocalInfo(0)
+    self._ghost = jagged_array(
+      data = QuadGhostInfo(0),
+      row_idx = np.array([0], dtype = np.int32) )
+
+    self._mirror = jagged_array(
+      data = self._local,
+      row_idx = np.array([0], dtype = np.int32) )
 
     self._init()
 
@@ -154,6 +195,11 @@ cdef class P4est:
 
   #-----------------------------------------------------------------------------
   @property
+  def mesh( self ):
+    return self._mesh
+
+  #-----------------------------------------------------------------------------
+  @property
   def max_level( self ):
     return self._max_level
 
@@ -164,38 +210,18 @@ cdef class P4est:
 
   #-----------------------------------------------------------------------------
   @property
-  def mesh( self ):
-    return self._mesh
+  def local(self):
+    return self._local
 
   #-----------------------------------------------------------------------------
   @property
-  def shape( self ):
-    return self._shape
+  def ghost(self):
+    return self._ghost
 
   #-----------------------------------------------------------------------------
   @property
-  def dtype( self ):
-    return self._dtype
-
-  #-----------------------------------------------------------------------------
-  @property
-  def leaf_info(self):
-    return self._leaf_info
-
-  #-----------------------------------------------------------------------------
-  @property
-  def ghost_info(self):
-    return self._ghost_info
-
-  #-----------------------------------------------------------------------------
-  @property
-  def rank_ghosts(self):
-    return self._rank_ghosts
-
-  #-----------------------------------------------------------------------------
-  @property
-  def rank_mirrors(self):
-    return self._rank_mirrors
+  def mirror(self):
+    return self._mirror
 
   #-----------------------------------------------------------------------------
   def coord(self,
@@ -229,7 +255,7 @@ cdef class P4est:
     if where is None:
       where = slice(None)
 
-    info = self._leaf_info[where]
+    info = self._local[where]
 
     # compute the local discrete width of the leaf within the root cell
     # NOTE: the root level = 0 is 2**P4EST_MAXLEVEL wide, and all refinement
@@ -256,7 +282,7 @@ cdef class P4est:
       trees = <p4est_tree_t*>self._p4est.trees.array,
       first_local_tree = self._p4est.first_local_tree,
       last_local_tree = self._p4est.last_local_tree,
-      adapt = self._leaf_info.adapt )
+      adapt = self._local.adapt )
 
     with nogil:
       self._adapt()
@@ -320,9 +346,9 @@ cdef class P4est:
         0,
         P4EST_CONNECT_FULL)
 
-    prev_leaf_info = self._leaf_info
-    self._leaf_info = QuadInfo(mesh.local_num_quadrants)
-    self._ghost_info = QuadGhostInfo(mesh.ghost_num_quadrants)
+    prev_leaf_info = self._local
+    self._local = QuadLocalInfo(mesh.local_num_quadrants)
+    ghost_flat = QuadGhostInfo(mesh.ghost_num_quadrants)
 
     num_adapted = _count_leaf_adapted(
       trees = <p4est_tree_t*>self._p4est.trees.array,
@@ -361,25 +387,25 @@ cdef class P4est:
         subitems = 2,
         arr = mesh.quad_to_half).reshape(-1,2),
       # out
-      root = self._leaf_info.root,
-      level = self._leaf_info.level,
-      origin = self._leaf_info.origin,
-      weight = self._leaf_info.weight,
-      adapt = self._leaf_info.adapt,
-      cell_adj = self._leaf_info.cell_adj,
-      cell_adj_face = self._leaf_info.cell_adj_face,
-      cell_adj_subface = self._leaf_info.cell_adj_subface,
-      cell_adj_order = self._leaf_info.cell_adj_order,
-      cell_adj_level = self._leaf_info.cell_adj_level,
+      root = self._local.root,
+      level = self._local.level,
+      origin = self._local.origin,
+      weight = self._local.weight,
+      adapt = self._local.adapt,
+      cell_adj = self._local.cell_adj,
+      cell_adj_face = self._local.cell_adj_face,
+      cell_adj_subface = self._local.cell_adj_subface,
+      cell_adj_order = self._local.cell_adj_order,
+      cell_adj_level = self._local.cell_adj_level,
       leaf_adapted = leaf_adapted,
       leaf_adapted_fine = leaf_adapted_fine,
       leaf_adapted_coarse = leaf_adapted_coarse )
 
-    self._leaf_info.idx = np.arange(mesh.local_num_quadrants)
+    self._local.idx = np.arange(mesh.local_num_quadrants)
 
     ranks = np.concatenate([
       np.full(
-        (len(self._leaf_info),),
+        (len(self._local),),
         fill_value = self.comm.rank,
         dtype = np.int32),
       ndarray_from_ptr(
@@ -388,7 +414,7 @@ cdef class P4est:
         count = mesh.ghost_num_quadrants,
         arr = <char*>mesh.ghost_to_proc)])
 
-    self._leaf_info.cell_adj_rank = ranks[self._leaf_info.cell_adj]
+    self._local.cell_adj_rank = ranks[self._local.cell_adj]
 
     # translate cell_adj indicies for ghost quadrants to {-ng..-1)
     # NOTE: This can be used to flag ghost vs local based on the sign,
@@ -397,9 +423,9 @@ cdef class P4est:
     # in a separate array of only ghost data.
     nl = mesh.local_num_quadrants
     ng = mesh.ghost_num_quadrants
-    cell_adj = self._leaf_info.cell_adj
+    cell_adj = self._local.cell_adj
 
-    self._leaf_info.cell_adj -= (ng + nl) * (cell_adj // nl)
+    self._local.cell_adj -= (ng + nl) * (cell_adj // nl)
 
     ghost_proc_offsets = np.copy(ndarray_from_ptr(
       write = False,
@@ -412,14 +438,14 @@ cdef class P4est:
       num_ghosts = mesh.ghost_num_quadrants,
       proc_offsets = ghost_proc_offsets,
       # out
-      rank = self._ghost_info.rank,
-      root = self._ghost_info.root,
-      idx = self._ghost_info.idx,
-      level = self._ghost_info.level,
-      origin = self._ghost_info.origin )
+      rank = ghost_flat.rank,
+      root = ghost_flat.root,
+      idx = ghost_flat.idx,
+      level = ghost_flat.level,
+      origin = ghost_flat.origin )
 
-    self._rank_ghosts = jagged_array(
-      data = self._ghost_info,
+    self._ghost = jagged_array(
+      data = ghost_flat,
       row_idx = ghost_proc_offsets )
 
     # indices of each mirror in leaf_info
@@ -446,10 +472,8 @@ cdef class P4est:
       count = mirror_proc_offsets[-1],
       arr = <char*>ghost.mirror_proc_mirrors)
 
-    mirror_info = self._leaf_info[mirrors_idx[mirror_proc_mirrors]]
-
-    self._rank_mirrors = jagged_array(
-      data = mirror_info,
+    self._mirror = jagged_array(
+      data = mirrors_idx[mirror_proc_mirrors],
       row_idx = mirror_proc_offsets )
 
     p4est_mesh_destroy(mesh)
@@ -466,13 +490,13 @@ cdef class P4est:
 
     refined = QuadAdapted(
       idx = fine_idx,
-      info = self._leaf_info[fine_idx],
+      info = self._local[fine_idx],
       replaced_idx = refined_idx,
       replaced_info = prev_leaf_info[refined_idx] )
 
     coarsened = QuadAdapted(
       idx = coarse_idx,
-      info = self._leaf_info[coarse_idx],
+      info = self._local[coarse_idx],
       replaced_idx = coarsened_idx,
       replaced_info = prev_leaf_info[coarsened_idx] )
 

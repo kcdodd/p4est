@@ -13,7 +13,7 @@ from mpi4py.MPI cimport MPI_Comm, Comm
 from p4est.utils import jagged_array
 from p4est.mesh.hex import HexMesh
 from p4est.core._leaf_info import (
-  HexInfo,
+  HexLocalInfo,
   HexGhostInfo )
 from p4est.core._adapted import HexAdapted
 from p4est.core._utils cimport (
@@ -161,17 +161,57 @@ cdef class P8estConnectivity:
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P8est:
-  """
+  r"""__init__(mesh, min_level = None, max_level = None, comm = None )
 
   Parameters
   ----------
   mesh : HexMesh
+    Mesh for the root-level cells.
   min_level : None | int
     (default: 0)
   max_level : None | int
     (default: -1)
   comm : None | mpi4py.MPI.Comm
     (default: mpi4py.MPI.COMM_WORLD)
+
+
+  .. partis_attr:: mesh
+    :prefix: property
+    :type: HexMesh
+
+    Mesh for the root-level cells.
+
+  .. partis_attr:: max_level
+    :prefix: property
+    :type: int
+
+  .. partis_attr:: comm
+    :prefix: property
+    :type: mpi4py.MPI.Comm
+
+    ``NP = comm.size``
+
+  .. partis_attr:: local
+    :prefix: property
+    :type: HexLocalInfo
+
+    Cells local to the process ``comm.rank``.
+
+  .. partis_attr:: ghost
+    :prefix: property
+    :type: jagged_array
+    :subscript: (NP, *), HexGhostInfo
+
+    Cells outside the process boundary (*not* local) that neighbor one or more
+    local cells, grouped by the rank of the *ghost's* local process.
+
+  .. partis_attr:: mirror
+    :prefix: property
+    :type: jagged_array
+    :subscript: (NP, *), int32
+
+    Indicies into ``local`` for cells that touch the parallel boundary
+    of each rank.
 
   """
 
@@ -206,10 +246,15 @@ cdef class P8est:
     self._mesh = mesh
     self._min_level = min_level
 
-    self._leaf_info = HexInfo(0)
-    self._ghost_info = HexGhostInfo(0)
-    self._rank_ghosts = None
-    self._rank_mirrors = None
+    self._local = HexLocalInfo(0)
+    self._ghost = jagged_array(
+      data = HexGhostInfo(0),
+      row_idx = np.array([0], dtype = np.int32) )
+
+    self._mirror = jagged_array(
+      data = self._local,
+      row_idx = np.array([0], dtype = np.int32) )
+
     self._connectivity = P8estConnectivity(self._mesh)
 
     self._init()
@@ -233,7 +278,7 @@ cdef class P8est:
         <void*>self )
 
     self._p4est = p4est
-    self._sync_leaf_info()
+    self._sync_local()
 
   #-----------------------------------------------------------------------------
   def __dealloc__(self):
@@ -278,29 +323,24 @@ cdef class P8est:
 
   #-----------------------------------------------------------------------------
   @property
-  def leaf_info(self):
-    return self._leaf_info
+  def local(self):
+    return self._local
 
   #-----------------------------------------------------------------------------
   @property
-  def ghost_info(self):
-    return self._ghost_info
+  def ghost(self):
+    return self._ghost
 
   #-----------------------------------------------------------------------------
   @property
-  def rank_ghosts(self):
-    return self._rank_ghosts
-
-  #-----------------------------------------------------------------------------
-  @property
-  def rank_mirrors(self):
-    return self._rank_mirrors
+  def mirror(self):
+    return self._mirror
 
   #-----------------------------------------------------------------------------
   def coord(self,
     offset = None,
     where = None ):
-    r"""
+    r"""coord(offset = None, where = None )
 
     Parameters
     ----------
@@ -335,7 +375,7 @@ cdef class P8est:
     if where is None:
       where = slice(None)
 
-    info = self._leaf_info[where]
+    info = self._local[where]
 
     root = np.atleast_1d(info.root)
     level = np.atleast_1d(info.level).astype(np.int32)
@@ -356,7 +396,7 @@ cdef class P8est:
 
   #-----------------------------------------------------------------------------
   def adapt(self):
-    """Applies refinement, coarsening, and then balances based on ``leaf_info.adapt``.
+    """Applies refinement, coarsening, and then balances based on ``local.adapt``.
 
     Returns
     -------
@@ -368,12 +408,12 @@ cdef class P8est:
       trees = <p8est_tree_t*>self._p4est.trees.array,
       first_local_tree = self._p4est.first_local_tree,
       last_local_tree = self._p4est.last_local_tree,
-      adapt = self._leaf_info.adapt )
+      adapt = self._local.adapt )
 
     with nogil:
       self._adapt()
 
-    return self._sync_leaf_info()
+    return self._sync_local()
 
   #-----------------------------------------------------------------------------
   cdef void _adapt(P8est self) nogil:
@@ -413,7 +453,7 @@ cdef class P8est:
         <p8est_weight_t>_weight_quadrant )
 
   #-----------------------------------------------------------------------------
-  cdef _sync_leaf_info(P8est self):
+  cdef _sync_local(P8est self):
     cdef:
       p8est_ghost_t* ghost
       p8est_mesh_t* mesh
@@ -432,9 +472,9 @@ cdef class P8est:
         0,
         P8EST_CONNECT_FULL)
 
-    prev_leaf_info = self._leaf_info
-    self._leaf_info = HexInfo(mesh.local_num_quadrants)
-    self._ghost_info = HexGhostInfo(mesh.ghost_num_quadrants)
+    prev_local = self._local
+    self._local = HexLocalInfo(mesh.local_num_quadrants)
+    ghost_flat = HexGhostInfo(mesh.ghost_num_quadrants)
 
     num_adapted = _count_leaf_adapted(
       trees = <p8est_tree_t*>self._p4est.trees.array,
@@ -453,7 +493,7 @@ cdef class P8est:
       (num_adapted, 2, 2, 2),
       dtype = np.int32 )
 
-    _sync_leaf_info(
+    _sync_local(
       trees = <p8est_tree_t*>self._p4est.trees.array,
       first_local_tree = self._p4est.first_local_tree,
       last_local_tree = self._p4est.last_local_tree,
@@ -473,25 +513,25 @@ cdef class P8est:
         subitems = 4,
         arr = mesh.quad_to_half).reshape(-1,2,2),
       # out
-      root = self._leaf_info.root,
-      level = self._leaf_info.level,
-      origin = self._leaf_info.origin,
-      weight = self._leaf_info.weight,
-      adapt = self._leaf_info.adapt,
-      cell_adj = self._leaf_info.cell_adj,
-      cell_adj_face = self._leaf_info.cell_adj_face,
-      cell_adj_subface = self._leaf_info.cell_adj_subface,
-      cell_adj_order = self._leaf_info.cell_adj_order,
-      cell_adj_level = self._leaf_info.cell_adj_level,
+      root = self._local.root,
+      level = self._local.level,
+      origin = self._local.origin,
+      weight = self._local.weight,
+      adapt = self._local.adapt,
+      cell_adj = self._local.cell_adj,
+      cell_adj_face = self._local.cell_adj_face,
+      cell_adj_subface = self._local.cell_adj_subface,
+      cell_adj_order = self._local.cell_adj_order,
+      cell_adj_level = self._local.cell_adj_level,
       leaf_adapted = leaf_adapted,
       leaf_adapted_fine = leaf_adapted_fine,
       leaf_adapted_coarse = leaf_adapted_coarse )
 
-    self._leaf_info.idx = np.arange(mesh.local_num_quadrants)
+    self._local.idx = np.arange(mesh.local_num_quadrants)
 
     ranks = np.concatenate([
       np.full(
-        (len(self._leaf_info),),
+        (len(self._local),),
         fill_value = self.comm.rank,
         dtype = np.int32),
       ndarray_from_ptr(
@@ -500,7 +540,7 @@ cdef class P8est:
         count = mesh.ghost_num_quadrants,
         arr = <char*>mesh.ghost_to_proc)])
 
-    self._leaf_info.cell_adj_rank = ranks[self._leaf_info.cell_adj]
+    self._local.cell_adj_rank = ranks[self._local.cell_adj]
 
     # translate cell_adj indicies for ghost quadrants to {-ng..-1)
     # NOTE: This can be used to flag ghost vs local based on the sign,
@@ -509,9 +549,9 @@ cdef class P8est:
     # in a separate array of only ghost data.
     nl = mesh.local_num_quadrants
     ng = mesh.ghost_num_quadrants
-    cell_adj = self._leaf_info.cell_adj
+    cell_adj = self._local.cell_adj
 
-    self._leaf_info.cell_adj -= (ng + nl) * (cell_adj // nl)
+    self._local.cell_adj -= (ng + nl) * (cell_adj // nl)
 
     ghost_proc_offsets = np.copy(ndarray_from_ptr(
       write = False,
@@ -519,22 +559,22 @@ cdef class P8est:
       count = ghost.mpisize + 1,
       arr = <char*>ghost.proc_offsets))
 
-    _sync_ghost_info(
+    _sync_ghost(
       ghosts = <p8est_quadrant_t*> ghost.ghosts.array,
       num_ghosts = mesh.ghost_num_quadrants,
       proc_offsets = ghost_proc_offsets,
       # out
-      rank = self._ghost_info.rank,
-      root = self._ghost_info.root,
-      idx = self._ghost_info.idx,
-      level = self._ghost_info.level,
-      origin = self._ghost_info.origin )
+      rank = ghost_flat.rank,
+      root = ghost_flat.root,
+      idx = ghost_flat.idx,
+      level = ghost_flat.level,
+      origin = ghost_flat.origin )
 
-    self._rank_ghosts = jagged_array(
-      data = self._ghost_info,
+    self._ghost = jagged_array(
+      data = ghost_flat,
       row_idx = ghost_proc_offsets )
 
-    # indices of each mirror in leaf_info
+    # indices of each mirror in local
     mirrors_idx = np.zeros((ghost.mirrors.elem_count,), dtype = np.int32)
 
     _sync_mirror_idx(
@@ -558,10 +598,8 @@ cdef class P8est:
       count = mirror_proc_offsets[-1],
       arr = <char*>ghost.mirror_proc_mirrors)
 
-    mirror_info = self._leaf_info[mirrors_idx[mirror_proc_mirrors]]
-
-    self._rank_mirrors = jagged_array(
-      data = mirror_info,
+    self._mirror = jagged_array(
+      data = mirrors_idx[mirror_proc_mirrors],
       row_idx = mirror_proc_offsets )
 
     p8est_mesh_destroy(mesh)
@@ -578,15 +616,15 @@ cdef class P8est:
 
     refined = HexAdapted(
       idx = fine_idx,
-      info = self._leaf_info[fine_idx],
+      info = self._local[fine_idx],
       replaced_idx = refined_idx,
-      replaced_info = prev_leaf_info[refined_idx] )
+      replaced_info = prev_local[refined_idx] )
 
     coarsened = HexAdapted(
       idx = coarse_idx,
-      info = self._leaf_info[coarse_idx],
+      info = self._local[coarse_idx],
       replaced_idx = coarsened_idx,
-      replaced_info = prev_leaf_info[coarsened_idx] )
+      replaced_info = prev_local[coarsened_idx] )
 
     return refined, coarsened
 
@@ -654,7 +692,7 @@ cdef npy.npy_int32 _count_leaf_adapted(
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
-cdef _sync_leaf_info(
+cdef _sync_local(
   p8est_tree_t* trees,
   npy.npy_int32 first_local_tree,
   npy.npy_int32 last_local_tree,
@@ -822,7 +860,7 @@ cdef _sync_leaf_info(
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
-cdef _sync_ghost_info(
+cdef _sync_ghost(
   p8est_quadrant_t* ghosts,
   npy.npy_int32 num_ghosts,
   const npy.npy_int32[:] proc_offsets,

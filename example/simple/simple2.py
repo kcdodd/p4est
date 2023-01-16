@@ -21,7 +21,7 @@ def plot_grid(grid):
   pv.set_plot_theme('paraview')
   p = pv.Plotter()
 
-  nc = len(grid.leaf_info)
+  nc = len(grid.local)
   verts = np.empty((4*nc, 3))
   verts[:nc] = grid.coord(offset = (_scale, _scale))
   verts[nc:2*nc] = grid.coord(offset = (_scale, scale))
@@ -39,7 +39,7 @@ def plot_grid(grid):
 
   p.add_mesh(
     pv.PolyData(verts, faces = faces.ravel()),
-    scalars = grid.leaf_info.root,
+    scalars = grid.local.root,
     show_edges = True,
     line_width = 1,
     point_size = 3 )
@@ -57,7 +57,7 @@ def run_icosahedron_golden():
     mesh = mesh)
 
   for r in range(3):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -72,7 +72,7 @@ def run_icosahedron_spherical():
     min_level = 0)
 
   for r in range(3):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -88,7 +88,7 @@ def run_icosahedron():
     min_level = 0)
 
   for r in range(4):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -102,7 +102,7 @@ def run_cube():
     min_level = 0)
 
   for r in range(4):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -116,7 +116,7 @@ def run_spherical_cube():
     min_level = 0)
 
   for r in range(4):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -127,3 +127,4 @@ if __name__ == '__main__':
   run_icosahedron_spherical()
   run_icosahedron()
   run_cube()
+  run_spherical_cube()

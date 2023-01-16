@@ -6,8 +6,6 @@ Hexahedral Mesh
 
 .. automodule:: p4est.mesh.hex.base
 
-.. automodule:: p4est.mesh.hex.mesh
-
 Mesh Pimitive Factories
 -----------------------
 

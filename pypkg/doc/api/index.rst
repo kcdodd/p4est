@@ -7,4 +7,5 @@ API Reference
   core
   mesh.quad
   mesh.hex
+  geom
   utils

@@ -5,7 +5,7 @@ from p4est.core._sc cimport (
   sc_array_t,
   sc_mempool_t )
 from p4est.core._leaf_info cimport (
-  QuadInfo,
+  QuadLocalInfo,
   QuadGhostInfo )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -489,10 +489,9 @@ cdef class P4est:
   cdef np.npy_int8 _min_level
   cdef np.npy_int8 _max_level
 
-  cdef QuadInfo _leaf_info
-  cdef QuadGhostInfo _ghost_info
-  cdef _rank_ghosts
-  cdef _rank_mirrors
+  cdef QuadLocalInfo _local
+  cdef _ghost
+  cdef _mirror
 
   cdef p4est_connectivity_t _connectivity
   cdef p4est_t* _p4est

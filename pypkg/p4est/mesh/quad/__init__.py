@@ -1,8 +1,4 @@
-from .base import QuadMeshBase
-from .mesh import (
-  QuadMesh,
-  QuadMeshSpherical,
-  QuadMeshCartesianSpherical )
+from .base import QuadMesh
 from .prim import (
   unit_square,
   cube,

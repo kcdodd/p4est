@@ -6,8 +6,6 @@ Quadrilateral Mesh
 
 .. automodule:: p4est.mesh.quad.base
 
-.. automodule:: p4est.mesh.quad.mesh
-
 Mesh Pimitive Factories
 -----------------------
 

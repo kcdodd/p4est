@@ -42,8 +42,8 @@ def interpgrid_2D_to_3D():
 def mpi_ghost_exchange(grid, local_value):
 
   # exchange process neighbor information
-  sendbuf = np.ascontiguousarray(local_value[grid.rank_mirrors.flat.idx])
-  recvbuf = np.empty((len(grid.rank_ghosts.flat),), dtype = local_value.dtype)
+  sendbuf = np.ascontiguousarray(local_value[grid.local.idx[grid.mirror.flat]])
+  recvbuf = np.empty((len(grid.ghost.flat),), dtype = local_value.dtype)
 
   mpi_datatype = from_numpy_dtype(local_value.dtype)
 
@@ -51,14 +51,14 @@ def mpi_ghost_exchange(grid, local_value):
     sendbuf = [
       sendbuf, (
         # counts
-        grid.rank_mirrors.row_counts,
+        grid.mirror.row_counts,
         # displs
-        grid.rank_mirrors.row_idx[:-1] ),
+        grid.mirror.row_idx[:-1] ),
       mpi_datatype ],
     recvbuf = [
       recvbuf, (
-        grid.rank_ghosts.row_counts,
-        grid.rank_ghosts.row_idx[:-1] ),
+        grid.ghost.row_counts,
+        grid.ghost.row_idx[:-1] ),
       mpi_datatype ])
 
   return np.concatenate([local_value, recvbuf])
@@ -69,7 +69,7 @@ def plot_grid(grid, scalars = None):
   _scale = 1.0 - scale
 
 
-  nc = len(grid.leaf_info)
+  nc = len(grid.local)
   verts = np.empty((4*nc, 3))
   verts[:nc] = grid.coord(offset = (_scale, _scale))
   verts[nc:2*nc] = grid.coord(offset = (_scale, scale))
@@ -88,7 +88,7 @@ def plot_grid(grid, scalars = None):
   p = pv.Plotter()
   p.add_mesh(
      pv.PolyData(verts, faces = faces.ravel()),
-     scalars = grid.leaf_info.root if scalars is None else scalars,
+     scalars = grid.local.root if scalars is None else scalars,
      show_edges = False,
      line_width = 1,
      point_size = 3 )
@@ -109,7 +109,7 @@ grid = P4est(
   min_level = 0)
 
 for p in range(4):
-  grid.leaf_info.adapt = 1
+  grid.local.adapt = 1
   grid.adapt()
 
 
@@ -120,17 +120,17 @@ for r in range(6):
 
   value = mpi_ghost_exchange(grid, local_value)
 
-  value_adj = value[grid.leaf_info.cell_adj]
+  value_adj = value[grid.local.cell_adj]
   d_value = np.abs(local_value[:,None,None,None] - value_adj).max(axis = (1,2,3))
 
   refine = d_value > tol
-  grid.leaf_info.adapt = refine
+  grid.local.adapt = refine
 
   if not np.any(refine):
     break
 
   refined, coarsened = grid.adapt()
-  print(f"{grid.comm.rank} refined: {refined.replaced_idx.shape} -> {refined.idx.shape} (total= {len(grid.leaf_info):,})")
+  print(f"{grid.comm.rank} refined: {refined.replaced_idx.shape} -> {refined.idx.shape} (total= {len(grid.local):,})")
 
 
 points = trans_cart_to_sphere(grid.coord(offset = (0.5,0.5)))
