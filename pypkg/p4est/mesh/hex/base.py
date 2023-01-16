@@ -258,6 +258,10 @@ class HexMesh:
       if not isinstance(geom, HexGeometry):
         raise ValueError(f"'geoms' must be list of HexGeometry: {type(geom)}")
 
+    # TODO: remove when implementing inhomogenous geometry
+    if len(geoms) != 1:
+      raise NotImplementedError(f"Inhomogenous geometry not implemented")
+
     #...........................................................................
     if vert_geom is None:
       vert_geom = np.zeros(len(verts), dtype = np.int32)

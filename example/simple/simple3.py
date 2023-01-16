@@ -168,10 +168,10 @@ def run_icosahedron():
 if __name__ == '__main__':
   run_cube()
   run_spherical_cube_shell()
-  run_spherical_cube()
 
   # NOTE: mixing geometries not quite working
-  run_slab_spherical_cube_hole()
+  # run_slab_spherical_cube_hole()
+  # run_spherical_cube()
 
   run_icosahedron_spherical()
   run_icosahedron()
