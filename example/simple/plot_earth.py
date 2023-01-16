@@ -17,9 +17,7 @@ from PIL import (
 import pyvista as pv
 from p4est import (
   P4est,
-  interp_sphere_to_cart_slerp,
-  trans_cart_to_sphere,
-  interp_slerp_quad)
+  trans_cart_to_sphere )
 
 from p4est.mesh.quad import spherical_cube
 

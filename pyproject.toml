@@ -38,6 +38,13 @@ email = "me@lucaswilcox.com"
 name = "Tobin Isaac"
 email = "tisaac@uchicago.edu"
 
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[project.optional-dependencies]
+
+doc = [
+  'partis-utils[sphinx] >= 0.1.0' ]
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Build and distribution configuration
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

@@ -11,9 +11,7 @@ import numpy as np
 from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
 from p4est.utils import jagged_array
-from p4est.mesh.hex import (
-  HexMeshBase,
-  HexMesh )
+from p4est.mesh.hex import HexMesh
 from p4est.core._leaf_info import (
   HexInfo,
   HexGhostInfo )
@@ -167,7 +165,7 @@ cdef class P8est:
 
   Parameters
   ----------
-  mesh : HexMeshBase
+  mesh : HexMesh
   min_level : None | int
     (default: 0)
   max_level : None | int
@@ -185,8 +183,8 @@ cdef class P8est:
     comm = None ):
 
     #...........................................................................
-    if not isinstance(mesh, HexMeshBase):
-      raise ValueError(f"mesh must be a HexMeshBase: {type(mesh)}")
+    if not isinstance(mesh, HexMesh):
+      raise ValueError(f"mesh must be a HexMesh: {type(mesh)}")
 
     if min_level is None:
       min_level = 0
@@ -280,16 +278,6 @@ cdef class P8est:
 
   #-----------------------------------------------------------------------------
   @property
-  def shape( self ):
-    return self._shape
-
-  #-----------------------------------------------------------------------------
-  @property
-  def dtype( self ):
-    return self._dtype
-
-  #-----------------------------------------------------------------------------
-  @property
   def leaf_info(self):
     return self._leaf_info
 
@@ -338,22 +326,33 @@ cdef class P8est:
     else:
       offset = np.asarray(offset, dtype = np.float64)
 
+    offset = np.atleast_2d(offset)
+
+    shape = offset.shape
+
+    offset = offset.reshape(shape[0], int(np.prod(shape[1:-1])), shape[-1])
+
     if where is None:
       where = slice(None)
 
     info = self._leaf_info[where]
 
+    root = np.atleast_1d(info.root)
+    level = np.atleast_1d(info.level).astype(np.int32)
+    origin = np.atleast_2d(info.origin)
+
     # compute the local discrete width of the leaf within the root cell
     # NOTE: the root level = 0 is 2**P8EST_MAXLEVEL wide, and all refinement
     # levels are smaller by factors that are powers of 2.
-    qwidth = np.left_shift(1, P8EST_MAXLEVEL - info.level.astype(np.int32))
+    qwidth = np.left_shift(1, P8EST_MAXLEVEL - level)
 
+    leaf_offset = ( origin[:,None,:] + offset * qwidth[:,None,None] ) / P8EST_ROOT_LEN
 
-    leaf_offset = ( info.origin + offset[None,:] * qwidth[:,None] ) / P8EST_ROOT_LEN
+    coord = self.mesh.coord(
+      offset = leaf_offset.reshape(-1, 3),
+      where = np.repeat(root, leaf_offset.shape[1]) )
 
-    return self.mesh.coord(
-      offset = leaf_offset,
-      where = info.root )
+    return coord.reshape(root.shape + shape[1:])
 
   #-----------------------------------------------------------------------------
   def adapt(self):
