@@ -117,6 +117,8 @@ cdef class P4est:
       self._connectivity.corner_to_tree = <np.npy_int32*>(corner_to_tree.data)
       self._connectivity.corner_to_corner = <np.npy_int8*>(corner_to_corner.data)
 
+      
+
 
     cdef p4est_t* p4est = NULL
     cdef sc_MPI_Comm comm = <sc_MPI_Comm> (<Comm>self.comm).ob_mpi
