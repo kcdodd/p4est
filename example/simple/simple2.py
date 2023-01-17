@@ -123,8 +123,8 @@ def run_spherical_cube():
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 if __name__ == '__main__':
-  run_icosahedron_golden()
-  run_icosahedron_spherical()
-  run_icosahedron()
+  #run_icosahedron_golden()
+  #run_icosahedron_spherical()
+  #run_icosahedron()
   run_cube()
-  run_spherical_cube()
+  #run_spherical_cube()

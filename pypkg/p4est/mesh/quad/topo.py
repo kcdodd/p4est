@@ -29,20 +29,16 @@ def quad_cell_nodes(cells, vert_nodes):
   # count number of cells sharing each vertex to find if there are any singularities
   # that haven't been added to a 'node'
   # NOTE: assumes a vertex is in a cell at most 1 time
-  _verts, _count = np.unique(
-    cells.ravel(),
-    return_counts = True )
 
-  vert_cells_count = np.zeros((len(vert_nodes),), dtype = np.int32)
-  vert_cells_count[_verts] = _count
-  naked_singularities = (vert_cells_count > 4) & (vert_nodes == -1)
-  ns = np.count_nonzero(naked_singularities)
+
+  independent = (vert_nodes == -1)
+  ns = np.count_nonzero(independent)
 
   if ns > 0:
     # add new nodes for any that need them
     vert_nodes = np.copy(vert_nodes)
     new_nodes = np.arange(ns) + np.amax(vert_nodes) + 1
-    vert_nodes[naked_singularities] = new_nodes
+    vert_nodes[independent] = new_nodes
 
   # get unique nodes, and the number of vertices associated with each one
   nodes, node_verts_count = np.unique(
@@ -101,30 +97,17 @@ def quad_cell_nodes(cells, vert_nodes):
   node_cells_idx = np.concatenate(np.nonzero(_mask) + ([_mask.size],)).astype(np.int32)
 
   # the difference between these indices is the count of repeats of the node
-  _counts = np.diff(node_cells_idx)
-  _nodes = _nodes[_mask]
+  #_counts = np.diff(node_cells_idx)
+  #_nodes = _nodes[_mask]
 
 
   # NOTE: this is back to len(nodes), with all 'unused' node counts set to zero
-  node_cells_count = np.zeros((len(nodes),), dtype = np.int32)
-  node_cells_count[_nodes] = _counts
+  #node_cells_count = np.zeros((len(nodes),), dtype = np.int32)
+  #node_cells_count[_nodes] = _counts
 
   # Only store nodes that:
   # Are associated with 2 or more vertices ("non-local" connections),
   # or connect 5 or more cells (mesh singularities )
-  node_keep = (nodes != -1) & ((node_cells_count > 4) | (node_verts_count > 1))
-
-  _node_keep = np.repeat( node_keep, node_cells_count )
-
-  node_cells_count = node_cells_count[node_keep]
-  node_cells = node_cells[_node_keep]
-  node_cells_inv = node_cells_inv[_node_keep]
-
-  # NOTE: this still points to the memoryview of un-raveled cell_nodes
-  _cell_nodes[sort_idx[~_node_keep]] = -1
-
-  # recompute the offsets after masking
-  node_cells_idx = np.concatenate(([0],np.cumsum(node_cells_count))).astype(np.int32)
 
   node_cells = jagged_array(node_cells, node_cells_idx)
   node_cells_inv = jagged_array(node_cells_inv, node_cells_idx)

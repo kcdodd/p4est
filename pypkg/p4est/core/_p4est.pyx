@@ -11,6 +11,7 @@ from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
 from p4est.utils import jagged_array
 from p4est.mesh.quad import QuadMesh
+from p4est.mesh.quad import quad_cell_nodes
 from p4est.core._info import (
   QuadLocalInfo,
   QuadGhostInfo )
@@ -119,16 +120,7 @@ cdef class P4est:
 
   #-----------------------------------------------------------------------------
   cdef _init(P4est self):
-    #TODO: Create a nodes array object
-    #TODO: Load the nodes array object with nodes
-    #TODO: Gather the Indep nodes element count
-    #TODO: Gather the Face hanging element counts
-    #TODO: Create a Local nodes table
-    #TODO: Create an array of shared independent nodes
-    #TODO: Create a member that holds the number of sharerers for each independent node
-    #TODO: Have Processor own stored independent nodes
-    #TODO: Update leaf_info and header files
-    #TODO: Run program without it seg faulting
+
     memset(&self._connectivity, 0, sizeof(p4est_connectivity_t));
 
     cdef np.ndarray[double, ndim=2] verts = self._mesh.verts
@@ -140,6 +132,8 @@ cdef class P4est:
     cdef np.ndarray[np.npy_int32, ndim=1] ctt_offset = np.ascontiguousarray(self._mesh.node_cells.row_idx)
     cdef np.ndarray[np.npy_int32, ndim=1] corner_to_tree = np.ascontiguousarray(self._mesh.node_cells.flat)
     cdef np.ndarray[np.npy_int8, ndim=1] corner_to_corner = np.ascontiguousarray(self._mesh.node_cells_inv.flat)
+
+    cdef np.ndarray[np.npy_int32, ndim = 3] cell_nodes = self._mesh.cell_nodes
 
     self._connectivity.num_vertices = len(verts)
     self._connectivity.vertices = <double*>verts.data
@@ -351,6 +345,7 @@ cdef class P4est:
     cdef:
       p4est_ghost_t* ghost
       p4est_mesh_t* mesh
+      p4est_nodes_t* nodes
 
     with nogil:
       ghost = p4est_ghost_new(
@@ -365,6 +360,10 @@ cdef class P4est:
         # compute_level_lists
         0,
         P4EST_CONNECT_FULL)
+
+      nodes = p4est_nodes_new(
+        self._p4est,
+        NULL)
 
     prev_info = self._local
     self._local = QuadLocalInfo(mesh.local_num_quadrants)
@@ -422,6 +421,13 @@ cdef class P4est:
       leaf_adapted_coarse = leaf_adapted_coarse )
 
     self._local.idx = np.arange(mesh.local_num_quadrants)
+    self.local.cell_nodes = ndarray_from_ptr(
+        write = False,
+        dtype = np.int32,
+        count = 4 * mesh.local_num_quadrants,
+        arr = <char *>nodes.local_nodes).reshape(-1,2,2)
+    vnodes = np.arange(nodes.indep_nodes.elem_count + nodes.face_hangings.elem_count)
+    vert_nodes, self.local.cell_nodes, node_cells, node_cells_inv = quad_cell_nodes(self.local.cell_nodes, vnodes)
 
     ranks = np.concatenate([
       np.full(
@@ -637,6 +643,7 @@ cdef void _sync_info(
     npy.npy_int8 cell_adj_face_idx = 0
     npy.npy_int8 face_order = 0
 
+
   for root_idx in range(first_local_tree, last_local_tree+1):
     tree = &trees[root_idx]
     quads = <p4est_quadrant_t*>tree.quadrants.array
@@ -698,10 +705,10 @@ cdef void _sync_info(
       level[cell_idx] = cell.level
       origin[cell_idx,0] = cell.x
       origin[cell_idx,1] = cell.y
-
       # get adjacency information from the mesh
       for i in range(2):
         for j in  range(2):
+
           cell_adj_idx = quad_to_quad[cell_idx,i,j]
           cell_adj_face_idx = quad_to_face[cell_idx,i,j]
 
@@ -726,7 +733,6 @@ cdef void _sync_info(
             # quad_to_half array that stores two quadrant numbers per index,
             cell_adj[cell_idx,i,j] = quad_to_half[cell_adj_idx]
             cell_adj_level[cell_idx,i,j] = 1
-
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
 # @cython.wraparound(False)

@@ -200,7 +200,10 @@ cdef class QuadLocalInfo(CellInfo):
       # relative level {-1, 0, 1} of the adjacent cell
       'cell_adj_level' : ((2,2), np.int8),
       # MPI process rank of adjacent cell
-      'cell_adj_rank' : ((2,2,2), np.int32)  }
+      'cell_adj_rank' : ((2,2,2), np.int32),
+      #The nodes that are inside of a cell
+      'cell_nodes' : ((2,2), np.int32)
+      }
 
   #-----------------------------------------------------------------------------
   @property
@@ -321,6 +324,16 @@ cdef class QuadLocalInfo(CellInfo):
   @cell_adj_rank.setter
   def cell_adj_rank(self, val):
     self._cell_adj_rank[:] = val
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cell_nodes(self):
+    return self._cell_nodes
+
+  #-----------------------------------------------------------------------------
+  @cell_nodes.setter
+  def cell_nodes(self, val):
+    self._cell_nodes[:] = val
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class QuadGhostInfo(CellInfo):
@@ -465,7 +478,9 @@ cdef class NodeInfo(Info):
     return {
       # unique local index
       'idx' : (tuple(), np.int32),
+      # Cells that are connected to this node
       'cells' : ((2,2), np.int8),
+      # Inverse order of cells connected to this node
       'cells_inv' : ((2,2), np.int8)  }
 
   #-----------------------------------------------------------------------------
