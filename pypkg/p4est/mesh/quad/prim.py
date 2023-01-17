@@ -1,9 +1,9 @@
 import numpy as np
-from ...geom import (
+from ...geom import trans_sphere_to_cart
+from .geom import (
   QuadLinear,
   QuadSpherical,
-  QuadCartesianSpherical,
-  trans_sphere_to_cart )
+  QuadCartesianSpherical )
 from .base import QuadMesh
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

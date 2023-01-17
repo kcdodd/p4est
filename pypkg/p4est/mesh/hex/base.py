@@ -4,7 +4,7 @@ import numpy as np
 
 from ...utils import (
   jagged_array )
-from ...geom import (
+from .geom import (
   HexGeometry,
   HexLinear )
 from .topo import (

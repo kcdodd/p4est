@@ -4,9 +4,6 @@ import ctypes
 from .core import (
   P4est,
   P8est )
-from .mesh import (
-  QuadMesh,
-  HexMesh )
 from .geom import (
   trans_sphere_to_cart,
   trans_cart_to_sphere,
@@ -18,6 +15,18 @@ from .geom import (
   interp_slerp3,
   interp_sphere_to_cart_slerp2,
   interp_sphere_to_cart_slerp3)
+from .mesh import (
+  QuadMesh,
+  QuadGeometry,
+  QuadLinear,
+  QuadSpherical,
+  QuadCartesianSpherical,
+  HexMesh,
+  HexGeometry,
+  HexLinear,
+  HexSpherical,
+  HexCartesianSpherical )
+
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def get_include():

@@ -341,11 +341,21 @@ cdef class P8est:
     offset = None,
     where = None ):
     r"""coord(offset = None, where = None )
+    Transform to (physical/global) coordinates of a point relative to each cell
+
+    .. math::
+
+      \func{\rankone{r}}{\rankone{q}} =
+      \begin{bmatrix}
+        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
+        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
+        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2}
+      \end{bmatrix}
 
     Parameters
     ----------
     offset : None | numpy.ndarray
-      shape = (*,3)
+      shape = (N | 1, ..., 3)
 
       Relative coordinates from each cell origin to compute the coordinates,
       normalized :math:`\rankone{q} \in [0.0, 1.0]^3` along each edge of the cell.
@@ -356,7 +366,7 @@ cdef class P8est:
 
     Returns
     -------
-    coord: array of shape = (NC, 3)
+    coord: array of shape = (N, ..., 3)
 
     """
 

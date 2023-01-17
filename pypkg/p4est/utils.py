@@ -110,7 +110,7 @@ class jagged_array:
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def unique_full(arr, axis):
-  """This is a reimplementation of np.unique, but returns the needed intermediate
+  r"""This is a reimplementation of np.unique, but returns the needed intermediate
   arrays needed to construct the outputs, instead of the standard outputs
   (numpy/lib/arraysetops.py).
 
@@ -139,7 +139,7 @@ def unique_full(arr, axis):
     ``counts = np.diff(unique_idx)``
   inv_idx : ndarray of shape = (N,)
     Indices of sorted unique values to reconstruct the original (unsorted) array.
-    ``np.all(arr == unique[inv_idx])
+    ``np.all(arr == unique[inv_idx])``
   """
 
   arr = np.moveaxis(arr, axis, 0)

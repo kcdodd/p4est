@@ -1,4 +1,9 @@
 from .base import QuadMesh
+from .geom import (
+  QuadGeometry,
+  QuadLinear,
+  QuadSpherical,
+  QuadCartesianSpherical )
 from .prim import (
   unit_square,
   cube,

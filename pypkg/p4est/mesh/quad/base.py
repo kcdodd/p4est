@@ -2,7 +2,7 @@ import numpy as np
 from collections.abc import Sequence
 from ...utils import (
   jagged_array )
-from ...geom import (
+from .geom import (
   QuadGeometry,
   QuadLinear )
 from .topo import (
@@ -15,10 +15,10 @@ class QuadMesh:
 
   Parameters
   ----------
-  verts : numpy.ndarray[float64, (NV, 2 or 3)]
+  verts : ndarray[(NV, 2 or 3), floating]
     Position of each vertex.
     (AKA :c:var:`p4est_connectivity_t.vertices`)
-  cells : numpy.ndarray[int32, (NC, 2, 2)]
+  cells : ndarray[(NC, 2, 2), integer]
     Mapping of quadrilateral cells to the indices of their 4 vertices.
     (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
 
@@ -305,7 +305,7 @@ class QuadMesh:
 
     Parameters
     ----------
-    offset : numpy.ndarray[float64, (N | 1, ..., 2)]
+    offset : ndarray[(N | 1, ..., 2), floating]
 
       Relative coordinates from each cell origin to compute the coordinates,
       normalized :math:`\rankone{q} \in [0.0, 1.0]^2` along each edge of the cell.
@@ -314,7 +314,7 @@ class QuadMesh:
 
     Returns
     -------
-    coord: numpy.ndarray[float64, (N, ..., 3)]
+    coord: ndarray[(N, ..., 3), floating]
     """
 
     if where is None:

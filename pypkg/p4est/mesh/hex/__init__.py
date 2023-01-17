@@ -1,5 +1,9 @@
 from .base import HexMesh
-
+from .geom import (
+  HexGeometry,
+  HexLinear,
+  HexSpherical,
+  HexCartesianSpherical )
 from .prim import (
   cube,
   spherical_cube_shell,

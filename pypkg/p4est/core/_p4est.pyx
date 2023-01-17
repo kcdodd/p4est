@@ -227,23 +227,32 @@ cdef class P4est:
   def coord(self,
     offset = None,
     where = None ):
-    r"""
+    r"""coord(offset = None, where = None )
+    Transform to (physical/global) coordinates of a point relative to each cell
+
+    .. math::
+
+      \func{\rankone{r}}{\rankone{q}} =
+      \begin{bmatrix}
+        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1} \\
+        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1} \\
+        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1}
+      \end{bmatrix}
 
     Parameters
     ----------
     offset : None | numpy.ndarray
-      shape = (*,2)
+      shape = (N | 1, ..., 2)
 
       Relative coordinates from each cell origin to compute the coordinates,
       normalized :math:`\rankone{q} \in [0.0, 1.0]^2` along each edge of the cell.
       (default: (0.5, 0.5))
-
     where : None | slice | numpy.ndarray
       Subset of cells. (default: slice(None))
 
     Returns
     -------
-    coord: array of shape = (NC, 3)
+    coord: array of shape = (N, ..., 3)
     """
 
     if offset is None:
