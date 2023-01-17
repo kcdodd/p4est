@@ -13,7 +13,7 @@ install_files = [
   '__init__.pxd',
   '_utils.pxd',
   '_sc.pxd',
-  '_leaf_info.pxd',
+  '_info.pxd',
   '_adapted.pxd',
   '_p4est.pxd',
   '_p8est.pxd' ]
@@ -21,7 +21,7 @@ install_files = [
 modules = [
   '_utils',
   '_sc',
-  '_leaf_info',
+  '_info',
   '_adapted',
   '_p4est',
   '_p8est' ]

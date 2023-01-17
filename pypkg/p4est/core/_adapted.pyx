@@ -2,7 +2,37 @@ import numpy as np
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class QuadAdapted:
-  """Data associated with changes during adaptive mesh refinement
+  """__init__(idx, info, replaced_idx, replaced_info)
+
+  Data associated with changes during adaptive mesh refinement
+
+  .. partis_attr:: idx
+    :prefix: property
+    :type: numpy.ndarray
+    :subscript: shape = (num. coarse), dtype = int32
+
+    Coarser level indices into :attr:`P4est.local` (*previous* values, if refining).
+
+  .. partis_attr:: info
+    :prefix: property
+    :type: QuadLocalInfo
+    :subscript: shape = (num. coarse,)
+
+    Coarser level local info, ``local[idx]`` (*previous* values, if refining).
+
+  .. partis_attr:: replaced_idx
+    :prefix: property
+    :type: numpy.ndarray
+    :subscript: shape = (NC,2,2), dtype = int32
+
+    Finer level indices into :attr:`P4est.local` (*previous* values, if coarsening)
+
+  .. partis_attr:: info
+    :prefix: property
+    :type: QuadLocalInfo
+    :subscript: shape = (num. coarse,)
+
+    Coarser level local info, ``local[idx]`` (*previous* values, if refining).
   """
 
   #-----------------------------------------------------------------------------

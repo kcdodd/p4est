@@ -1,7 +1,12 @@
 from .quad import (
-  QuadMeshBase,
-  QuadMesh )
-
+  QuadMesh,
+  QuadGeometry,
+  QuadLinear,
+  QuadSpherical,
+  QuadCartesianSpherical )
 from .hex import (
   HexMesh,
-  HexMesh )
+  HexGeometry,
+  HexLinear,
+  HexSpherical,
+  HexCartesianSpherical )

@@ -1,9 +1,9 @@
 import numpy as np
-from ...geom import (
+from ...geom import trans_sphere_to_cart
+from .geom import (
   HexLinear,
   HexSpherical,
-  HexCartesianSpherical,
-  trans_sphere_to_cart)
+  HexCartesianSpherical)
 from .base import HexMesh
 
 

@@ -3,8 +3,8 @@ from p4est.core._sc cimport (
   sc_MPI_Comm,
   sc_array_t,
   sc_mempool_t )
-from p4est.core._leaf_info cimport (
-  HexInfo,
+from p4est.core._info cimport (
+  HexLocalInfo,
   HexGhostInfo )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -444,10 +444,9 @@ cdef class P8est:
   cdef np.npy_int8 _min_level
   cdef np.npy_int8 _max_level
 
-  cdef HexInfo _leaf_info
-  cdef HexGhostInfo _ghost_info
-  cdef _rank_ghosts
-  cdef _rank_mirrors
+  cdef HexLocalInfo _local
+  cdef _ghost
+  cdef _mirror
 
   cdef P8estConnectivity _connectivity
   cdef p8est_t* _p4est
@@ -462,4 +461,4 @@ cdef class P8est:
   cdef void _partition(P8est self) nogil
 
   #-----------------------------------------------------------------------------
-  cdef _sync_leaf_info(P8est self)
+  cdef _sync_local(P8est self)

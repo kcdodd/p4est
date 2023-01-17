@@ -32,7 +32,7 @@ def plot_grid(grid):
   #   color = 'red',
   #   opacity = 0.75 )
 
-  nc = len(grid.leaf_info)
+  nc = len(grid.local)
   verts = np.empty((nc, 2,2,2,3))
 
   kji = [
@@ -59,7 +59,7 @@ def plot_grid(grid):
   cells[:,7:] = vidx[:,1,1,::-1]
 
   _grid = pv.UnstructuredGrid(cells, [pv.CellType.HEXAHEDRON]*nc, verts.reshape(-1,3))
-  _grid.cell_data['root'] = grid.leaf_info.root
+  _grid.cell_data['root'] = grid.local.root
 
   p.add_mesh_clip_plane(
     mesh = _grid,
@@ -84,7 +84,7 @@ def run_cube():
     min_level = 0)
 
   for r in range(4):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -99,7 +99,7 @@ def run_spherical_cube_shell():
     min_level = 0)
 
   for r in range(4):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -114,7 +114,7 @@ def run_spherical_cube():
     min_level = 0)
 
   for r in range(4):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -129,7 +129,7 @@ def run_slab_spherical_cube_hole():
     min_level = 0)
 
   for r in range(4):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -144,7 +144,7 @@ def run_icosahedron_spherical():
     min_level = 0)
 
   for r in range(3):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -159,7 +159,7 @@ def run_icosahedron():
     min_level = 0)
 
   for r in range(3):
-    grid.leaf_info.adapt = 1
+    grid.local.adapt = 1
     grid.adapt()
 
   plot_grid(grid)
@@ -168,10 +168,10 @@ def run_icosahedron():
 if __name__ == '__main__':
   run_cube()
   run_spherical_cube_shell()
-  run_spherical_cube()
 
   # NOTE: mixing geometries not quite working
-  run_slab_spherical_cube_hole()
+  # run_slab_spherical_cube_hole()
+  # run_spherical_cube()
 
   run_icosahedron_spherical()
   run_icosahedron()
