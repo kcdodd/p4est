@@ -1,5 +1,5 @@
 cimport numpy as np
-from p4est.core._leaf_info cimport QuadLocalInfo, HexLocalInfo
+from p4est.core._info cimport QuadLocalInfo, HexLocalInfo
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class QuadAdapted:

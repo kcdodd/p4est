@@ -1,11 +1,15 @@
 cimport numpy as np
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class LeafInfo:
+cdef class Info:
   cdef tuple _shape
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class QuadLocalInfo(LeafInfo):
+cdef class CellInfo(Info):
+  pass
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class QuadLocalInfo(CellInfo):
   cdef public _root
   cdef public _idx
   cdef public _level
@@ -20,7 +24,7 @@ cdef class QuadLocalInfo(LeafInfo):
   cdef public _cell_adj_rank
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class QuadGhostInfo(LeafInfo):
+cdef class QuadGhostInfo(CellInfo):
   cdef public _rank
   cdef public _root
   cdef public _idx
@@ -35,3 +39,9 @@ cdef class HexLocalInfo(QuadLocalInfo):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class HexGhostInfo(QuadGhostInfo):
   pass
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class NodelInfo(Info):
+  cdef public _idx
+  cdef public _cells
+  cdef public _cells_inv

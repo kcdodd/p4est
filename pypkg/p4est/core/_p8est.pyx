@@ -12,7 +12,7 @@ from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
 from p4est.utils import jagged_array
 from p4est.mesh.hex import HexMesh
-from p4est.core._leaf_info import (
+from p4est.core._info import (
   HexLocalInfo,
   HexGhostInfo )
 from p4est.core._adapted import HexAdapted

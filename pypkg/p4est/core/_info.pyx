@@ -8,7 +8,7 @@ import numpy as np
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class LeafInfo:
+cdef class Info:
   #-----------------------------------------------------------------------------
   def __init__(self, *args, **kwargs):
 
@@ -31,12 +31,13 @@ cdef class LeafInfo:
 
   #-----------------------------------------------------------------------------
   @property
-  def fields(self):
-    return self._fields()
+  def shape(self):
+    return self._shape
 
   #-----------------------------------------------------------------------------
-  def _fields(self):
-    raise NotImplementedError
+  @property
+  def fields(self):
+    return self._fields()
 
   #-----------------------------------------------------------------------------
   @property
@@ -47,60 +48,6 @@ cdef class LeafInfo:
   @lru_cache(maxsize = 1)
   def _tuple_cls(self):
     return namedtuple(f'{type(self).__name__}Tuple', list(self.fields.keys()))
-
-  #-----------------------------------------------------------------------------
-  def _validate_tuple(self, info):
-    cls = self.tuple_cls
-    fields = self.fields
-
-    if not isinstance(info, cls):
-      if isinstance(info, Mapping):
-        info = cls(**info)
-      else:
-        info = cls(*info)
-
-    base_shape = None
-
-    for (k, (shape, dtype)), v in zip(fields.items(), info):
-      ndim = v.ndim - len(shape)
-
-      if v.shape[ndim:] != shape or v.dtype != dtype:
-        raise ValueError(f"'{k}' must have trailing shape[{ndim}:] == {shape}, dtype == {dtype}: {v.shape[ndim:]}, {v.dtype}")
-
-      if base_shape is None:
-        base_shape = v.shape[:ndim]
-
-      elif v.shape[:ndim] != base_shape:
-        raise ValueError(f"All arrays must have same leading shape {base_shape}: {k} -> {v.shape[:ndim]}")
-
-    return base_shape, info
-
-  #-----------------------------------------------------------------------------
-  @property
-  def shape(self):
-    return self._shape
-
-  #-----------------------------------------------------------------------------
-  def resize(self, size):
-    if self._shape is not None and size == self._shape[0]:
-      return
-
-    info = list()
-
-    for (k, (shape, dtype)), _arr in zip(self._fields().items(), self.as_tuple()):
-
-      arr = np.zeros((size, *shape), dtype = dtype)
-
-      if _arr is not None:
-        arr[:len(_arr)] = _arr[:size]
-
-      info.append(arr)
-
-    self.set_from(info)
-
-  #-----------------------------------------------------------------------------
-  def contiguous(self):
-    return type(self)( np.ascontiguousarray(arr) for arr in self.as_tuple() )
 
   #-----------------------------------------------------------------------------
   def __len__(self):
@@ -134,8 +81,66 @@ cdef class LeafInfo:
 
     self._shape = base_shape
 
+  #-----------------------------------------------------------------------------
+  def _validate_tuple(self, info):
+    cls = self.tuple_cls
+    fields = self.fields
+
+    if not isinstance(info, cls):
+      if isinstance(info, Mapping):
+        info = cls(**info)
+      else:
+        info = cls(*info)
+
+    base_shape = None
+
+    for (k, (shape, dtype)), v in zip(fields.items(), info):
+      # number of trailing dimensions that must match the field spec
+      ndim = v.ndim - len(shape)
+
+      if v.shape[ndim:] != shape or v.dtype != dtype:
+        raise ValueError(f"'{k}' must have trailing shape[{ndim}:] == {shape}, dtype == {dtype}: {v.shape[ndim:]}, {v.dtype}")
+
+      if base_shape is None:
+        base_shape = v.shape[:ndim]
+
+      elif v.shape[:ndim] != base_shape:
+        raise ValueError(f"All arrays must have same leading shape {base_shape}: {k} -> {v.shape[:ndim]}")
+
+    return base_shape, info
+
+  #-----------------------------------------------------------------------------
+  def resize(self, size):
+    if self._shape is not None and size == self._shape[0]:
+      return
+
+    info = list()
+
+    for (k, (shape, dtype)), _arr in zip(self._fields().items(), self.as_tuple()):
+
+      arr = np.zeros((size, *shape), dtype = dtype)
+
+      if _arr is not None:
+        arr[:len(_arr)] = _arr[:size]
+
+      info.append(arr)
+
+    self.set_from(info)
+
+  #-----------------------------------------------------------------------------
+  def contiguous(self):
+    return type(self)( np.ascontiguousarray(arr) for arr in self.as_tuple() )
+
+  #-----------------------------------------------------------------------------
+  def _fields(self):
+    raise NotImplementedError
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class QuadLocalInfo(LeafInfo):
+cdef class CellInfo(Info):
+  pass
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class QuadLocalInfo(CellInfo):
   #-----------------------------------------------------------------------------
   @lru_cache(maxsize = 1)
   def _fields(self):
@@ -318,7 +323,7 @@ cdef class QuadLocalInfo(LeafInfo):
     self._cell_adj_rank[:] = val
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cdef class QuadGhostInfo(LeafInfo):
+cdef class QuadGhostInfo(CellInfo):
   #-----------------------------------------------------------------------------
   def _fields(self):
     return {
@@ -451,3 +456,44 @@ cdef class HexGhostInfo(QuadGhostInfo):
       'idx' : (tuple(), np.int32),
       'level' : (tuple(), np.int8),
       'origin' : ((3,), np.int32) }
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class NodeInfo(Info):
+  #-----------------------------------------------------------------------------
+  @lru_cache(maxsize = 1)
+  def _fields(self):
+    return {
+      # unique local index
+      'idx' : (tuple(), np.int32),
+      'cells' : ((2,2), np.int8),
+      'cells_inv' : ((2,2), np.int8)  }
+
+  #-----------------------------------------------------------------------------
+  @property
+  def idx(self):
+    return self._idx
+
+  #-----------------------------------------------------------------------------
+  @idx.setter
+  def idx(self, val):
+    self._idx[:] = val
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cells(self):
+    return self._cells
+
+  #-----------------------------------------------------------------------------
+  @cells.setter
+  def cells(self, val):
+    self._cells[:] = val
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cells_inv(self):
+    return self._cells_inv
+
+  #-----------------------------------------------------------------------------
+  @cells_inv.setter
+  def cells_inv(self, val):
+    self._cells_inv[:] = val

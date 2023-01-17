@@ -3,7 +3,7 @@ from p4est.core._sc cimport (
   sc_MPI_Comm,
   sc_array_t,
   sc_mempool_t )
-from p4est.core._leaf_info cimport (
+from p4est.core._info cimport (
   HexLocalInfo,
   HexGhostInfo )
 

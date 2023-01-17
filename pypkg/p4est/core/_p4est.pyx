@@ -11,7 +11,7 @@ from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
 from p4est.utils import jagged_array
 from p4est.mesh.quad import QuadMesh
-from p4est.core._leaf_info import (
+from p4est.core._info import (
   QuadLocalInfo,
   QuadGhostInfo )
 from p4est.core._adapted import QuadAdapted
@@ -166,7 +166,7 @@ cdef class P4est:
         <void*>self )
 
     self._p4est = p4est
-    self._sync_leaf_info()
+    self._sync_info()
 
   #-----------------------------------------------------------------------------
   def __dealloc__(self):
@@ -296,7 +296,7 @@ cdef class P4est:
     with nogil:
       self._adapt()
 
-    return self._sync_leaf_info()
+    return self._sync_info()
 
   #-----------------------------------------------------------------------------
   cdef void _adapt(P4est self) nogil:
@@ -336,7 +336,7 @@ cdef class P4est:
         <p4est_weight_t>_weight_quadrant )
 
   #-----------------------------------------------------------------------------
-  cdef _sync_leaf_info(P4est self):
+  cdef _sync_info(P4est self):
     cdef:
       p4est_ghost_t* ghost
       p4est_mesh_t* mesh
@@ -355,7 +355,7 @@ cdef class P4est:
         0,
         P4EST_CONNECT_FULL)
 
-    prev_leaf_info = self._local
+    prev_info = self._local
     self._local = QuadLocalInfo(mesh.local_num_quadrants)
     ghost_flat = QuadGhostInfo(mesh.ghost_num_quadrants)
 
@@ -376,7 +376,7 @@ cdef class P4est:
       (num_adapted, 2, 2),
       dtype = np.int32 )
 
-    _sync_leaf_info(
+    _sync_info(
       trees = <p4est_tree_t*>self._p4est.trees.array,
       first_local_tree = self._p4est.first_local_tree,
       last_local_tree = self._p4est.last_local_tree,
@@ -501,13 +501,13 @@ cdef class P4est:
       idx = fine_idx,
       info = self._local[fine_idx],
       replaced_idx = refined_idx,
-      replaced_info = prev_leaf_info[refined_idx] )
+      replaced_info = prev_info[refined_idx] )
 
     coarsened = QuadAdapted(
       idx = coarse_idx,
       info = self._local[coarse_idx],
       replaced_idx = coarsened_idx,
-      replaced_info = prev_leaf_info[coarsened_idx] )
+      replaced_info = prev_info[coarsened_idx] )
 
     return refined, coarsened
 
@@ -575,7 +575,7 @@ cdef npy.npy_int32 _count_leaf_adapted(
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
-cdef void _sync_leaf_info(
+cdef void _sync_info(
   p4est_tree_t* trees,
   npy.npy_int32 first_local_tree,
   npy.npy_int32 last_local_tree,

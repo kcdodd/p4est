@@ -4,7 +4,7 @@ from p4est.core._sc cimport (
   sc_MPI_Comm,
   sc_array_t,
   sc_mempool_t )
-from p4est.core._leaf_info cimport (
+from p4est.core._info cimport (
   QuadLocalInfo,
   QuadGhostInfo )
 
@@ -506,4 +506,4 @@ cdef class P4est:
   cdef void _partition(P4est self) nogil
 
   #-----------------------------------------------------------------------------
-  cdef _sync_leaf_info(P4est self)
+  cdef _sync_info(P4est self)
