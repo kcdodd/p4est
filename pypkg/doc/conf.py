@@ -16,7 +16,6 @@ globals().update( basic_conf(
 
 intersphinx_mapping['mpi4py'] = ("https://mpi4py.readthedocs.io/en/stable/", None)
 intersphinx_mapping['numpy'] = ("https://numpy.org/doc/stable/", None)
-intersphinx_mapping['np'] = ("https://numpy.org/doc/stable/", None)
 
 html_logo = os.fspath(Path(__file__).parent / '_static' / 'logo2.png')
 

@@ -1,11 +1,16 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-from typing import (
-  Optional,
-  Union,
-  Literal,
-  TypeVar,
-  NewType )
+try:
+  from typing import (
+    Optional,
+    Union,
+    Literal,
+    TypeVar,
+    NewType )
+  from ...typing import N, NV, NN, NC
+except:
+  pass
+
 import numpy as np
 from collections.abc import Sequence
 from ...utils import (
@@ -17,20 +22,6 @@ from .topo import (
   quad_cell_nodes,
   quad_cell_adj )
 
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#: A variable size
-N = TypeVar('N', bound = int)
-
-#: A variable number of vertices
-NV = TypeVar('NV', bound = int)
-
-#: A variable number of cells
-NC = TypeVar('NC', bound = int)
-
-#: A variable number of nodes
-NN = TypeVar('NN', bound = int)
-
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class QuadMesh:
   r"""Base container for quadrilateral mesh
@@ -40,11 +31,9 @@ class QuadMesh:
   verts:
     Position of each vertex.
     (AKA :c:var:`p4est_connectivity_t.vertices`)
-
   cells:
     Mapping of quadrilateral cells to the indices of their 4 vertices.
-    (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
-
+    See :attr:`QuadMesh.cells` (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
   vert_nodes:
     The topological node associated with each vertex, causing cells to be connected
     by having vertices associated with the same node in addition to directly
@@ -52,11 +41,9 @@ class QuadMesh:
     A value of ``-1`` is used to indicate independent vertices.
     If not given, each vertex is assumed to be independent, and cells are only
     connected by shared vertices.
-
   geoms:
     The available geometries that may be referenced by 'vert_geom'.
     (default: [QuadLinear])
-
   vert_geom:
     Indices into 'geoms' to get the geometry associated with each vertex.
     (default: zeros(:class:`NV`))
@@ -190,7 +177,7 @@ class QuadMesh:
   #-----------------------------------------------------------------------------
   @property
   def verts(self) \
-      -> np.ndarray[(NV, 2, 2), np.dtype[np.floating]]:
+      -> np.ndarray[(NV, 2), np.dtype[np.floating]]:
     """Position of each vertex.
     (AKA :c:var:`p4est_connectivity_t.vertices`)
     """
@@ -306,7 +293,8 @@ class QuadMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def vert_geom(self) -> np.ndarray[(NV,), np.dtype[np.integer]]:
+  def vert_geom(self) \
+      -> np.ndarray[(NV,), np.dtype[np.integer]]:
     """Indices into 'geoms' to get the geometry associated with each vertex.
     """
     return self._vert_geom
@@ -315,7 +303,7 @@ class QuadMesh:
   def coord(self,
     offset : np.ndarray[(Union[N,Literal[1]], ..., 2), np.dtype[np.floating]],
     where : Union[None, slice, np.ndarray[..., np.dtype[Union[np.integer, bool]]]] = None ) \
-      -> np.ndarray[(N, ..., Literal[3]), np.dtype[np.floating]]:
+      -> np.ndarray[(N, ..., 3), np.dtype[np.floating]]:
     r"""Transform to (physical/global) coordinates of a point relative to each cell
 
     .. math::
@@ -337,7 +325,7 @@ class QuadMesh:
 
     Returns
     -------
-    Global absolute coordinates
+    Absolute coordinates at each ``offset``
     """
 
     if where is None:
