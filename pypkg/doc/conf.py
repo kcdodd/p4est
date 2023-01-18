@@ -16,6 +16,7 @@ globals().update( basic_conf(
 
 intersphinx_mapping['mpi4py'] = ("https://mpi4py.readthedocs.io/en/stable/", None)
 intersphinx_mapping['numpy'] = ("https://numpy.org/doc/stable/", None)
+intersphinx_mapping['np'] = ("https://numpy.org/doc/stable/", None)
 
 html_logo = os.fspath(Path(__file__).parent / '_static' / 'logo2.png')
 
@@ -33,6 +34,7 @@ html_theme_options = {
     'color-background-primary' : '#EFF0F1',
     'color-background-secondary' : '#d6e6de',
     'color-background-border' : '#b1b5b9',
+    'color-inline-code-background' : '#e7f9f0',
 
     'color-brand-primary' : '#39845f',
     'color-brand-content' : '#39845f',
@@ -57,6 +59,7 @@ html_theme_options = {
     'color-background-primary' : '#373b39',
     'color-background-secondary' : '#4f5955',
     'color-background-border' : '#51575d',
+    'color-inline-code-background' : '#424745',
 
     'color-brand-primary' : '#6af4af',
     'color-brand-content' : '#6af4af',
