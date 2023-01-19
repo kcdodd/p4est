@@ -2,6 +2,9 @@ API Reference
 =============
 
 .. toctree::
-  :maxdepth: 2
-
+  :maxdepth: 4
+  
+  core
+  geom
   mesh.quad
+  mesh.hex

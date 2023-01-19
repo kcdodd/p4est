@@ -32,6 +32,12 @@ def unit_square():
 def cube(length = 1.0):
   """Factory method to create the surface of a cube
 
+  .. figure:: ../img/4estCube.png
+    :width: 90%
+    :align: center
+
+    Topological elements.
+
   Parameters
   ----------
   length : float
@@ -72,6 +78,12 @@ def cube(length = 1.0):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def spherical_cube(length = 1.0):
   """Factory method to create the surface of a cube
+
+  .. figure:: ../img/Spherical_Cube.png
+    :width: 90%
+    :align: center
+
+    Spherical Cube.
 
   Parameters
   ----------
@@ -224,6 +236,12 @@ def periodic_stack():
 def icosahedron_golden():
   """Factory method to create an icosahedron using golden ratio
 
+  .. figure:: ../img/icosahedron_golden.png
+    :width: 90%
+    :align: center
+
+    Icosahedron Golden.
+
   Parameters
   ----------
   radius : float
@@ -287,6 +305,12 @@ def icosahedron_golden():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def icosahedron_spherical(radius = 1.0):
   """Factory method to create an icosahedron in spherical coordinates
+
+  .. figure:: ../img/Icosahedron_Spherical.png
+    :width: 90%
+    :align: center
+
+    Icosahedron Spherical.
 
   Parameters
   ----------
@@ -354,6 +378,12 @@ def icosahedron_spherical(radius = 1.0):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def icosahedron(radius = 1.0):
   """Factory method to create an icosahedron in cartesian coordinates
+
+  .. figure:: ../img/Icosahedron.png
+    :width: 90%
+    :align: center
+
+    Icosahedron.
 
   Parameters
   ----------

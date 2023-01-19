@@ -77,7 +77,8 @@ def plot_grid(grid):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_cube():
   mesh = cube()
-  # mesh.show()
+  print("Cube")
+  mesh.show()
 
   grid = P8est(
     mesh = mesh,
@@ -92,7 +93,7 @@ def run_cube():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_spherical_cube_shell():
   mesh = spherical_cube_shell()
-  # mesh.show()
+  #mesh.show()
 
   grid = P8est(
     mesh = mesh,
@@ -107,7 +108,7 @@ def run_spherical_cube_shell():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_spherical_cube():
   mesh = spherical_cube()
-  # mesh.show()
+  #mesh.show()
 
   grid = P8est(
     mesh = mesh,
@@ -122,7 +123,7 @@ def run_spherical_cube():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_slab_spherical_cube_hole():
   mesh = slab_spherical_cube_hole()
-  # mesh.show()
+  #mesh.show()
 
   grid = P8est(
     mesh = mesh,
@@ -137,7 +138,7 @@ def run_slab_spherical_cube_hole():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_icosahedron_spherical():
   mesh = icosahedron_spherical_shell()
-  # mesh.show()
+  #mesh.show()
 
   grid = P8est(
     mesh = mesh,
@@ -152,8 +153,7 @@ def run_icosahedron_spherical():
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_icosahedron():
   mesh = icosahedron_shell()
-  # mesh.show()
-
+  #mesh.show()
   grid = P8est(
     mesh = mesh,
     min_level = 0)
