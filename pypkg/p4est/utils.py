@@ -1,8 +1,22 @@
+# Enable postponed evaluation of annotations
+from __future__ import annotations
+try:
+  from typing import (
+    Optional,
+    Union,
+    Literal,
+    TypeVar,
+    NewType )
+  from .typing import N, M
+except:
+  pass
+
 from copy import copy
+from collections.abc import Sequence
 import numpy as np
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-class jagged_array:
+class jagged_array(Sequence):
   """Container for jagged (ragged) array
 
   Eeach 'row' potentially has a different number of entries, but also each row
@@ -13,14 +27,17 @@ class jagged_array:
 
   Parameters
   ----------
-  data : array of shape = (N, ...)
-  row_idx : array of shape = (nrows + 1,)
+  data :
+    The data of all rows
+  row_idx :
     Indices of each row, where row ``i`` is ``data[row_idx[i]:row_idx[i+1]]``,
     with ``row_idx[0] == 0`` and ``row_idx[-1] == len(data)``.
 
   """
   #-----------------------------------------------------------------------------
-  def __init__(self, data, row_idx):
+  def __init__(self,
+    data : np.ndarray[(N, ...)],
+    row_idx : np.ndarray[(M,), np.dtype[np.integer]]):
 
     row_idx = np.ascontiguousarray(row_idx)
 
@@ -48,6 +65,11 @@ class jagged_array:
     self._data = data
     self._row_idx = row_idx
     self._row_counts = row_counts
+
+  #-----------------------------------------------------------------------------
+  def __class_getitem__(cls, *args):
+    from types import GenericAlias
+    return GenericAlias(cls, args)
 
   #-----------------------------------------------------------------------------
   def __copy__(self):

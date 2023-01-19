@@ -1,22 +1,36 @@
+# Enable postponed evaluation of annotations
+from __future__ import annotations
+try:
+  from typing import (
+    Optional,
+    Union,
+    Literal,
+    TypeVar,
+    NewType )
+  from .typing import N
+except:
+  pass
+
 import numpy as np
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def trans_sphere_to_cart(uvr):
-  """Transforms coordinates from spherical to cartesian
+def trans_sphere_to_cart(
+  uvr : np.ndarray[(...,3), np.dtype[np.floating]] ) \
+  -> np.ndarray[(...,3), np.dtype[np.floating]]:
+  r"""Transforms coordinates from spherical to cartesian
 
   Parameters
   ----------
-  uvr : array with shape = (..., 3)
+  uvr :
     Spherical coordinates are (in order):
 
-    * polar angle (aka. colatitude) [0, pi]
-    * azimuthal angle (aka. longitude) [-pi, pi]
+    * polar angle (aka. colatitude) :math:`\in [0, \pi]`
+    * azimuthal angle (aka. longitude) :math:`\in [-\pi, \pi]`
     * radius
 
   Returns
   -------
-  xyz : array with shape = (..., 3)
-    Cartesian coordinates
+  Cartesian coordinates
   """
   phi = uvr[...,0]
   theta = uvr[...,1]
@@ -30,22 +44,23 @@ def trans_sphere_to_cart(uvr):
   return xyz
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def trans_cart_to_sphere(xyz):
-  """Transforms coordinates from spherical to cartesian
+def trans_cart_to_sphere(
+  xyz : np.ndarray[(...,3), np.dtype[np.floating]] ) \
+  -> np.ndarray[(...,3), np.dtype[np.floating]]:
+  r"""Transforms coordinates from spherical to cartesian
 
   Parameters
   ----------
-  xyz : array with shape = (..., 3)
+  xyz :
     Cartesian coordinates
 
   Returns
   -------
-  uvr : array with shape = (..., 3)
-    Spherical coordinates are (in order):
+  Spherical coordinates are (in order):
 
-    * polar angle (aka. colatitude) [0, pi]
-    * azimuthal angle (aka. longitude) [-pi, pi]
-    * radius
+  * polar angle (aka. colatitude) :math:`\in [0, \pi]`
+  * azimuthal angle (aka. longitude) :math:`\in [-\pi, \pi]`
+  * radius
   """
 
   x = xyz[...,0]
@@ -62,8 +77,21 @@ def trans_cart_to_sphere(xyz):
   return uvr
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_linear(eta, x0, x1):
-  """Linear interpolation
+def interp_linear(
+  eta : np.ndarray[(...,), np.dtype[np.floating]],
+  x0 : np.ndarray[(...,N), np.dtype[np.floating]],
+  x1 : np.ndarray[(...,N), np.dtype[np.floating]]) \
+  -> np.ndarray[(...,N), np.dtype[np.floating]]:
+  r"""Linear interpolation
+
+  Parameters
+  ----------
+  eta :
+    Interpolation point :math:`\in [0.0, 1.0]^2`
+  x0 :
+    Value at :math:`0.0`
+  x1 :
+    Value at :math:`1.0`
   """
 
   if eta.ndim < x0.ndim:
@@ -72,8 +100,18 @@ def interp_linear(eta, x0, x1):
   return (1.0 - eta) * x0 + eta * x1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_linear2(verts, uv):
-  """Bi-linear interpolation
+def interp_linear2(
+  verts : np.ndarray[(...,2,2,N), np.dtype[np.floating]],
+  uv : np.ndarray[(...,2), np.dtype[np.floating]]) \
+  -> np.ndarray[(...,N), np.dtype[np.floating]]:
+  r"""Bi-linear interpolation
+
+  Parameters
+  ----------
+  verts :
+    Values at the four limits of ``uv``.
+  uv :
+    Interpolation point :math:`\in [0.0, 1.0]^2`
   """
 
   m = np.prod(verts.shape[-2:])
@@ -90,8 +128,18 @@ def interp_linear2(verts, uv):
       x1 = verts[...,1,:])
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_linear3(verts, uv):
-  """Tri-inear interpolation
+def interp_linear3(
+  verts : np.ndarray[(...,2,2,2,N), np.dtype[np.floating]],
+  uv : np.ndarray[(...,3), np.dtype[np.floating]] ) \
+  -> np.ndarray[(...,N), np.dtype[np.floating]]:
+  r"""Tri-linear interpolation
+
+  Parameters
+  ----------
+  verts :
+    Values at the four limits of ``uv``.
+  uv :
+    Interpolation point :math:`\in [0.0, 1.0]^3`
   """
 
   m = np.prod(verts.shape[-3:])
@@ -105,8 +153,21 @@ def interp_linear3(verts, uv):
   return interp_linear2(verts = verts, uv = uv)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_slerp(eta, x0, x1):
-  """Spherical linear interpolation
+def interp_slerp(
+  eta : np.ndarray[(...,), np.dtype[np.floating]],
+  x0 : np.ndarray[(...,N), np.dtype[np.floating]],
+  x1 : np.ndarray[(...,N), np.dtype[np.floating]]) \
+  -> np.ndarray[(...,N), np.dtype[np.floating]]:
+  r"""Spherical linear interpolation
+
+  Parameters
+  ----------
+  eta :
+    Interpolation point :math:`\in [0.0, 1.0]^2`
+  x0 :
+    Value at :math:`0.0`
+  x1 :
+    Value at :math:`1.0`
   """
 
   _x0 = np.linalg.norm(x0, axis = -1)
@@ -122,8 +183,18 @@ def interp_slerp(eta, x0, x1):
   return c0[...,None] * x0 + c1[...,None] * x1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_slerp2(verts, uv):
-  """Spherical linear interpolation of quadrilateral vertices
+def interp_slerp2(
+  verts : np.ndarray[(...,2,2,N), np.dtype[np.floating]],
+  uv : np.ndarray[(...,2), np.dtype[np.floating]]) \
+  -> np.ndarray[(...,N), np.dtype[np.floating]]:
+  r"""Spherical linear interpolation of quadrilateral vertices
+
+  Parameters
+  ----------
+  verts :
+    Values at the four limits of ``uv``.
+  uv :
+    Interpolation point :math:`\in [0.0, 1.0]^2`
   """
 
   return interp_slerp(
@@ -138,9 +209,19 @@ def interp_slerp2(verts, uv):
       x1 = verts[...,1,1,:]) )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_slerp3(verts, uv):
-  """Spherical linear interpolation of quadrilateral vertices, assumes third axis
+def interp_slerp3(
+  verts : np.ndarray[(...,2,2,2,N), np.dtype[np.floating]],
+  uv : np.ndarray[(...,3), np.dtype[np.floating]] ) \
+  -> np.ndarray[(...,N), np.dtype[np.floating]]:
+  r"""Spherical linear interpolation of quadrilateral vertices, assumes third axis
   is 'radial'.
+
+  Parameters
+  ----------
+  verts :
+    Values at the four limits of ``uv``.
+  uv :
+    Interpolation point :math:`\in [0.0, 1.0]^3`
   """
 
   m = np.prod(verts.shape[-3:])
@@ -154,16 +235,36 @@ def interp_slerp3(verts, uv):
   return interp_slerp2(verts, uv)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_sphere_to_cart_slerp2(verts, uv):
-  """Spherical linear interpolation applied after transforming to cartesian
+def interp_sphere_to_cart_slerp2(
+  verts : np.ndarray[(...,2,2,3), np.dtype[np.floating]],
+  uv : np.ndarray[(...,2), np.dtype[np.floating]]) \
+  -> np.ndarray[(...,3), np.dtype[np.floating]]:
+  r"""Spherical linear interpolation applied after transforming to cartesian
+
+  Parameters
+  ----------
+  verts :
+    Values at the four limits of ``uv``.
+  uv :
+    Interpolation point :math:`\in [0.0, 1.0]^2`
   """
   return interp_slerp2(
     verts = trans_sphere_to_cart(verts),
     uv = uv )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def interp_sphere_to_cart_slerp3(verts, uv):
-  """Spherical linear interpolation applied after transforming to cartesian
+def interp_sphere_to_cart_slerp3(
+  verts : np.ndarray[(...,2,2,2,3), np.dtype[np.floating]],
+  uv : np.ndarray[(...,3), np.dtype[np.floating]] ) \
+  -> np.ndarray[(...,3), np.dtype[np.floating]]:
+  r"""Spherical linear interpolation applied after transforming to cartesian
+
+  Parameters
+  ----------
+  verts :
+    Values at the four limits of ``uv``.
+  uv :
+    Interpolation point :math:`\in [0.0, 1.0]^3`
   """
   return interp_slerp3(
     verts = trans_sphere_to_cart(verts),

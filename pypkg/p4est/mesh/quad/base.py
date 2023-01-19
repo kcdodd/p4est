@@ -1,3 +1,16 @@
+# Enable postponed evaluation of annotations
+from __future__ import annotations
+try:
+  from typing import (
+    Optional,
+    Union,
+    Literal,
+    TypeVar,
+    NewType )
+  from ...typing import N, NV, NN, NC
+except:
+  pass
+
 import numpy as np
 from collections.abc import Sequence
 from ...utils import (
@@ -15,109 +28,33 @@ class QuadMesh:
 
   Parameters
   ----------
-  verts : ndarray[(NV, 2 or 3), floating]
+  verts:
     Position of each vertex.
     (AKA :c:var:`p4est_connectivity_t.vertices`)
-  cells : ndarray[(NC, 2, 2), integer]
+  cells:
     Mapping of quadrilateral cells to the indices of their 4 vertices.
-    (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
-
-    .. code-block::
-
-      cells[:,0,0] -> Vertex(-y, -x)
-      cells[:,0,1] -> Vertex(-y, +x)
-      cells[:,1,0] -> Vertex(+y, -x)
-      cells[:,1,1] -> Vertex(+y, +x)
-
-  vert_nodes : None | numpy.ndarray[int32, (NV,)]
+    See :attr:`QuadMesh.cells` (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
+  vert_nodes:
     The topological node associated with each vertex, causing cells to be connected
     by having vertices associated with the same node in addition to directly
     sharing vertices.
     A value of ``-1`` is used to indicate independent vertices.
     If not given, each vertex is assumed to be independent, and cells are only
     connected by shared vertices.
-
-  geoms : None | Sequence[QuadGeometry]
+  geoms:
     The available geometries that may be referenced by 'vert_geom'.
     (default: [QuadLinear])
-
-  vert_geom : None | numpy.ndarray[int32, (NV,)]
-
+  vert_geom:
     Indices into 'geoms' to get the geometry associated with each vertex.
-    (default: zeros(NV))
-
-
-
-  .. partis_attr:: cell_adj
-    :prefix: property
-    :type: numpy.ndarray
-    :subscript: int32, (NC, 2, 2)
-
-    Mapping of cells to the indices of their (up to) 4 face-adjacent neighbors.
-    (AKA :c:var:`p4est_connectivity_t.tree_to_tree`)
-
-    .. code-block::
-
-      cell_adj[:,0,0] -> Cell(-xface)
-      cell_adj[:,0,1] -> Cell(+xface)
-      cell_adj[:,1,0] -> Cell(-yface)
-      cell_adj[:,1,1] -> Cell(+yface)
-
-  .. partis_attr:: cell_adj_face
-    :prefix: property
-    :type: numpy.ndarray
-    :subscript: int8, (NC, 2, 2)
-
-    Topological order of the faces of each connected cell.
-    (AKA :c:var:`p4est_connectivity_t.tree_to_face`)
-
-  .. partis_attr:: cell_nodes
-    :prefix: property
-    :type: numpy.ndarray
-    :subscript: int32, (NC, 2, 2)
-
-    Mapping of cells to the indices of their (up to) 4 nodes
-    in ``node_cells`` and ``node_cells_inv``,
-    ``-1`` used where nodes are not specified.
-    (AKA :c:var:`p4est_connectivity_t.tree_to_corner`)
-
-    .. code-block::
-
-      cell_nodes[:,0,0] -> Node(-y, -x)
-      cell_nodes[:,0,1] -> Node(-y, +x)
-      cell_nodes[:,1,0] -> Node(+y, -x)
-      cell_nodes[:,1,1] -> Node(+y, +x)
-
-  .. partis_attr:: node_cells
-    :prefix: property
-    :type: jagged_array
-    :subscript: int32, (NN, *)
-
-    Mapping to cells sharing each node, all ``len(node_cells[i]) > 1``.
-    (AKA :c:var:`p4est_connectivity_t.corner_to_tree`)
-
-  .. partis_attr:: node_cells_inv
-    :prefix: property
-    :type: jagged_array
-    :subscript: int32, (NN, *, 1)
-
-    Mapping to the cell's local vertex {0,1,2,3} in ``cell_nodes`` which maps
-    back to the node.
-    (AKA :c:var:`p4est_connectivity_t.corner_to_corner`)
-
-    .. code-block::
-
-      nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
-      _nodes = cell_nodes.reshape(-1,4)[(node_cells.flat, node_cells_inv.flat)]
-      valid = nodes == _nodes
+    (default: zeros(:class:`NV`))
 
   """
   def __init__(self,
-    verts,
-    cells,
-    vert_nodes = None,
-    geoms = None,
-    vert_geom = None ):
+    verts: np.ndarray[(NV, 2, 2), np.dtype[np.floating]],
+    cells: np.ndarray[(NC, 2, 2), np.dtype[np.integer]],
+    vert_nodes: Optional[np.ndarray[(NV,), np.dtype[np.integer]]] = None,
+    geoms: Optional[Sequence[QuadGeometry]] = None,
+    vert_geom: Optional[np.ndarray[(NV,), np.dtype[np.integer]]] = None ):
 
     #...........................................................................
     if vert_nodes is None:
@@ -238,59 +175,130 @@ class QuadMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def verts(self):
+  def verts(self) \
+    -> np.ndarray[(NV, 2), np.dtype[np.floating]]:
+    """Position of each vertex.
+    (AKA :c:var:`p4est_connectivity_t.vertices`)
+    """
     return self._verts
 
   #-----------------------------------------------------------------------------
   @property
-  def vert_nodes(self):
+  def vert_nodes(self) \
+    -> np.ndarray[(NV,), np.dtype[np.integer]]:
+    """The topological node associated with each vertex, causing cells to be connected
+    by having vertices associated with the same node in addition to directly
+    sharing vertices.
+    """
     return self._vert_nodes
 
   #-----------------------------------------------------------------------------
   @property
-  def cells(self):
+  def cells(self) \
+    -> np.ndarray[(NC, 2, 2), np.dtype[np.integer]]:
+    """Mapping of quadrilateral cells to the indices of their 4 vertices.
+    (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
+
+    .. code-block::
+
+      cells[:,0,0] -> Vertex(-y, -x)
+      cells[:,0,1] -> Vertex(-y, +x)
+      cells[:,1,0] -> Vertex(+y, -x)
+      cells[:,1,1] -> Vertex(+y, +x)
+
+    """
     return self._cells
 
   #-----------------------------------------------------------------------------
   @property
-  def cell_adj(self):
+  def cell_adj(self) \
+    -> np.ndarray[(NC, 2, 2), np.dtype[np.integer]]:
+    """Mapping of cells to the indices of their (up to) 4 face-adjacent neighbors.
+    (AKA :c:var:`p4est_connectivity_t.tree_to_tree`)
+
+    .. code-block::
+
+      cell_adj[:,0,0] -> Cell(-xface)
+      cell_adj[:,0,1] -> Cell(+xface)
+      cell_adj[:,1,0] -> Cell(-yface)
+      cell_adj[:,1,1] -> Cell(+yface)
+    """
     return self._cell_adj
 
   #-----------------------------------------------------------------------------
   @property
-  def cell_adj_face(self):
+  def cell_adj_face(self) \
+    -> np.ndarray[(NC, 2, 2), np.dtype[np.integer]]:
+    """Topological order of the faces of each connected cell.
+    (AKA :c:var:`p4est_connectivity_t.tree_to_face`)
+    """
     return self._cell_adj_face
 
   #-----------------------------------------------------------------------------
   @property
-  def cell_nodes(self):
+  def cell_nodes(self) \
+    -> np.ndarray[(NC, 2, 2), np.dtype[np.integer]]:
+    """Mapping of cells to the indices of their (up to) 4 nodes
+    in ``node_cells`` and ``node_cells_inv``,
+    ``-1`` used where nodes are not specified.
+    (AKA :c:var:`p4est_connectivity_t.tree_to_corner`)
+
+    .. code-block::
+
+      cell_nodes[:,0,0] -> Node(-y, -x)
+      cell_nodes[:,0,1] -> Node(-y, +x)
+      cell_nodes[:,1,0] -> Node(+y, -x)
+      cell_nodes[:,1,1] -> Node(+y, +x)
+
+    """
     return self._cell_nodes
 
   #-----------------------------------------------------------------------------
   @property
-  def node_cells(self):
+  def node_cells(self) \
+    -> jagged_array[NN, np.ndarray[(...,), np.dtype[np.integer]]]:
+    """Mapping to cells sharing each node, all ``len(node_cells[i]) > 1``.
+    (AKA :c:var:`p4est_connectivity_t.corner_to_tree`)
+    """
     return self._node_cells
 
   #-----------------------------------------------------------------------------
   @property
-  def node_cells_inv(self):
+  def node_cells_inv(self) \
+    -> jagged_array[NN, np.ndarray[(...,), np.dtype[np.integer]]]:
+    """Mapping to the cell's local vertex {0,1,2,3} in ``cell_nodes`` which maps
+    back to the node.
+    (AKA :c:var:`p4est_connectivity_t.corner_to_corner`)
+
+    .. code-block::
+
+      nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
+      _nodes = cell_nodes.reshape(-1,4)[(node_cells.flat, node_cells_inv.flat)]
+      valid = nodes == _nodes
+    """
     return self._node_cells_inv
 
   #-----------------------------------------------------------------------------
   @property
-  def geoms(self):
+  def geoms(self) \
+    -> Sequence[QuadGeometry]:
+    """The available geometries referenced by 'vert_geom'.
+    """
     return self._geoms
 
   #-----------------------------------------------------------------------------
   @property
-  def vert_geom(self):
+  def vert_geom(self) \
+    -> np.ndarray[(NV,), np.dtype[np.integer]]:
+    """Indices into 'geoms' to get the geometry associated with each vertex.
+    """
     return self._vert_geom
-
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    offset,
-    where = None ):
+    offset : np.ndarray[(Union[N,Literal[1]], ..., 2), np.dtype[np.floating]],
+    where : Union[None, slice, np.ndarray[..., np.dtype[Union[np.integer, bool]]]] = None ) \
+    -> np.ndarray[(N, ..., 3), np.dtype[np.floating]]:
     r"""Transform to (physical/global) coordinates of a point relative to each cell
 
     .. math::
@@ -304,16 +312,15 @@ class QuadMesh:
 
     Parameters
     ----------
-    offset : ndarray[(N | 1, ..., 2), floating]
-
+    offset :
       Relative coordinates from each cell origin to compute the coordinates,
       normalized :math:`\rankone{q} \in [0.0, 1.0]^2` along each edge of the cell.
-    where : None | slice | numpy.ndarray
-      Subset of cells. (default: slice(None))
+    where :
+      Subset of cells. (default: :py:obj:`slice(None)`)
 
     Returns
     -------
-    coord: ndarray[(N, ..., 3), floating]
+    Absolute coordinates at each ``offset``
     """
 
     if where is None:

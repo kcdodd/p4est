@@ -2,9 +2,12 @@ API Reference
 =============
 
 .. toctree::
-  :maxdepth: 4
-  
+  :maxdepth: 2
+
   core
-  geom
   mesh.quad
   mesh.hex
+  geom
+  utils
+  typing
+

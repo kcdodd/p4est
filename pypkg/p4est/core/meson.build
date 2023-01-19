@@ -26,6 +26,8 @@ modules = [
   '_p4est',
   '_p8est' ]
 
+lib_rpath = host_machine.system() == 'darwin' ? '@loader_path/lib' : '$ORIGIN/lib'
+
 foreach mod : modules
 
   py3.extension_module(
@@ -38,7 +40,7 @@ foreach mod : modules
     link_with : p4est_shared_lib,
     install: true,
     # NOTE: this is so the python extensions can find libp4est and libsc at runtime
-    install_rpath: '$ORIGIN/lib',
+    install_rpath: lib_rpath,
     install_dir: 'p4est/core' )
 
 endforeach

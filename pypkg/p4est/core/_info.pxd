@@ -22,8 +22,7 @@ cdef class QuadLocalInfo(CellInfo):
   cdef public _cell_adj_order
   cdef public _cell_adj_level
   cdef public _cell_adj_rank
-  cdef public _cell_nodes
-  cdef public _cell_node_adj
+  cdef public _nodes
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class QuadGhostInfo(CellInfo):

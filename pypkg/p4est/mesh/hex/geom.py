@@ -1,3 +1,16 @@
+# Enable postponed evaluation of annotations
+from __future__ import annotations
+try:
+  from typing import (
+    Optional,
+    Union,
+    Literal,
+    TypeVar,
+    NewType )
+  from ...typing import N
+except:
+  pass
+
 import numpy as np
 from ...geom import (
   interp_linear3,
@@ -15,8 +28,9 @@ class HexGeometry:
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    cell_verts,
-    offset ):
+    cell_verts : np.ndarray[(Union[N,Literal[1]], ..., 2,2,2,3), np.dtype[np.floating]],
+    offset : np.ndarray[(Union[N,Literal[1]], ..., 3), np.dtype[np.floating]] ) \
+      -> np.ndarray[(N, ..., 3), np.dtype[np.floating]]:
     r"""Transform to (physical/global) coordinates of a point relative to each cell
 
     .. math::
@@ -30,27 +44,24 @@ class HexGeometry:
 
     Parameters
     ----------
-    cell_verts : numpy.ndarray
-      shape = (..., 2, 2, 2, 3)
-
-    offset : numpy.ndarray
-      shape = (..., 3)
-
+    cell_verts :
+    offset :
       Relative coordinates from each cell origin to compute the coordinates,
       normalized :math:`\rankone{q} \in [0.0, 1.0]^3` along each edge of the cell.
 
 
     Returns
     -------
-    coord: array of shape = (..., 3)
+    Absolute coordinates at each ``offset``
     """
 
     raise NotImplementedError()
 
   #-----------------------------------------------------------------------------
   def coord_jac(self,
-    cell_verts,
-    offset ):
+    cell_verts : np.ndarray[(Union[N,Literal[1]], ..., 2,2,2,3), np.dtype[np.floating]],
+    offset : np.ndarray[(Union[N,Literal[1]], ..., 3), np.dtype[np.floating]] ) \
+      -> np.ndarray[(N, ..., 3,3), np.dtype[np.floating]]:
     r"""Jacobian of the absolute coordinates w.r.t local coordinates
 
     .. math::
@@ -64,20 +75,15 @@ class HexGeometry:
 
     Parameters
     ----------
-    cell_verts : numpy.ndarray
-      shape = (..., 2, 2, 2, 3)
-
-    offset : numpy.ndarray
-      shape = (..., 3)
-
+    cell_verts :
+    offset :
       Relative coordinates from each cell origin to compute the coordinates,
       normalized :math:`\rankone{q} \in [0.0, 1.0]^3` along each edge of the cell.
 
 
     Returns
     -------
-    coord_jac: numpy.ndarray
-      shape = (..., 3, 3)
+    Jacobian at each ``offset``
     """
     raise NotImplementedError()
 
