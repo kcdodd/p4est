@@ -7,12 +7,8 @@ from .geom import (
 from .base import QuadMesh
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def unit_square():
+def unit_square() -> QuadMesh:
   """Factory method to create a unit square
-
-  Returns
-  -------
-  QuadMesh
   """
 
   verts = np.array([
@@ -29,16 +25,13 @@ def unit_square():
     cells = cells )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def cube(length = 1.0):
+def cube(length : float = 1.0) -> QuadMesh:
   """Factory method to create the surface of a cube
 
   Parameters
   ----------
-  length : float
-
-  Returns
-  -------
-  QuadMesh
+  length :
+    Length of sides
   """
 
   half = 0.5*length
@@ -70,16 +63,14 @@ def cube(length = 1.0):
     cells = cells )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def spherical_cube(length = 1.0):
+def spherical_cube(length : float = 1.0) -> QuadMesh:
   """Factory method to create the surface of a cube
 
   Parameters
   ----------
   length : float
+    Length of sides
 
-  Returns
-  -------
-  QuadMesh
   """
 
   half = 0.5*length
@@ -112,7 +103,7 @@ def spherical_cube(length = 1.0):
     geoms = QuadCartesianSpherical() )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def stack_o_squares():
+def stack_o_squares() -> QuadMesh:
   verts = np.array([
     [0, 0, 0],
     [1, 0, 0],
@@ -138,20 +129,16 @@ def stack_o_squares():
     cells = cells )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def star(r1 = 1.0, r2 = 1.5):
+def star(r1 : float = 1.0, r2 : float = 1.5) -> QuadMesh:
   """Factory method to create a 6 point star
 
   Parameters
   ----------
-  r1 : float
+  r1 :
     Outer radius of points.
-
-  r2 : float
+  r2 :
     Inner radius where points merge.
 
-  Returns
-  -------
-  QuadMesh
   """
 
   verts = np.zeros((13, 3), dtype = np.float64)
@@ -179,16 +166,8 @@ def star(r1 = 1.0, r2 = 1.5):
     cells = cells )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def periodic_stack():
+def periodic_stack() -> QuadMesh:
   """Factory method to create a periodic stack of unit squares
-
-  Parameters
-  ----------
-  radius : float
-
-  Returns
-  -------
-  QuadMesh
   """
 
   verts = np.array([
@@ -221,16 +200,8 @@ def periodic_stack():
     vert_nodes = vert_nodes )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron_golden():
+def icosahedron_golden() -> QuadMesh:
   """Factory method to create an icosahedron using golden ratio
-
-  Parameters
-  ----------
-  radius : float
-
-  Returns
-  -------
-  QuadMesh
   """
 
   c3 = np.cos(np.pi/3)
@@ -285,17 +256,13 @@ def icosahedron_golden():
     vert_nodes = vert_nodes)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron_spherical(radius = 1.0):
+def icosahedron_spherical(radius : float = 1.0) -> QuadMesh:
   """Factory method to create an icosahedron in spherical coordinates
 
   Parameters
   ----------
-  radius : float
+  radius :
     Outer radius of points
-
-  Returns
-  -------
-  QuadMesh
   """
 
   c3 = np.cos(np.pi/3)
@@ -352,17 +319,13 @@ def icosahedron_spherical(radius = 1.0):
     geoms = QuadSpherical() )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron(radius = 1.0):
+def icosahedron(radius : float = 1.0) -> QuadMesh:
   """Factory method to create an icosahedron in cartesian coordinates
 
   Parameters
   ----------
   radius : float
     Outer radius of points
-
-  Returns
-  -------
-  QuadMesh
   """
   mesh = icosahedron_spherical(radius = radius)
 

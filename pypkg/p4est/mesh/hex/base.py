@@ -344,7 +344,7 @@ class HexMesh:
   #-----------------------------------------------------------------------------
   @property
   def edge_cells(self) \
-      -> jagged_array:
+      -> jagged_array[NE, np.ndarray[(...,), np.dtype[np.integer]]]:
     """Mapping to cells sharing each edge, all ``len(edge_cells[i]) > 1``.
     (AKA :c:var:`p8est_connectivity_t.edge_to_tree`)
 
@@ -355,7 +355,7 @@ class HexMesh:
   #-----------------------------------------------------------------------------
   @property
   def edge_cells_inv(self) \
-      -> jagged_array:
+      -> jagged_array[NE, np.ndarray[(...,), np.dtype[np.integer]]]:
     """Mapping to the cell's local edge {0,...11} in ``cell_edges``  which maps
     back to the edge.
     (AKA :c:var:`p8est_connectivity_t.edge_to_edge`)
@@ -400,7 +400,7 @@ class HexMesh:
   #-----------------------------------------------------------------------------
   @property
   def node_cells(self) \
-      -> jagged_array:
+      -> jagged_array[NN, np.ndarray[(...,), np.dtype[np.integer]]]:
     """Mapping to cells sharing each node, all ``len(node_cells[i]) > 1``.
     (AKA :c:var:`p8est_connectivity_t.corner_to_tree`)
 
@@ -411,7 +411,7 @@ class HexMesh:
   #-----------------------------------------------------------------------------
   @property
   def node_cells_inv(self) \
-      -> jagged_array:
+      -> jagged_array[NN, np.ndarray[(...,), np.dtype[np.integer]]]:
     """Mapping to the cell's local vertex {0,...7} in ``cell_nodes`` which maps
     back to the node.
     (AKA :c:var:`p8est_connectivity_t.corner_to_corner`)

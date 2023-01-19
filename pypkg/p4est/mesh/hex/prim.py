@@ -8,16 +8,13 @@ from .base import HexMesh
 
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def cube(length = 1.0):
+def cube(length : float = 1.0) -> HexMesh:
   """Factory method to create the volume of a cube
 
   Parameters
   ----------
-  length : float
-
-  Returns
-  -------
-  HexMesh
+  length :
+    Length of sides
   """
 
   half = 0.5*length
@@ -37,19 +34,15 @@ def cube(length = 1.0):
     cells = cells )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def spherical_cube_shell(r1 = 0.5, r2 = 1.0):
+def spherical_cube_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
   """Factory method to create the volume of a spherical shell
 
   Parameters
   ----------
-  r1 : float
+  r1 :
     Inner radius
-  r2 : float
+  r2 :
     Outer radius
-
-  Returns
-  -------
-  HexMesh
   """
 
   # half-length of cube edges for distance (radius) to the vertices
@@ -96,19 +89,15 @@ def spherical_cube_shell(r1 = 0.5, r2 = 1.0):
     geoms = HexCartesianSpherical())
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def spherical_cube(r1 = 0.5, r2 = 1.0):
+def spherical_cube(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
   """Factory method to create the volume of a sphere
 
   Parameters
   ----------
-  r1 : float
+  r1 :
     Inner radius
-  r2 : float
+  r2 :
     Outer radius
-
-  Returns
-  -------
-  HexMesh
   """
 
   # half-length of cube edges for distance (radius) to the vertices
@@ -159,25 +148,23 @@ def spherical_cube(r1 = 0.5, r2 = 1.0):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def slab_spherical_cube_hole(
-  lx = 0.5,
-  ly = 0.5,
-  lz = 1.0,
-  z = 0.25,
-  r = 0.25):
+  lx : float = 0.5,
+  ly : float = 0.5,
+  lz : float = 1.0,
+  z : float = 0.25,
+  r : float = 0.25 ) \
+  -> HexMesh:
   """Factory method to create the volume of slab with spherical hole
 
   Parameters
   ----------
-  lx, ly, lz : float
+  lx, ly, lz :
     Length of slab sides
-  z : float
+  z :
     z-offset of hole
-  r : float
+  r :
     Radius of hole
 
-  Returns
-  -------
-  HexMesh
   """
 
   # half-length of cube edges for distance (radius) to the vertices
@@ -226,17 +213,15 @@ def slab_spherical_cube_hole(
     vert_geom = [0]*8 + [1]*8)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron_spherical_shell(r1 = 0.5, r2 = 1.0):
+def icosahedron_spherical_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
   """Factory method to create an icosahedron shell in spherical coordinates
 
   Parameters
   ----------
-  radius : float
-    Outer radius of points
-
-  Returns
-  -------
-  HexMesh
+  r1 :
+    Inner radius
+  r2 :
+    Outer radius
   """
 
   c3 = np.cos(np.pi/3)
@@ -305,17 +290,15 @@ def icosahedron_spherical_shell(r1 = 0.5, r2 = 1.0):
     geoms = HexSpherical() )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron_shell(r1 = 0.5, r2 = 1.0):
+def icosahedron_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
   """Factory method to create an icosahedron in cartesian coordinates
 
   Parameters
   ----------
-  radius : float
-    Outer radius of points
-
-  Returns
-  -------
-  HexMesh
+  r1 :
+    Inner radius
+  r2 :
+    Outer radius
   """
   mesh = icosahedron_spherical_shell(r1 = r1, r2 = r2)
 
