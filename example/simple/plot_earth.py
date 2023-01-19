@@ -16,7 +16,7 @@ from PIL import (
   Image )
 import pyvista as pv
 from p4est import (
-  P4est,
+  QuadAMR,
   trans_cart_to_sphere )
 
 from p4est.mesh.quad import spherical_cube
@@ -104,9 +104,8 @@ f = interpgrid_2D_to_3D()
 tol = 0.05
 
 
-grid = P4est(
-  mesh = mesh,
-  min_level = 0)
+grid = QuadAMR(
+  mesh = mesh)
 
 for p in range(4):
   grid.local.adapt = 1

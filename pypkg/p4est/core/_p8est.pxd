@@ -439,14 +439,13 @@ cdef class P8estConnectivity:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P8est:
 
-  cdef _comm
-  cdef _mesh
-  cdef np.npy_int8 _min_level
-  cdef np.npy_int8 _max_level
+  cdef public _mesh
+  cdef public _comm
+  cdef public np.npy_int8 _max_level
 
-  cdef HexLocalInfo _local
-  cdef _ghost
-  cdef _mirror
+  cdef public HexLocalInfo _local
+  cdef public _ghost
+  cdef public _mirror
 
   cdef P8estConnectivity _connectivity
   cdef p8est_t* _p4est

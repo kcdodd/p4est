@@ -29,6 +29,12 @@ from .topo import (
 class HexMesh:
   r"""Base container for hexahedral mesh
 
+  .. figure:: ../img/topology.svg.png
+    :width: 90%
+    :align: center
+
+    Topological elements.
+
   Parameters
   ----------
   verts :

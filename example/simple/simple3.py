@@ -2,7 +2,7 @@ import numpy as np
 import itertools
 import pyvista as pv
 from p4est import (
-  P8est)
+  HexAMR)
 
 from p4est.mesh.hex import (
   HexMesh,
@@ -79,9 +79,8 @@ def run_cube():
   mesh = cube()
   # mesh.show()
 
-  grid = P8est(
-    mesh = mesh,
-    min_level = 0)
+  grid = HexAMR(
+    mesh = mesh)
 
   for r in range(4):
     grid.local.adapt = 1
@@ -94,9 +93,8 @@ def run_spherical_cube_shell():
   mesh = spherical_cube_shell()
   # mesh.show()
 
-  grid = P8est(
-    mesh = mesh,
-    min_level = 0)
+  grid = HexAMR(
+    mesh = mesh)
 
   for r in range(4):
     grid.local.adapt = 1
@@ -109,9 +107,8 @@ def run_spherical_cube():
   mesh = spherical_cube()
   # mesh.show()
 
-  grid = P8est(
-    mesh = mesh,
-    min_level = 0)
+  grid = HexAMR(
+    mesh = mesh)
 
   for r in range(4):
     grid.local.adapt = 1
@@ -124,9 +121,8 @@ def run_slab_spherical_cube_hole():
   mesh = slab_spherical_cube_hole()
   # mesh.show()
 
-  grid = P8est(
-    mesh = mesh,
-    min_level = 0)
+  grid = HexAMR(
+    mesh = mesh)
 
   for r in range(4):
     grid.local.adapt = 1
@@ -139,9 +135,8 @@ def run_icosahedron_spherical():
   mesh = icosahedron_spherical_shell()
   # mesh.show()
 
-  grid = P8est(
-    mesh = mesh,
-    min_level = 0)
+  grid = HexAMR(
+    mesh = mesh)
 
   for r in range(3):
     grid.local.adapt = 1
@@ -154,9 +149,8 @@ def run_icosahedron():
   mesh = icosahedron_shell()
   # mesh.show()
 
-  grid = P8est(
-    mesh = mesh,
-    min_level = 0)
+  grid = HexAMR(
+    mesh = mesh)
 
   for r in range(3):
     grid.local.adapt = 1

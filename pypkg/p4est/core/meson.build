@@ -2,8 +2,6 @@
 
 cython_gen = generator( cython,
   arguments : cython_args + [
-    '-3',
-    '--fast-fail',
     '--output-file', '@OUTPUT@',
     '@INPUT@' ],
   output : '@BASENAME@.c' )

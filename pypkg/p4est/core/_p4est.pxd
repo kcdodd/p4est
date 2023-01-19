@@ -484,14 +484,13 @@ ctypedef struct aux_quadrant_data_t:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
 
-  cdef _comm
-  cdef _mesh
-  cdef np.npy_int8 _min_level
-  cdef np.npy_int8 _max_level
+  cdef public _mesh
+  cdef public _comm
+  cdef public np.npy_int8 _max_level
 
-  cdef QuadLocalInfo _local
-  cdef _ghost
-  cdef _mirror
+  cdef public QuadLocalInfo _local
+  cdef public _ghost
+  cdef public _mirror
 
   cdef p4est_connectivity_t _connectivity
   cdef p4est_t* _p4est

@@ -223,7 +223,9 @@ if target_pypkg
   np_inc = include_directories(incdir_numpy)
 
 
-  cython_args = []
+  cython_args = [
+    '-3',
+    '--fast-fail' ]
 
   if get_option('profile')
     cython_args += ['-X profile=True', '-X linetrace=True', '-X binding=True']

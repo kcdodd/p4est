@@ -22,63 +22,22 @@ from p4est.core._sc cimport (
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
-  r"""__init__(mesh, min_level = None, max_level = None, comm = None )
+  r"""
 
   Parameters
   ----------
   mesh : QuadMesh
-  min_level : None | int
-    (default: 0)
-  max_level : None | int
+    Mesh for the root-level cells.
+  max_level : int
     (default: -1)
-  comm : None | mpi4py.MPI.Comm
+  comm : mpi4py.MPI.Comm
     (default: mpi4py.MPI.COMM_WORLD)
 
-
-  .. partis_attr:: mesh
-    :prefix: property
-    :type: QuadMesh
-
-    Mesh for the root-level cells.
-
-  .. partis_attr:: max_level
-    :prefix: property
-    :type: int
-
-  .. partis_attr:: comm
-    :prefix: property
-    :type: mpi4py.MPI.Comm
-
-    ``NP = comm.size``
-
-  .. partis_attr:: local
-    :prefix: property
-    :type: QuadLocalInfo
-    :subscript: shape = (NC,)
-
-    Cells local to the process ``comm.rank``.
-
-  .. partis_attr:: ghost
-    :prefix: property
-    :type: jagged_array
-    :subscript: (NP, *), QuadGhostInfo
-
-    Cells outside the process boundary (*not* local) that neighbor one or more
-    local cells, grouped by the rank of the *ghost's* local process.
-
-  .. partis_attr:: mirror
-    :prefix: property
-    :type: jagged_array
-    :subscript: (NP, *), int32
-
-    Indicies into ``local`` for cells that touch the parallel boundary
-    of each rank.
   """
 
   #-----------------------------------------------------------------------------
   def __init__(self,
     mesh,
-    min_level = None,
     max_level = None,
     comm = None ):
 
@@ -86,25 +45,18 @@ cdef class P4est:
     if not isinstance(mesh, QuadMesh):
       raise ValueError(f"mesh must be a QuadMesh: {type(mesh)}")
 
-    if min_level is None:
-      min_level = 0
-
-    min_level = min(127, max(0, int(min_level)))
-
     if max_level is None:
       max_level = -1
 
-    max_level = min(127, max(-1, int(max_level)))
+    max_level = min(P4EST_MAXLEVEL, max(-1, int(max_level)))
 
     if comm is None:
       comm = MPI.COMM_WORLD
 
-
     #...........................................................................
-    self._max_level = P4EST_MAXLEVEL
-    self._comm = comm
     self._mesh = mesh
-    self._min_level = min_level
+    self._max_level = max_level
+    self._comm = comm
 
     self._local = QuadLocalInfo(0)
     self._ghost = jagged_array(
@@ -151,7 +103,7 @@ cdef class P4est:
 
 
     cdef p4est_t* p4est = NULL
-    cdef sc_MPI_Comm comm = <sc_MPI_Comm> (<Comm>self.comm).ob_mpi
+    cdef sc_MPI_Comm comm = <sc_MPI_Comm> (<Comm>self._comm).ob_mpi
     cdef p4est_connectivity_t* connectivity = &(self._connectivity)
 
     with nogil:
@@ -159,7 +111,7 @@ cdef class P4est:
         comm,
         connectivity,
         0,
-        self._min_level,
+        0,
         0,
         sizeof(aux_quadrant_data_t),
         <p4est_init_t>_init_quadrant,
@@ -194,66 +146,9 @@ cdef class P4est:
     return False
 
   #-----------------------------------------------------------------------------
-  @property
-  def mesh( self ):
-    return self._mesh
-
-  #-----------------------------------------------------------------------------
-  @property
-  def max_level( self ):
-    return self._max_level
-
-  #-----------------------------------------------------------------------------
-  @property
-  def comm( self ):
-    return self._comm
-
-  #-----------------------------------------------------------------------------
-  @property
-  def local(self):
-    return self._local
-
-  #-----------------------------------------------------------------------------
-  @property
-  def ghost(self):
-    return self._ghost
-
-  #-----------------------------------------------------------------------------
-  @property
-  def mirror(self):
-    return self._mirror
-
-  #-----------------------------------------------------------------------------
   def coord(self,
-    offset = None,
+    offset,
     where = None ):
-    r"""coord(offset = None, where = None )
-    Transform to (physical/global) coordinates of a point relative to each cell
-
-    .. math::
-
-      \func{\rankone{r}}{\rankone{q}} =
-      \begin{bmatrix}
-        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1} \\
-        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1} \\
-        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1}
-      \end{bmatrix}
-
-    Parameters
-    ----------
-    offset : None | numpy.ndarray
-      shape = (N | 1, ..., 2)
-
-      Relative coordinates from each cell origin to compute the coordinates,
-      normalized :math:`\rankone{q} \in [0.0, 1.0]^2` along each edge of the cell.
-      (default: (0.5, 0.5))
-    where : None | slice | numpy.ndarray
-      Subset of cells. (default: slice(None))
-
-    Returns
-    -------
-    coord: array of shape = (N, ..., 3)
-    """
 
     if offset is None:
       offset = 0.5*np.ones((2,), dtype = np.float64)
@@ -273,26 +168,17 @@ cdef class P4est:
 
     leaf_offset = ( info.origin + offset[None,:] * qwidth[:,None] ) / P4EST_ROOT_LEN
 
-    return self.mesh.coord(
+    return self._mesh.coord(
       offset = leaf_offset,
       where = info.root )
 
   #-----------------------------------------------------------------------------
   def adapt(self):
-    """Applies refinement, coarsening, and then balances based on ``leaf_info.adapt``.
-
-    Returns
-    -------
-    refined : QuadAdapted
-    coarsened : QuadAdapted
-    """
-
     _set_leaf_adapt(
       trees = <p4est_tree_t*>self._p4est.trees.array,
       first_local_tree = self._p4est.first_local_tree,
       last_local_tree = self._p4est.last_local_tree,
-      adapt = self._local.adapt )
-
+      adapt = self._local._adapt )
     with nogil:
       self._adapt()
 
@@ -415,7 +301,7 @@ cdef class P4est:
     ranks = np.concatenate([
       np.full(
         (len(self._local),),
-        fill_value = self.comm.rank,
+        fill_value = self._comm.rank,
         dtype = np.int32),
       ndarray_from_ptr(
         write = False,

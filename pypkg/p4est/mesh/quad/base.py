@@ -26,6 +26,12 @@ from .topo import (
 class QuadMesh:
   r"""Base container for quadrilateral mesh
 
+  .. figure:: ../img/topology.svg.png
+    :width: 90%
+    :align: center
+
+    Topological elements.
+
   Parameters
   ----------
   verts:

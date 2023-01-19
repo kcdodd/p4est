@@ -1,9 +1,6 @@
 from pathlib import Path
 import ctypes
 
-from .core import (
-  P4est,
-  P8est )
 from .geom import (
   trans_sphere_to_cart,
   trans_cart_to_sphere,
@@ -14,7 +11,7 @@ from .geom import (
   interp_slerp2,
   interp_slerp3,
   interp_sphere_to_cart_slerp2,
-  interp_sphere_to_cart_slerp3)
+  interp_sphere_to_cart_slerp3 )
 from .mesh import (
   QuadMesh,
   QuadGeometry,
@@ -26,7 +23,12 @@ from .mesh import (
   HexLinear,
   HexSpherical,
   HexCartesianSpherical )
-
+from .core import (
+  P4est,
+  P8est )
+from .amr import (
+  QuadAMR,
+  HexAMR )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def get_include():

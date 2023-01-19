@@ -1,7 +1,7 @@
 import numpy as np
 import pyvista as pv
 from p4est import (
-  P4est,
+  QuadAMR,
   interp_sphere_to_cart_slerp2,
   interp_slerp2)
 
@@ -53,7 +53,7 @@ def run_icosahedron_golden():
   mesh = icosahedron_golden()
   mesh.show()
 
-  grid = P4est(
+  grid = QuadAMR(
     mesh = mesh)
 
   for r in range(3):
@@ -67,9 +67,7 @@ def run_icosahedron_golden():
 def run_icosahedron_spherical():
   mesh = icosahedron_spherical()
 
-  grid = P4est(
-    mesh = mesh,
-    min_level = 0)
+  grid = QuadAMR(mesh = mesh)
 
   for r in range(3):
     grid.local.adapt = 1
@@ -83,9 +81,7 @@ def run_icosahedron():
   mesh = icosahedron()
   mesh.show()
 
-  grid = P4est(
-    mesh = mesh,
-    min_level = 0)
+  grid = QuadAMR(mesh = mesh)
 
   for r in range(4):
     grid.local.adapt = 1
@@ -97,9 +93,7 @@ def run_icosahedron():
 def run_cube():
   mesh = cube()
 
-  grid = P4est(
-    mesh = mesh,
-    min_level = 0)
+  grid = QuadAMR(mesh = mesh)
 
   for r in range(4):
     grid.local.adapt = 1
@@ -111,9 +105,7 @@ def run_cube():
 def run_spherical_cube():
   mesh = spherical_cube()
 
-  grid = P4est(
-    mesh = mesh,
-    min_level = 0)
+  grid = QuadAMR(mesh = mesh)
 
   for r in range(4):
     grid.local.adapt = 1
