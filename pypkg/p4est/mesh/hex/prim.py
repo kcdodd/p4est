@@ -11,6 +11,18 @@ from .base import HexMesh
 def cube(length : float = 1.0) -> HexMesh:
   """Factory method to create the volume of a cube
 
+  .. figure:: ../img/Mesh_Cube.png
+    :width: 90%
+    :align: center
+
+    Mesh Volume Cube.
+
+  .. figure:: ../img/3D_Cube.png
+    :width: 90%
+    :align: center
+
+    Volume Cube.
+
   Parameters
   ----------
   length :
@@ -36,6 +48,18 @@ def cube(length : float = 1.0) -> HexMesh:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def spherical_cube_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
   """Factory method to create the volume of a spherical shell
+
+  .. figure:: ../img/mesh_spherical_cube_shell.png
+    :width: 90%
+    :align: center
+
+    Mesh Speherical Cube Shell.
+
+  .. figure:: ../img/3D_Spherical_cube_Shell.png
+    :width: 90%
+    :align: center
+
+    Spherical Cube Shell.
 
   Parameters
   ----------
@@ -91,6 +115,18 @@ def spherical_cube_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def spherical_cube(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
   """Factory method to create the volume of a sphere
+
+  .. figure:: ../img/mesh_spherical_cube_shell.png
+    :width: 90%
+    :align: center
+
+    Mesh Speherical Cube Shell.
+
+  .. figure:: ../img/Spherical_Cube.png
+    :width: 90%
+    :align: center
+
+    Spherical Cube Refined.
 
   Parameters
   ----------
@@ -292,6 +328,18 @@ def icosahedron_spherical_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def icosahedron_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
   """Factory method to create an icosahedron in cartesian coordinates
+
+  .. figure:: ../img/mesh_Icosahedron_Spherical.png
+    :width: 90%
+    :align: center
+
+    Mesh Speherical Shell.
+
+  .. figure:: ../img/3D_Icosahedron_Spherical.png
+    :width: 90%
+    :align: center
+
+    Icosahedron Shell.
 
   Parameters
   ----------

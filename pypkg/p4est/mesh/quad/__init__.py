@@ -14,3 +14,6 @@ from .prim import (
   icosahedron_golden,
   icosahedron_spherical,
   icosahedron)
+
+from .topo import (
+  quad_cell_nodes)

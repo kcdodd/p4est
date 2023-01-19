@@ -59,7 +59,6 @@ def run_icosahedron_golden():
   for r in range(3):
     grid.local.adapt = 1
     grid.adapt()
-
   plot_grid(grid)
 
 
@@ -72,7 +71,6 @@ def run_icosahedron_spherical():
   for r in range(3):
     grid.local.adapt = 1
     grid.adapt()
-
   plot_grid(grid)
 
 
@@ -86,7 +84,6 @@ def run_icosahedron():
   for r in range(4):
     grid.local.adapt = 1
     grid.adapt()
-
   plot_grid(grid)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -98,7 +95,6 @@ def run_cube():
   for r in range(4):
     grid.local.adapt = 1
     grid.adapt()
-
   plot_grid(grid)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -110,7 +106,6 @@ def run_spherical_cube():
   for r in range(4):
     grid.local.adapt = 1
     grid.adapt()
-
   plot_grid(grid)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

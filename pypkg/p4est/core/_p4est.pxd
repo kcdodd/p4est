@@ -254,6 +254,7 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_t            *p4est
     p4est_ghost_t      *ghost
     p4est_mesh_t       *mesh
+    p4est_nodes_t      *nodes
 
     p4est_topidx_t      which_tree
     p4est_locidx_t      quadrant_id
@@ -322,6 +323,10 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_connect_type_t btype)
 
   #.............................................................................
+  p4est_nodes_t* p4est_nodes_new (
+    p4est_t * p4est, 
+    p4est_ghost_t * ghost)
+  #.............................................................................
   void p4est_ghost_destroy(
     p4est_ghost_t* ghost)
 
@@ -382,6 +387,22 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_t * p4est,
     int allow_for_coarsening,
     p4est_weight_t weight_fn )
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef extern from "p4est_nodes.h" nogil:
+  #.............................................................................
+  ctypedef struct p4est_nodes_t:
+
+    p4est_locidx_t num_local_quadrants
+    p4est_locidx_t num_owned_indeps, num_owned_shared
+    p4est_locidx_t offset_owned_indeps
+    sc_array_t indep_nodes
+    sc_array_t face_hangings
+    p4est_locidx_t *local_nodes
+    sc_array_t shared_indeps
+    p4est_locidx_t *shared_offsets
+    int *nonlocal_ranks
+    p4est_locidx_t *global_owned_indeps
+
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef extern from "p4est_iterate.h" nogil:

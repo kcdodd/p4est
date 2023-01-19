@@ -171,7 +171,6 @@ class QuadMesh:
 
     nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
     _nodes = self._cell_nodes.reshape(-1,4)[(node_cells.flat, node_cells_inv.flat)]
-
     if not np.all(_nodes == nodes):
       raise ValueError(
         f"'node_cells' and 'node_cells_inv' are not consistent with 'node_cells'")

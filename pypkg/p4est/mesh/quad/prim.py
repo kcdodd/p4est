@@ -28,6 +28,12 @@ def unit_square() -> QuadMesh:
 def cube(length : float = 1.0) -> QuadMesh:
   """Factory method to create the surface of a cube
 
+  .. figure:: ../img/4estCube.png
+    :width: 90%
+    :align: center
+
+    Topological elements.
+
   Parameters
   ----------
   length :
@@ -65,6 +71,12 @@ def cube(length : float = 1.0) -> QuadMesh:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def spherical_cube(length : float = 1.0) -> QuadMesh:
   """Factory method to create the surface of a cube
+
+  .. figure:: ../img/Spherical_Cube.png
+    :width: 90%
+    :align: center
+
+    Spherical Cube.
 
   Parameters
   ----------
@@ -202,6 +214,21 @@ def periodic_stack() -> QuadMesh:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def icosahedron_golden() -> QuadMesh:
   """Factory method to create an icosahedron using golden ratio
+
+  .. figure:: ../img/icosahedron_golden.png
+    :width: 90%
+    :align: center
+
+    Icosahedron Golden.
+
+  Parameters
+  ----------
+  radius : float
+
+  Returns
+  -------
+  QuadMesh
+  
   """
 
   c3 = np.cos(np.pi/3)
@@ -258,6 +285,12 @@ def icosahedron_golden() -> QuadMesh:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def icosahedron_spherical(radius : float = 1.0) -> QuadMesh:
   """Factory method to create an icosahedron in spherical coordinates
+
+  .. figure:: ../img/Icosahedron_Spherical.png
+    :width: 90%
+    :align: center
+
+    Icosahedron Spherical.
 
   Parameters
   ----------
@@ -321,6 +354,12 @@ def icosahedron_spherical(radius : float = 1.0) -> QuadMesh:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def icosahedron(radius : float = 1.0) -> QuadMesh:
   """Factory method to create an icosahedron in cartesian coordinates
+
+  .. figure:: ../img/Icosahedron.png
+    :width: 90%
+    :align: center
+
+    Icosahedron.
 
   Parameters
   ----------
