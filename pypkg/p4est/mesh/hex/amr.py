@@ -20,12 +20,12 @@ import numpy as np
 from mpi4py import MPI
 
 from ...utils import jagged_array
-from ...mesh.hex import HexMesh
 from ...core._info import (
   HexLocalInfo,
   HexGhostInfo )
 from ...core._adapted import HexAdapted
 from ...core._p8est import P8est
+from .base import HexMesh
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class HexAMR(P8est):

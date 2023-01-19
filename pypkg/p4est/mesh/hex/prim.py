@@ -1,3 +1,5 @@
+# Enable postponed evaluation of annotations
+from __future__ import annotations
 import numpy as np
 from ...geom import trans_sphere_to_cart
 from .geom import (
@@ -46,7 +48,10 @@ def cube(length : float = 1.0) -> HexMesh:
     cells = cells )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def spherical_cube_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
+def spherical_cube_shell(
+  r1 : float = 0.5,
+  r2 : float = 1.0) \
+  -> HexMesh[HexCartesianSpherical]:
   """Factory method to create the volume of a spherical shell
 
   .. figure:: ../img/mesh_spherical_cube_shell.png
@@ -113,7 +118,10 @@ def spherical_cube_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
     geoms = HexCartesianSpherical())
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def spherical_cube(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
+def spherical_cube(
+  r1 : float = 0.5,
+  r2 : float = 1.0) \
+  -> HexMesh[HexLinear, HexCartesianSpherical]:
   """Factory method to create the volume of a sphere
 
   .. figure:: ../img/mesh_spherical_cube_shell.png
@@ -189,7 +197,7 @@ def slab_spherical_cube_hole(
   lz : float = 1.0,
   z : float = 0.25,
   r : float = 0.25 ) \
-  -> HexMesh:
+  -> HexMesh[HexCartesianSpherical, HexLinear]:
   """Factory method to create the volume of slab with spherical hole
 
   Parameters
@@ -249,7 +257,10 @@ def slab_spherical_cube_hole(
     vert_geom = [0]*8 + [1]*8)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron_spherical_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
+def icosahedron_spherical_shell(
+  r1 : float = 0.5,
+  r2 : float = 1.0) \
+  -> HexMesh[HexSpherical]:
   """Factory method to create an icosahedron shell in spherical coordinates
 
   Parameters
@@ -326,7 +337,10 @@ def icosahedron_spherical_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
     geoms = HexSpherical() )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
+def icosahedron_shell(
+  r1 : float = 0.5,
+  r2 : float = 1.0) \
+  -> HexMesh[HexCartesianSpherical]:
   """Factory method to create an icosahedron in cartesian coordinates
 
   .. figure:: ../img/mesh_Icosahedron_Spherical.png

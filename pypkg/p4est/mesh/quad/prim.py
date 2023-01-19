@@ -1,3 +1,5 @@
+# Enable postponed evaluation of annotations
+from __future__ import annotations
 import numpy as np
 from ...geom import trans_sphere_to_cart
 from .geom import (
@@ -69,7 +71,7 @@ def cube(length : float = 1.0) -> QuadMesh:
     cells = cells )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def spherical_cube(length : float = 1.0) -> QuadMesh:
+def spherical_cube(length : float = 1.0) -> QuadMesh[QuadCartesianSpherical]:
   """Factory method to create the surface of a cube
 
   .. figure:: ../img/Spherical_Cube.png
@@ -228,7 +230,7 @@ def icosahedron_golden() -> QuadMesh:
   Returns
   -------
   QuadMesh
-  
+
   """
 
   c3 = np.cos(np.pi/3)
@@ -283,7 +285,7 @@ def icosahedron_golden() -> QuadMesh:
     vert_nodes = vert_nodes)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron_spherical(radius : float = 1.0) -> QuadMesh:
+def icosahedron_spherical(radius : float = 1.0) -> QuadMesh[QuadSpherical]:
   """Factory method to create an icosahedron in spherical coordinates
 
   .. figure:: ../img/Icosahedron_Spherical.png
@@ -352,7 +354,7 @@ def icosahedron_spherical(radius : float = 1.0) -> QuadMesh:
     geoms = QuadSpherical() )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron(radius : float = 1.0) -> QuadMesh:
+def icosahedron(radius : float = 1.0) -> QuadMesh[QuadCartesianSpherical]:
   """Factory method to create an icosahedron in cartesian coordinates
 
   .. figure:: ../img/Icosahedron.png

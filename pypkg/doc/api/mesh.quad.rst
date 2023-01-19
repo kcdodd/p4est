@@ -1,5 +1,5 @@
-Quad Meshes :mod:`p4est.mesh.quad`
-==================================
+Quad Mesh :mod:`p4est.mesh.quad`
+================================
 
 Quadrilateral Mesh
 ------------------
@@ -11,12 +11,17 @@ Mesh Geometry
 
 .. automodule:: p4est.mesh.quad.geom
 
-Mesh Pimitive Factories
------------------------
+Mesh Pimitives
+--------------
 
 .. automodule:: p4est.mesh.quad.prim
 
-Topology Helpers
-----------------
+Topology Routines
+-----------------
 
 .. automodule:: p4est.mesh.quad.topo
+
+Typing
+------
+
+.. automodule:: p4est.mesh.quad.typing

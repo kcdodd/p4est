@@ -20,12 +20,12 @@ import numpy as np
 from mpi4py import MPI
 
 from ...utils import jagged_array
-from ...mesh.quad import QuadMesh
 from ...core._info import (
   QuadLocalInfo,
   QuadGhostInfo )
 from ...core._adapted import QuadAdapted
 from ...core._p4est import P4est
+from .base import QuadMesh
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class QuadAMR(P4est):

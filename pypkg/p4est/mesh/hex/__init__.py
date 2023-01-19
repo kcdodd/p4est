@@ -11,6 +11,6 @@ from .prim import (
   slab_spherical_cube_hole,
   icosahedron_spherical_shell,
   icosahedron_shell )
-
 from .topo import (
   hex_cell_nodes )
+from .amr import HexAMR

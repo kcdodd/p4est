@@ -7,7 +7,7 @@ try:
     Literal,
     TypeVar,
     NewType )
-  from ...typing import N, NV, NN, NC
+  from ...typing import N, M, NV, NN, NC
 except:
   pass
 
@@ -180,6 +180,11 @@ class QuadMesh:
     self._node_cells_inv = node_cells_inv
 
   #-----------------------------------------------------------------------------
+  def __class_getitem__(cls, *args):
+    from types import GenericAlias
+    return GenericAlias(cls, args)
+
+  #-----------------------------------------------------------------------------
   @property
   def verts(self) \
     -> np.ndarray[(NV, 2), np.dtype[np.floating]]:
@@ -262,7 +267,7 @@ class QuadMesh:
   #-----------------------------------------------------------------------------
   @property
   def node_cells(self) \
-    -> jagged_array[NN, np.ndarray[(...,), np.dtype[np.integer]]]:
+    -> jagged_array[NN, np.ndarray[M, np.dtype[np.integer]]]:
     """Mapping to cells sharing each node, all ``len(node_cells[i]) > 1``.
     (AKA :c:var:`p4est_connectivity_t.corner_to_tree`)
     """
@@ -271,7 +276,7 @@ class QuadMesh:
   #-----------------------------------------------------------------------------
   @property
   def node_cells_inv(self) \
-    -> jagged_array[NN, np.ndarray[(...,), np.dtype[np.integer]]]:
+    -> jagged_array[NN, np.ndarray[M, np.dtype[np.integer]]]:
     """Mapping to the cell's local vertex {0,1,2,3} in ``cell_nodes`` which maps
     back to the node.
     (AKA :c:var:`p4est_connectivity_t.corner_to_corner`)

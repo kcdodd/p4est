@@ -1,5 +1,5 @@
-Hex Meshes :mod:`p4est.mesh.hex`
-================================
+Hex Mesh :mod:`p4est.mesh.hex`
+==============================
 
 Hexahedral Mesh
 ---------------
@@ -11,12 +11,17 @@ Mesh Geometry
 
 .. automodule:: p4est.mesh.hex.geom
 
-Mesh Pimitive Factories
------------------------
+Mesh Pimitives
+--------------
 
 .. automodule:: p4est.mesh.hex.prim
 
-Topology Helpers
-----------------
+Topology Routines
+-----------------
 
 .. automodule:: p4est.mesh.hex.topo
+
+Typing
+------
+
+.. automodule:: p4est.mesh.hex.typing

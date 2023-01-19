@@ -23,10 +23,8 @@ from .mesh import (
   HexLinear,
   HexSpherical,
   HexCartesianSpherical )
-from .core import (
-  P4est,
-  P8est )
-from .amr import (
+
+from .mesh import (
   QuadAMR,
   HexAMR )
 

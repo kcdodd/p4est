@@ -1,41 +1,51 @@
+# Enable postponed evaluation of annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+  from ...typing import N, M, NV, NN, NE, NC
+  from .typing import (
+    Cells,
+    VertNodes,
+    CellNodes,
+    NodeCells,
+    NodeCellsInv,
+    NodeEdgeCounts,
+    CellEdges,
+    EdgeCells,
+    EdgeCellsInv,
+    EdgeCellCounts)
+
 import numpy as np
 from ...utils import (
   jagged_array,
   unique_full )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def hex_cell_nodes(cells, vert_nodes):
+def hex_cell_nodes(
+  cells : Cells,
+  vert_nodes : VertNodes ) \
+  -> tuple[VertNodes, CellNodes, NodeCells, NodeCellsInv]:
   """Derives topological nodes between hex. cells
 
   Parameters
   ----------
-  cells : numpy.ndarray
-    shape = (NC, 2, 2, 2), dtype = np.int32
-
+  cells :
     Hexahedral cells, each defined by the indices of its 4 vertices.
-  vert_nodes : numpy.ndarray
-    shape = (NV,), dtype = np.int32
-
+  vert_nodes :
     The topological node associated with each vertex.
 
   Returns
   -------
-  vert_nodes : numpy.ndarray
-    shape = (NV,), dtype = np.int32
-
+  vert_nodes :
     Updated ``vert_nodes`` with additional nodes for any detected mesh
     singularities.
-  cell_nodes : numpy.ndarray
-    shape = (NC, 2, 2, 2), dtype = np.int32
-
+  cell_nodes :
     Mapping of hexahedral cells to the indices of their (up to) 8 nodes.
-  node_cells : jagged_array
-    dtype = np.int32
+  node_cells :
+  node_cells_inv :
+    ``node_cells_inv.row_idx == node_cells.row_idx``
 
-  node_cells_inv : jagged_array
-    dtype = np.int32
-
-    node_cells_inv.row_idx == node_cells.row_idx
   """
 
   independent = (vert_nodes == -1)
@@ -113,7 +123,8 @@ def hex_cell_nodes(cells, vert_nodes):
     node_cells_inv )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def hex_cell_edges(cell_nodes):
+def hex_cell_edges(cell_nodes: CellNodes) \
+  -> tuple[CellEdges, EdgeCells, EdgeCellsInv, NodeEdgeCounts, EdgeCellCounts]:
   """Derives topological edges shared by cells
 
   Parameters
@@ -123,18 +134,11 @@ def hex_cell_edges(cell_nodes):
 
   Returns
   -------
-  cell_edges : numpy.ndarray
-    shape = (NC, 3, 2, 2), dtype = numpy.int32
-  edge_cells : jagged_array
-  edge_cells_inv : jagged_array
-  node_edge_counts : numpy.ndarray
-    shape = (NN,), dtype = numpy.int8
-
-    Number of edges incident upon each node.
-  edge_cell_counts : numpy.ndarray
-    shape = (NE,), dtype = numpy.int8
-
-    Number of cells incident upon each edge.
+  cell_edges :
+  edge_cells :
+  edge_cells_inv :
+  node_edge_counts :
+  edge_cell_counts :
   """
   nc = len(cell_nodes)
   cidx = np.arange(nc)

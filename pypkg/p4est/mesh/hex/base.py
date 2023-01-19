@@ -1,15 +1,33 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-try:
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
   from typing import (
     Optional,
     Union,
     Literal,
     TypeVar,
     NewType )
-  from ...typing import N, NV, NN, NE, NC
-except:
-  pass
+  from ...typing import N, M, NV, NN, NE, NC
+  from .typing import (
+    Vertices,
+    VertGeom,
+    VertNodes,
+    Cells,
+    CellAdj,
+    CellAdjFace,
+    CellNodes,
+    NodeCells,
+    NodeCellsInv,
+    NodeEdgeCounts,
+    CellEdges,
+    EdgeCells,
+    EdgeCellsInv,
+    EdgeCellCounts,
+    Where,
+    CoordRel,
+    CoordAbs)
 
 from copy import copy
 from collections.abc import Sequence
@@ -53,18 +71,18 @@ class HexMesh:
     connected by shared vertices.
   geoms :
     The available geometries that may be referenced by 'vert_geom'.
-    (default: [HexLinear])
+    (default: [:class:`~p4est.mesh.hex.geom.HexLinear`])
   vert_geom :
     Indices into 'geoms' to get the geometry associated with each vertex.
-    (default: zeros(NV))
+    (default: zeros(:class:`~p4est.typing.NV`))
 
   """
   def __init__(self,
-    verts : np.ndarray[(NV, 3), np.dtype[np.floating]],
-    cells : np.ndarray[(NC, 2, 2, 2), np.dtype[np.integer]],
-    vert_nodes : Optional[np.ndarray[(NV,), np.dtype[np.integer]]] = None,
+    verts : Vertices,
+    cells : Cells,
+    vert_nodes : Optional[VertNodes] = None,
     geoms : Sequence[HexGeometry] = None,
-    vert_geom : Optional[np.ndarray[(NV,), np.dtype[np.integer]]] = None ):
+    vert_geom : Optional[VertGeom] = None ):
 
     verts = np.ascontiguousarray(
       verts,
@@ -217,6 +235,11 @@ class HexMesh:
     self._node_cells_inv = node_cells_inv
 
   #-----------------------------------------------------------------------------
+  def __class_getitem__(cls, *args):
+    from types import GenericAlias
+    return GenericAlias(cls, args)
+
+  #-----------------------------------------------------------------------------
   def __copy__(self):
     cls = type(self)
     mesh = cls.__new__(cls)
@@ -242,8 +265,7 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def verts(self) \
-      -> np.ndarray[(NV, 3), np.dtype[np.floating]]:
+  def verts(self) -> Vertices:
     """Position of each vertex.
     (AKA :c:var:`p8est_connectivity_t.vertices`)
     Indexing is ``[vertex, (x,y,z)]``
@@ -252,8 +274,7 @@ class HexMesh:
 
  #-----------------------------------------------------------------------------
   @property
-  def vert_nodes(self) \
-      -> np.ndarray[(NV,), np.dtype[np.integer]]:
+  def vert_nodes(self) -> VertNodes:
     """The topological node associated with each vertex, causing cells to be connected
     by having vertices associated with the same node in addition to directly
     sharing vertices.
@@ -262,8 +283,7 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def cells(self) \
-      -> np.ndarray[(NC, 2, 2, 2), np.dtype[np.integer]]:
+  def cells(self) -> Cells:
     """Mapping of hexahedral cells to the indices of their 8 vertices.
     (AKA :c:var:`p8est_connectivity_t.tree_to_vertex`)
 
@@ -287,8 +307,7 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def cell_adj(self) \
-      -> np.ndarray[(NC, 3, 2), np.dtype[np.integer]]:
+  def cell_adj(self) -> CellAdj:
     """Mapping of cells to the indices of their (up to) 6 face-adjacent neighbors.
     (AKA :c:var:`p8est_connectivity_t.tree_to_tree`)
 
@@ -309,8 +328,7 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def cell_adj_face(self) \
-      -> np.ndarray[(NC, 3, 2), np.dtype[np.integer]]:
+  def cell_adj_face(self) -> CellAdjFace:
     """Topological order of the faces of each connected cell.
     (AKA :c:var:`p8est_connectivity_t.tree_to_face`)
 
@@ -320,8 +338,7 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def cell_edges(self) \
-      -> np.ndarray[(NC, 3, 2, 2), np.dtype[np.integer]]:
+  def cell_edges(self) -> CellEdges:
     """Mapping of cells to the indices of their (up to) 12 edges
     in ``edge_cells`` and ``edge_cells_``,
     (AKA :c:var:`p8est_connectivity_t.tree_to_edge`)
@@ -349,8 +366,7 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def edge_cells(self) \
-      -> jagged_array[NE, np.ndarray[(...,), np.dtype[np.integer]]]:
+  def edge_cells(self) -> EdgeCells:
     """Mapping to cells sharing each edge, all ``len(edge_cells[i]) > 1``.
     (AKA :c:var:`p8est_connectivity_t.edge_to_tree`)
 
@@ -360,8 +376,7 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def edge_cells_inv(self) \
-      -> jagged_array[NE, np.ndarray[(...,), np.dtype[np.integer]]]:
+  def edge_cells_inv(self) -> EdgeCellsInv:
     """Mapping to the cell's local edge {0,...11} in ``cell_edges``  which maps
     back to the edge.
     (AKA :c:var:`p8est_connectivity_t.edge_to_edge`)
@@ -378,8 +393,7 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def cell_nodes(self) \
-      -> np.ndarray[(NC, 2, 2, 2), np.dtype[np.integer]]:
+  def cell_nodes(self) -> Cells:
     """Mapping of cells to the indices of their (up to) 8 nodes
     in ``node_cells`` and ``node_cells_inv``,
     ``-1`` used where nodes are not specified.
@@ -405,8 +419,7 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def node_cells(self) \
-      -> jagged_array[NN, np.ndarray[(...,), np.dtype[np.integer]]]:
+  def node_cells(self) -> NodeCells:
     """Mapping to cells sharing each node, all ``len(node_cells[i]) > 1``.
     (AKA :c:var:`p8est_connectivity_t.corner_to_tree`)
 
@@ -416,8 +429,7 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def node_cells_inv(self) \
-      -> jagged_array[NN, np.ndarray[(...,), np.dtype[np.integer]]]:
+  def node_cells_inv(self) -> NodeCellsInv:
     """Mapping to the cell's local vertex {0,...7} in ``cell_nodes`` which maps
     back to the node.
     (AKA :c:var:`p8est_connectivity_t.corner_to_corner`)
@@ -434,39 +446,36 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def edge_cell_counts(self):
+  def edge_cell_counts(self) -> EdgeCellCounts:
     """
     """
     return self._edge_cell_counts
 
   #-----------------------------------------------------------------------------
   @property
-  def node_edge_counts(self):
+  def node_edge_counts(self) -> NodeEdgeCounts:
     """
     """
     return self._node_edge_counts
 
   #-----------------------------------------------------------------------------
   @property
-  def geoms(self) \
-      -> Sequence[HexGeometry]:
+  def geoms(self) -> Sequence[HexGeometry]:
     """The available geometries referenced by 'vert_geom'.
     """
     return self._geoms
 
   #-----------------------------------------------------------------------------
   @property
-  def vert_geom(self) \
-      -> np.ndarray[(NV,), np.dtype[np.integer]]:
+  def vert_geom(self) -> VertGeom:
     """Indices into 'geoms' to get the geometry associated with each vertex.
     """
     return self._vert_geom
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    offset : np.ndarray[(Union[N,Literal[1]], ..., 3), np.dtype[np.floating]],
-    where : Union[None, slice, np.ndarray[..., np.dtype[Union[np.integer, bool]]]] = None ) \
-      -> np.ndarray[(N, ..., 3), np.dtype[np.floating]]:
+    offset : CoordRel,
+    where : Optional[Where] = None ) -> CoordAbs:
     r"""Transform to (physical/global) coordinates of a point relative to each cell
 
     .. math::

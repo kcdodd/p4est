@@ -1,4 +1,4 @@
-Quad AMR :mod:`p4est.amr.quad`
-==============================
+Quad AMR :mod:`p4est.mesh.quad.amr`
+===================================
 
-.. automodule:: p4est.amr.quad.base
+.. automodule:: p4est.mesh.quad.amr

@@ -1,4 +1,4 @@
-Hex AMR :mod:`p4est.amr.hex`
-============================
+Hex AMR :mod:`p4est.mesh.hex.amr`
+=================================
 
-.. automodule:: p4est.amr.hex.base
+.. automodule:: p4est.mesh.hex.amr
