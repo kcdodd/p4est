@@ -1,15 +1,20 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-try:
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
   from typing import (
     Optional,
     Union,
     Literal,
     TypeVar,
     NewType )
-  from ...typing import N
-except:
-  pass
+  from ...typing import N, M, NV, NN, NE, NC, Where
+  from .typing import (
+    CoordRel,
+    CoordAbs,
+    CoordAbsJac,
+    CoordGeom)
 
 import numpy as np
 from ...geom import (
@@ -28,19 +33,9 @@ class HexGeometry:
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    cell_verts : np.ndarray[(Union[N,Literal[1]], ..., 2,2,2,3), np.dtype[np.floating]],
-    offset : np.ndarray[(Union[N,Literal[1]], ..., 3), np.dtype[np.floating]] ) \
-      -> np.ndarray[(N, ..., 3), np.dtype[np.floating]]:
+    cell_verts : CoordGeom,
+    offset : CoordRel ) -> CoordAbs:
     r"""Transform to (physical/global) coordinates of a point relative to each cell
-
-    .. math::
-
-      \func{\rankone{r}}{\rankone{q}} =
-      \begin{bmatrix}
-        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
-        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
-        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2}
-      \end{bmatrix}
 
     Parameters
     ----------
@@ -59,19 +54,9 @@ class HexGeometry:
 
   #-----------------------------------------------------------------------------
   def coord_jac(self,
-    cell_verts : np.ndarray[(Union[N,Literal[1]], ..., 2,2,2,3), np.dtype[np.floating]],
-    offset : np.ndarray[(Union[N,Literal[1]], ..., 3), np.dtype[np.floating]] ) \
-      -> np.ndarray[(N, ..., 3,3), np.dtype[np.floating]]:
+    cell_verts : CoordGeom,
+    offset : CoordRel ) -> CoordAbsJac:
     r"""Jacobian of the absolute coordinates w.r.t local coordinates
-
-    .. math::
-
-      \ranktwo{J}_\rankone{r} = \nabla_{\rankone{q}} \rankone{r} =
-      \begin{bmatrix}
-        \frac{\partial x}{\partial q_0} & \frac{\partial x}{\partial q_1} & \frac{\partial x}{\partial q_2} \\
-        \frac{\partial y}{\partial q_0} & \frac{\partial y}{\partial q_1} & \frac{\partial y}{\partial q_2} \\
-        \frac{\partial z}{\partial q_0} & \frac{\partial z}{\partial q_1} & \frac{\partial z}{\partial q_2}
-      \end{bmatrix}
 
     Parameters
     ----------
@@ -94,8 +79,8 @@ class HexLinear(HexGeometry):
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    cell_verts,
-    offset ):
+    cell_verts : CoordGeom,
+    offset : CoordRel ) -> CoordAbs:
 
     return interp_linear3(cell_verts, offset)
 
@@ -106,18 +91,23 @@ class HexSpherical(HexGeometry):
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    cell_verts,
-    offset ):
+    cell_verts : CoordGeom,
+    offset : CoordRel ) -> CoordAbs:
 
     return interp_sphere_to_cart_slerp3(cell_verts, offset)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class HexCartesianSpherical(HexGeometry):
   """Spherical 3D geometry in cartesian coordinates
+
+  Parameters
+  ----------
+  origin :
+    Center of sphere in absolute coordinates
   """
 
   #-----------------------------------------------------------------------------
-  def __init__(self, origin = None):
+  def __init__(self, origin : tuple[float,float,float] = None):
     super().__init__()
 
     if origin is None:
@@ -127,7 +117,7 @@ class HexCartesianSpherical(HexGeometry):
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    cell_verts,
-    offset ):
+    cell_verts : CoordGeom,
+    offset : CoordRel ) -> CoordAbs:
 
     return interp_slerp3(cell_verts - self.origin, offset) + self.origin

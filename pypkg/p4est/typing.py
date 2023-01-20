@@ -3,10 +3,15 @@ from typing import (
   Union,
   Literal,
   TypeVar )
-
+import numpy as np
 from partis.utils.typing import NewType
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Where = NewType('Where', Union[slice, np.ndarray[..., np.dtype[Union[np.integer, bool]]]])
+"""Array indexing or boolean mask
+"""
+
 N = NewType('N', int)
 """A variable size
 """

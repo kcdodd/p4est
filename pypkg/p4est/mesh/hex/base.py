@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     Literal,
     TypeVar,
     NewType )
-  from ...typing import N, M, NV, NN, NE, NC
+  from ...typing import N, M, NV, NN, NE, NC, Where
   from .typing import (
     Vertices,
     VertGeom,
@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     EdgeCells,
     EdgeCellsInv,
     EdgeCellCounts,
-    Where,
     CoordRel,
     CoordAbs)
 
@@ -55,7 +54,7 @@ class HexMesh:
     Indexing is ``[vertex, (x,y,z)]``
   cells :
     Mapping of hexahedral cells to the indices of their 8 vertices.
-    See :attr:`HexMesh.cells` (AKA :c:var:`p8est_connectivity_t.tree_to_vertex`)
+    (AKA :c:var:`p8est_connectivity_t.tree_to_vertex`)
   vert_nodes :
     The topological node associated with each vertex, causing cells to be connected
     by having vertices associated with the same node in addition to directly

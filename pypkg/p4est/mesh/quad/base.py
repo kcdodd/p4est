@@ -39,7 +39,7 @@ class QuadMesh:
     (AKA :c:var:`p4est_connectivity_t.vertices`)
   cells:
     Mapping of quadrilateral cells to the indices of their 4 vertices.
-    See :attr:`QuadMesh.cells` (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
+    (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
   vert_nodes:
     The topological node associated with each vertex, causing cells to be connected
     by having vertices associated with the same node in addition to directly

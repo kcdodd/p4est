@@ -18,6 +18,7 @@ def cube(length : float = 1.0) -> HexMesh:
   length :
     Length of sides
 
+
   Notes
   -----
 

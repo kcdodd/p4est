@@ -1,15 +1,18 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-try:
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
   from typing import (
     Optional,
     Union,
     Literal,
     TypeVar,
     NewType )
-  from ...typing import N, M, NP, NV, NN, NC
-except:
-  pass
+  from ...typing import N, NP, M, NV, NN, NE, NC, Where
+  from .typing import (
+    CoordRel,
+    CoordAbs)
 
 from collections import namedtuple
 from collections.abc import (
@@ -95,20 +98,10 @@ class HexAMR(P8est):
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    offset : np.ndarray[(Union[N,Literal[1]], ..., 3), np.dtype[np.floating]],
-    where : Union[None, slice, np.ndarray[..., np.dtype[Union[np.integer, bool]]]] = None ) \
-    -> np.ndarray[(N, ..., 3), np.dtype[np.floating]]:
+    offset : CoordRel,
+    where : Optional[Where] = None ) -> CoordAbs:
     r"""
     Transform to (physical/global) coordinates of a point relative to each cell
-
-    .. math::
-
-      \func{\rankone{r}}{\rankone{q}} =
-      \begin{bmatrix}
-        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
-        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
-        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2}
-      \end{bmatrix}
 
     Parameters
     ----------

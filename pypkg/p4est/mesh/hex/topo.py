@@ -8,6 +8,8 @@ if TYPE_CHECKING:
     Cells,
     VertNodes,
     CellNodes,
+    CellAdj,
+    CellAdjFace,
     NodeCells,
     NodeCellsInv,
     NodeEdgeCounts,
@@ -213,27 +215,20 @@ def hex_cell_edges(cell_nodes: CellNodes) \
     node_edge_counts )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def hex_cell_adj(cell_nodes):
+def hex_cell_adj(cell_nodes: CellNodes) -> tuple[CellAdj, CellAdjFace]:
   """Derives topological adjacency between hex. cells accross shared faces
 
   Parameters
   ----------
-  cell_nodes : numpy.ndarray
-    shape = (NC, 2, 2, 2), dtype = np.int32
-
+  cell_nodes :
     Mapping of cells to the indices of their (up to) 8 nodes
 
   Returns
   -------
-  cell_adj : numpy.ndarray
-    shape (NC, 3, 2), dtype = np.int32
-
+  cell_adj :
     Topological connectivity to other cells accross each face.
-
-  cell_adj_face : numpy.ndarray
-    shape (NC, 3, 2), dtype = np.int8
-
-    Topological order of the faces of each connected cell.
+  cell_adj_face :
+    Topological order of the faces of each connected cell
 
   """
   nc = len(cell_nodes)

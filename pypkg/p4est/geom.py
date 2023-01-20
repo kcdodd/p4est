@@ -109,7 +109,7 @@ def interp_linear2(
   Parameters
   ----------
   verts :
-    Values at the four limits of ``uv``.
+    Values at the 4 limits of ``uv``.
   uv :
     Interpolation point :math:`\in [0.0, 1.0]^2`
   """
@@ -137,7 +137,7 @@ def interp_linear3(
   Parameters
   ----------
   verts :
-    Values at the four limits of ``uv``.
+    Values at the 8 limits of ``uv``.
   uv :
     Interpolation point :math:`\in [0.0, 1.0]^3`
   """
@@ -192,7 +192,7 @@ def interp_slerp2(
   Parameters
   ----------
   verts :
-    Values at the four limits of ``uv``.
+    Values at the 4 limits of ``uv``.
   uv :
     Interpolation point :math:`\in [0.0, 1.0]^2`
   """
@@ -219,7 +219,7 @@ def interp_slerp3(
   Parameters
   ----------
   verts :
-    Values at the four limits of ``uv``.
+    Values at the 8 limits of ``uv``.
   uv :
     Interpolation point :math:`\in [0.0, 1.0]^3`
   """
@@ -244,7 +244,7 @@ def interp_sphere_to_cart_slerp2(
   Parameters
   ----------
   verts :
-    Values at the four limits of ``uv``.
+    Values at the 4 limits of ``uv``.
   uv :
     Interpolation point :math:`\in [0.0, 1.0]^2`
   """
@@ -262,7 +262,7 @@ def interp_sphere_to_cart_slerp3(
   Parameters
   ----------
   verts :
-    Values at the four limits of ``uv``.
+    Values at the 8 limits of ``uv``.
   uv :
     Interpolation point :math:`\in [0.0, 1.0]^3`
   """

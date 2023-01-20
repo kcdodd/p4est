@@ -8,25 +8,51 @@ import numpy as np
 from ...typing import N, M, NV, NN, NE, NC, NewType
 from ...utils import jagged_array
 
-
-Where = NewType('Where', Union[slice, np.ndarray[..., np.dtype[Union[np.integer, bool]]]])
-"""Array indexing or boolean mask
-"""
-
 CoordRel = NewType('CoordRel', np.ndarray[(Union[N,Literal[1]], ..., 3), np.dtype[np.floating]])
 r"""Relative coordinates :math:`\in [0.0, 1.0]^3`
 """
 
 CoordAbs = NewType('CoordAbs', np.ndarray[(N, ..., 3), np.dtype[np.floating]])
 r"""Absolute coordinates :math:`\in \mathbb{R}^3`
+
+.. math::
+
+  \func{\rankone{r}}{\rankone{q}} =
+  \begin{bmatrix}
+    \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
+    \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
+    \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2}
+  \end{bmatrix}
+
+"""
+
+CoordAbsJac = NewType('CoordAbsJac', np.ndarray[(N, ..., 3,3), np.dtype[np.floating]])
+r"""Jacobian of the absolute coordinates w.r.t local coordinates
+
+.. math::
+
+  \ranktwo{J}_\rankone{r} = \nabla_{\rankone{q}} \rankone{r} =
+  \begin{bmatrix}
+    \frac{\partial x}{\partial q_0} & \frac{\partial x}{\partial q_1} & \frac{\partial x}{\partial q_2} \\
+    \frac{\partial y}{\partial q_0} & \frac{\partial y}{\partial q_1} & \frac{\partial y}{\partial q_2} \\
+    \frac{\partial z}{\partial q_0} & \frac{\partial z}{\partial q_1} & \frac{\partial z}{\partial q_2}
+  \end{bmatrix}
+"""
+
+CoordGeom = NewType('CoordGeom', np.ndarray[(Union[N,Literal[1]], ..., 2,2,2,3), np.dtype[np.floating]])
+"""Absolute coordinates :math:`\in \mathbb{R}^3` at 8 vertices
+
+See Also
+--------
+* :class:`Cells` for indexing
 """
 
 Vertices = NewType('Vertices', np.ndarray[(NV, 3), np.dtype[np.floating]])
-"""Hex mesh vertex positions
+"""Hex mesh vertex positions :math:`\in \mathbb{R}^3`
 """
 
 Cells = NewType('Cells', np.ndarray[(NC, 2, 2, 2), np.dtype[np.integer]])
-"""Hex mesh mapping cells -> vertices
+"""Hex mesh mapping cell -> vertex
 
 Indexing is ``[cell, ∓z, ∓y, ∓x]``
 
@@ -46,7 +72,7 @@ Indexing is ``[cell, ∓z, ∓y, ∓x]``
 """
 
 CellAdj = NewType('CellAdj', np.ndarray[(NC, 3, 2), np.dtype[np.integer]])
-"""Hex mesh mapping cells -> cell
+"""Topological connectivity to other cells accross each face, cell -> cell
 
 Indexing is ``[cell, (x,y,z), ∓(x|y|z)]``
 
@@ -63,13 +89,13 @@ Indexing is ``[cell, (x,y,z), ∓(x|y|z)]``
 """
 
 CellAdjFace = NewType('CellAdjFace', np.ndarray[(NC, 3, 2), np.dtype[np.integer]])
-"""Hex mesh mapping cells -> cell -> face
+"""Topological order of the faces of each connected cell, cell -> cell-face
 
 Indexing is ``[cell, (x,y,z), ∓(x|y|z)]``
 """
 
 VertNodes = NewType('VertNodes', np.ndarray[(NV,), np.dtype[np.integer]])
-"""Hex mesh mapping vertices -> nodes
+"""Hex mesh mapping vertex -> node
 """
 
 VertGeom = NewType('VertGeom', np.ndarray[(NV,), np.dtype[np.integer]])
@@ -77,7 +103,7 @@ VertGeom = NewType('VertGeom', np.ndarray[(NV,), np.dtype[np.integer]])
 """
 
 CellNodes = NewType('CellNodes', np.ndarray[(NC,2,2,2), np.dtype[np.integer]])
-"""Hex mesh mapping cells -> nodes
+"""Hex mesh mapping cell -> node
 
 Indexing is ``[cell, ∓z, ∓y, ∓x]``
 
@@ -97,13 +123,13 @@ Indexing is ``[cell, ∓z, ∓y, ∓x]``
 """
 
 NodeCells = NewType('NodeCells', jagged_array[NN, np.ndarray[M, np.dtype[np.integer]]])
-"""Hex mesh mapping nodes -> cells
+"""Hex mesh mapping node -> cell
 
 Indexing is ``[node, cell]``
 """
 
 NodeCellsInv = NewType('NodeCellsInv', jagged_array[NN, np.ndarray[M, np.dtype[np.integer]]])
-"""Hex mesh mapping nodes -> cells -> node
+"""Hex mesh mapping node -> cell-node
 
 Indexing is ``[node, cell]``
 """
@@ -113,7 +139,7 @@ NodeEdgeCounts = NewType('NodeEdgeCounts', np.ndarray[NN, np.dtype[np.integer]])
 """
 
 CellEdges = NewType('CellEdges', np.ndarray[(NC, 3, 2, 2), np.dtype[np.integer]])
-"""Hex mesh mapping cells -> edges
+"""Hex mesh mapping cell -> edge
 
 Indexing is ``[cell, (x,y,z), ∓(z|z|y), ∓(y|x|x)]``
 
@@ -136,13 +162,13 @@ Indexing is ``[cell, (x,y,z), ∓(z|z|y), ∓(y|x|x)]``
 """
 
 EdgeCells = NewType('EdgeCells', jagged_array[NE, np.ndarray[M, np.dtype[np.integer]]])
-"""Hex mesh mapping edges -> cells
+"""Hex mesh mapping edge -> cell
 
 Indexing is ``[edge, cell]``
 """
 
 EdgeCellsInv = NewType('EdgeCellsInv', jagged_array[NE, np.ndarray[M, np.dtype[np.integer]]])
-"""Hex mesh mapping edges -> cells -> edge
+"""Hex mesh mapping edge -> cell-edge
 
 Indexing is ``[edge, cell]``
 """
