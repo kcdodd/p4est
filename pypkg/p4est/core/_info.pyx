@@ -9,6 +9,8 @@ import numpy as np
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class Info:
+  """Container for state of AMR
+  """
   #-----------------------------------------------------------------------------
   def __init__(self, *args, **kwargs):
 
@@ -137,10 +139,14 @@ cdef class Info:
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class CellInfo(Info):
+  """AMR cell state
+  """
   pass
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class QuadLocalInfo(CellInfo):
+  """AMR cells owned by local process
+  """
   #-----------------------------------------------------------------------------
   @lru_cache(maxsize = 1)
   def _fields(self):
@@ -337,6 +343,8 @@ cdef class QuadLocalInfo(CellInfo):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class QuadGhostInfo(CellInfo):
+  """AMR cells neighboring one or more local cells, but owned by non-local process
+  """
   #-----------------------------------------------------------------------------
   def _fields(self):
     return {
@@ -348,7 +356,9 @@ cdef class QuadGhostInfo(CellInfo):
 
   #-----------------------------------------------------------------------------
   @property
-  def rank(self):
+  def rank(self) -> int:
+    """Owning rank of cell
+    """
     return self._rank
 
   #-----------------------------------------------------------------------------
@@ -388,7 +398,9 @@ cdef class QuadGhostInfo(CellInfo):
 
   #-----------------------------------------------------------------------------
   @property
-  def origin(self):
+  def origin(self) -> np.ndarray[(...,2,2), np.dtype[np.integer]]:
+    """Relative origin of refined cell within root cell
+    """
     return self._origin
 
   #-----------------------------------------------------------------------------

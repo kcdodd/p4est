@@ -104,7 +104,7 @@ cdef class P4est:
       self._connectivity.corner_to_tree = <np.npy_int32*>(corner_to_tree.data)
       self._connectivity.corner_to_corner = <np.npy_int8*>(corner_to_corner.data)
 
-      
+
 
 
     cdef p4est_t* p4est = NULL
@@ -220,11 +220,71 @@ cdef class P4est:
   #-----------------------------------------------------------------------------
   cdef void _partition(P4est self) nogil:
 
+    # cdef p4est_t* src = p4est_copy(
+    #   self._p4est,
+    #   # copy_data
+    #   1)
+
+    src_info = self._local
+
+    src_cell_idx = np.copy(ndarray_from_ptr(
+      write = False,
+      dtype = np.int64,
+      count = self._comm.size+1,
+      arr = <char*>self._p4est.global_first_quadrant))
+
     with nogil:
       p4est_partition_ext(
         self._p4est,
-        1,
+        # partition_for_coarsening
+        0,
         <p4est_weight_t>_weight_quadrant )
+
+    try:
+
+      src_cell_idx = ndarray_from_ptr(
+        write = False,
+        dtype = np.int64,
+        count = self._comm.size+1,
+        arr = <char*>src.global_first_quadrant)
+
+      dst_cell_idx = ndarray_from_ptr(
+        write = False,
+        dtype = np.int64,
+        count = self._comm.size+1,
+        arr = <char*>self._p4est.global_first_quadrant)
+
+      rank = self._comm.rank
+
+      # dst_begin = dst_cell_idx[rank]
+      # dst_end = dst_cell_idx[rank + 1]
+
+      # src_begin = src_cell_idx[rank]
+      # src_end = src_cell_idx[rank + 1]
+
+      # first_sender = np.searchsorted(
+      #   src_cell_idx[1:],
+      #   dst_begin,
+      #   # a[i-1] <= v < a[i]
+      #   side = 'right')
+
+      # last_sender = first_sender + np.searchsorted(
+      #   src_cell_idx[first_sender+1:],
+      #   dst_end - 1,
+      #   # a[i-1] <= v < a[i]
+      #   side = 'right')
+
+      idx = self._local._idx + src_cell_idx[rank]
+      src = np.searchsorted(src_cell_idx, idx) - 1
+
+
+      dst = np.searchsorted(dst_cell_idx, idx) - 1
+
+      num_senders = last_sender - first_sender + 1
+      assert num_senders > 0 and last_sender < self._comm.size
+
+    finally:
+      p4est_destroy(src)
 
   #-----------------------------------------------------------------------------
   cdef _sync_info(P4est self):

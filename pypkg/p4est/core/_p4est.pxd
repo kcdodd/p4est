@@ -314,6 +314,12 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_init_t init_fn,
     void* user_pointer )
 
+  #-----------------------------------------------------------------------------
+  # Make a deep copy of a p4est
+  p4est_t* p4est_copy(
+    p4est_t* input,
+    int copy_data )
+
   #.............................................................................
   void p4est_destroy(p4est_t* p4est)
 
@@ -324,7 +330,7 @@ cdef extern from "p4est_extended.h" nogil:
 
   #.............................................................................
   p4est_nodes_t* p4est_nodes_new (
-    p4est_t * p4est, 
+    p4est_t * p4est,
     p4est_ghost_t * ghost)
   #.............................................................................
   void p4est_ghost_destroy(
@@ -387,6 +393,7 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_t * p4est,
     int allow_for_coarsening,
     p4est_weight_t weight_fn )
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef extern from "p4est_nodes.h" nogil:
   #.............................................................................

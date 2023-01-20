@@ -16,3 +16,14 @@ cdef class HexAdapted:
 
   cdef np.ndarray _replaced_idx
   cdef HexLocalInfo _replaced_info
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class PartitionedLocal:
+  cdef np.ndarray _from_idx
+  cdef np.ndarray _to_idx
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class PartitionedRemote:
+  cdef np.ndarray _local_idx
+  cdef np.ndarray _remote_idx
+  cdef np.ndarray _rank
