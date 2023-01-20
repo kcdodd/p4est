@@ -47,12 +47,6 @@ from .topo import (
 class HexMesh:
   r"""Base container for hexahedral mesh
 
-  .. figure:: ../img/topology.svg.png
-    :width: 90%
-    :align: center
-
-    Topological elements.
-
   Parameters
   ----------
   verts :
@@ -76,6 +70,14 @@ class HexMesh:
     Indices into 'geoms' to get the geometry associated with each vertex.
     (default: zeros(:class:`~p4est.typing.NV`))
 
+  Notes
+  -----
+
+  .. figure:: ../img/topology.svg.png
+    :width: 90%
+    :align: center
+
+    Topological elements.
   """
   def __init__(self,
     verts : Vertices,
@@ -286,22 +288,6 @@ class HexMesh:
   def cells(self) -> Cells:
     """Mapping of hexahedral cells to the indices of their 8 vertices.
     (AKA :c:var:`p8est_connectivity_t.tree_to_vertex`)
-
-    Indexing is ``[cell, ∓z, ∓y, ∓x]``
-
-    .. code-block::
-
-      cells[:,0,0,0] -> vert(-z, -y, -x)
-      cells[:,0,0,1] -> vert(-z, -y, +x)
-
-      cells[:,0,1,0] -> vert(-z, +y, -x)
-      cells[:,0,1,1] -> vert(-z, +y, +x)
-
-      cells[:,1,0,0] -> vert(+z, -y, -x)
-      cells[:,1,0,1] -> vert(+z, -y, +x)
-
-      cells[:,1,1,0] -> vert(+z, +y, -x)
-      cells[:,1,1,1] -> vert(+z, +y, +x)
     """
     return self._cells
 
@@ -310,19 +296,6 @@ class HexMesh:
   def cell_adj(self) -> CellAdj:
     """Mapping of cells to the indices of their (up to) 6 face-adjacent neighbors.
     (AKA :c:var:`p8est_connectivity_t.tree_to_tree`)
-
-    Indexing is ``[cell, (x,y,z), ∓(x|y|z)]``
-
-    .. code-block::
-
-      cell_adj[:,0,0] -> xface(-x)
-      cell_adj[:,0,1] -> xface(+x)
-
-      cell_adj[:,1,0] -> yface(-y)
-      cell_adj[:,1,1] -> yface(+y)
-
-      cell_adj[:,2,0] -> zface(-z)
-      cell_adj[:,2,1] -> zface(+z)
     """
     return self._cell_adj
 
@@ -331,8 +304,6 @@ class HexMesh:
   def cell_adj_face(self) -> CellAdjFace:
     """Topological order of the faces of each connected cell.
     (AKA :c:var:`p8est_connectivity_t.tree_to_face`)
-
-    Indexing is ``[cell, (x,y,z), ∓(x|y|z)]``
     """
     return self._cell_adj_face
 
@@ -342,25 +313,6 @@ class HexMesh:
     """Mapping of cells to the indices of their (up to) 12 edges
     in ``edge_cells`` and ``edge_cells_``,
     (AKA :c:var:`p8est_connectivity_t.tree_to_edge`)
-
-    Indexing is ``[cell, (x,y,z), ∓(z|z|y), ∓(y|x|x)]``
-
-    .. code-block::
-
-      cell_edges[:,0,0,0] -> xedge(-z, -y)
-      cell_edges[:,0,0,1] -> xedge(-z, +y)
-      cell_edges[:,0,1,0] -> xedge(+z, -y)
-      cell_edges[:,0,1,1] -> xedge(+z, +y)
-
-      cell_edges[:,1,0,0] -> yedge(-z, -x)
-      cell_edges[:,1,0,1] -> yedge(-z, +x)
-      cell_edges[:,1,1,0] -> yedge(+z, -x)
-      cell_edges[:,1,1,1] -> yedge(+z, +x)
-
-      cell_edges[:,2,0,0] -> zedge(-y, -x)
-      cell_edges[:,2,0,1] -> zedge(-y, +x)
-      cell_edges[:,2,1,0] -> zedge(+y, -x)
-      cell_edges[:,2,1,1] -> zedge(+y, +x)
     """
     return self._cell_edges
 
@@ -369,8 +321,6 @@ class HexMesh:
   def edge_cells(self) -> EdgeCells:
     """Mapping to cells sharing each edge, all ``len(edge_cells[i]) > 1``.
     (AKA :c:var:`p8est_connectivity_t.edge_to_tree`)
-
-    Indexing is ``[edge, cell]``
     """
     return self._edge_cells
 
@@ -380,8 +330,6 @@ class HexMesh:
     """Mapping to the cell's local edge {0,...11} in ``cell_edges``  which maps
     back to the edge.
     (AKA :c:var:`p8est_connectivity_t.edge_to_edge`)
-
-    Indexing is ``[edge, cell]``
 
     .. code-block::
 
@@ -398,22 +346,6 @@ class HexMesh:
     in ``node_cells`` and ``node_cells_inv``,
     ``-1`` used where nodes are not specified.
     (AKA :c:var:`p8est_connectivity_t.tree_to_corner`)
-
-    Indexing is ``[cell, ∓z, ∓y, ∓x]``
-
-    .. code-block::
-
-      cell_nodes[:,0,0,0] -> node(-z, -y, -x)
-      cell_nodes[:,0,0,1] -> node(-z, -y, +x)
-
-      cell_nodes[:,0,1,0] -> node(-z, +y, -x)
-      cell_nodes[:,0,1,1] -> node(-z, +y, +x)
-
-      cell_nodes[:,1,0,0] -> node(+z, -y, -x)
-      cell_nodes[:,1,0,1] -> node(+z, -y, +x)
-
-      cell_nodes[:,1,1,0] -> node(+z, +y, -x)
-      cell_nodes[:,1,1,1] -> node(+z, +y, +x)
     """
     return self._cell_nodes
 
@@ -422,8 +354,6 @@ class HexMesh:
   def node_cells(self) -> NodeCells:
     """Mapping to cells sharing each node, all ``len(node_cells[i]) > 1``.
     (AKA :c:var:`p8est_connectivity_t.corner_to_tree`)
-
-    Indexing is ``[node, cell]``
     """
     return self._node_cells
 
@@ -433,8 +363,6 @@ class HexMesh:
     """Mapping to the cell's local vertex {0,...7} in ``cell_nodes`` which maps
     back to the node.
     (AKA :c:var:`p8est_connectivity_t.corner_to_corner`)
-
-    Indexing is ``[node, cell]``
 
     .. code-block::
 

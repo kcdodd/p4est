@@ -72,12 +72,21 @@ install_subdir(
     'Makefile.am',
     'meson.build' ] )
 
+lib_rpath = '$ORIGIN'
+
+_c_args = c_args
+
+if host_machine.system() == 'darwin'
+  _c_args += ['-install_name', '@rpath/libp4est.dylib']
+  lib_rpath = '@loader_path'
+endif
+
 p4est_shared_lib = shared_library(
   'p4est',
   p4est_lib_sources,
   dependencies : m_deps + mpi_deps + sc_deps,
   include_directories : p4est_inc,
-  c_args : c_args,
+  c_args : _c_args,
   link_args : link_args,
-  install_rpath: '$ORIGIN',
+  install_rpath: lib_rpath,
   install: true )

@@ -22,6 +22,9 @@ configure
 # editors
 .vscode*
 
+# FS
+.DS_Store
+
 # temporary
 build
 dist

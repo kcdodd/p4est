@@ -40,6 +40,21 @@ class QuadAMR(P4est):
   comm :
     (default: mpi4py.MPI.COMM_WORLD)
 
+  Notes
+  -----
+
+  .. subfigure:: AB
+    :name: plot_earth
+    :subcaptions: above
+
+    .. image:: ../img/amr_earth.png
+      :alt: Full view
+
+    .. image:: ../img/amr_earth_zoom.png
+      :alt: Zoomed view
+
+    Earth texture on AMR mesh, refinement set from tolerance on difference in
+    value beteen adjacent cells.
   """
 
   #-----------------------------------------------------------------------------
