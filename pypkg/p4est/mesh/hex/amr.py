@@ -1,14 +1,11 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from partis.utils import TYPING
 
-if TYPE_CHECKING:
+if TYPING:
   from typing import (
-    Optional,
     Union,
-    Literal,
-    TypeVar,
-    NewType )
+    Literal )
   from ...typing import N, NP, M, NV, NN, NE, NC, Where
   from .typing import (
     CoordRel,
@@ -32,7 +29,7 @@ from .base import HexMesh
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class HexAMR(P8est):
-  r"""Hexahedral adaptive mesh refinement
+  r"""Hexahedral adaptive mesh refinement using p8est
 
   Parameters
   ----------
@@ -48,8 +45,8 @@ class HexAMR(P8est):
   #-----------------------------------------------------------------------------
   def __init__(self,
     mesh : HexMesh,
-    max_level : Optional[int] = None,
-    comm : Optional[MPI.Comm] = None ):
+    max_level : int = None,
+    comm : MPI.Comm = None ):
 
     super().__init__(
       mesh = mesh,
@@ -66,11 +63,15 @@ class HexAMR(P8est):
   #-----------------------------------------------------------------------------
   @property
   def max_level( self ) -> int:
+    """Maximum allowed refinement level
+    """
     return self._max_level
 
   #-----------------------------------------------------------------------------
   @property
   def comm( self ) -> MPI.Comm:
+    """MPI Communicator
+    """
     return self._comm
 
   #-----------------------------------------------------------------------------
@@ -99,7 +100,7 @@ class HexAMR(P8est):
   #-----------------------------------------------------------------------------
   def coord(self,
     offset : CoordRel,
-    where : Optional[Where] = None ) -> CoordAbs:
+    where : Where = None ) -> CoordAbs:
     r"""
     Transform to (physical/global) coordinates of a point relative to each cell
 
@@ -128,7 +129,8 @@ class HexAMR(P8est):
 
     Returns
     -------
-    ``(refined, coarsened)``
+    refined :
+    coarsened :
     """
 
     return super().adapt()

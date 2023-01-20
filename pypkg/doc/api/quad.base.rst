@@ -6,22 +6,17 @@ Quadrilateral Mesh
 
 .. automodule:: p4est.mesh.quad.base
 
-Mesh Geometry
--------------
+Quad Mesh Geometry
+------------------
 
 .. automodule:: p4est.mesh.quad.geom
 
-Mesh Pimitives
---------------
-
-.. automodule:: p4est.mesh.quad.prim
-
-Topology Routines
------------------
+Quad Topology Routines
+----------------------
 
 .. automodule:: p4est.mesh.quad.topo
 
-Typing
-------
+Quad Typing
+-----------
 
 .. automodule:: p4est.mesh.quad.typing

@@ -1,3 +1,18 @@
+# Enable postponed evaluation of annotations
+from __future__ import annotations
+from partis.utils import TYPING
+
+if TYPING:
+  from ...typing import N, M, NV, NN, NE, NC
+  from .typing import (
+    Cells,
+    VertNodes,
+    CellNodes,
+    CellAdj,
+    CellAdjFace,
+    NodeCells,
+    NodeCellsInv)
+
 import numpy as np
 from ...utils import (
   jagged_array,

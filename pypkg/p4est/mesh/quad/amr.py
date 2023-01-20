@@ -1,15 +1,15 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-try:
+from partis.utils import TYPING
+
+if TYPING:
   from typing import (
-    Optional,
     Union,
-    Literal,
-    TypeVar,
-    NewType )
-  from ...typing import N, M, NP, NV, NN, NC
-except:
-  pass
+    Literal )
+  from ...typing import N, M, NP, NV, NN, NC, Where
+  from .typing import (
+    CoordRel,
+    CoordAbs)
 
 from collections import namedtuple
 from collections.abc import (
@@ -29,7 +29,7 @@ from .base import QuadMesh
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class QuadAMR(P4est):
-  r"""Quadrilateral adaptive mesh refinement
+  r"""Quadrilateral adaptive mesh refinement using p4est
 
   Parameters
   ----------
@@ -49,9 +49,11 @@ class QuadAMR(P4est):
 
     .. image:: ../img/amr_earth.png
       :alt: Full view
+      :width: 95%
 
     .. image:: ../img/amr_earth_zoom.png
       :alt: Zoomed view
+      :width: 95%
 
     Earth texture on AMR mesh, refinement set from tolerance on difference in
     value beteen adjacent cells.
@@ -60,8 +62,8 @@ class QuadAMR(P4est):
   #-----------------------------------------------------------------------------
   def __init__(self,
     mesh : QuadMesh,
-    max_level : Optional[int] = None,
-    comm : Optional[MPI.Comm] = None ):
+    max_level : int = None,
+    comm : MPI.Comm = None ):
 
     super().__init__(
       mesh = mesh,
@@ -78,11 +80,15 @@ class QuadAMR(P4est):
   #-----------------------------------------------------------------------------
   @property
   def max_level( self ) -> int:
+    """Maximum allowed refinement level
+    """
     return self._max_level
 
   #-----------------------------------------------------------------------------
   @property
   def comm( self ) -> MPI.Comm:
+    """MPI Communicator
+    """
     return self._comm
 
   #-----------------------------------------------------------------------------
@@ -110,20 +116,10 @@ class QuadAMR(P4est):
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    offset : np.ndarray[(Union[N,Literal[1]], ..., 2), np.dtype[np.floating]],
-    where : Union[None, slice, np.ndarray[..., np.dtype[Union[np.integer, bool]]]] = None ) \
-    -> np.ndarray[(N, ..., 3), np.dtype[np.floating]]:
+    offset : CoordRel,
+    where : Where = None ) -> CoordAbs:
     r"""
     Transform to (physical/global) coordinates of a point relative to each cell
-
-    .. math::
-
-      \func{\rankone{r}}{\rankone{q}} =
-      \begin{bmatrix}
-        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1} \\
-        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1} \\
-        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1}
-      \end{bmatrix}
 
     Parameters
     ----------
@@ -150,7 +146,8 @@ class QuadAMR(P4est):
 
     Returns
     -------
-    ``(refined, coarsened)``
+    refined :
+    coarsened :
     """
 
     return super().adapt()

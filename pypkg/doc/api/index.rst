@@ -4,10 +4,12 @@ API Reference
 .. toctree::
   :maxdepth: 2
 
-  mesh.quad
-  amr.quad
-  mesh.hex
-  amr.hex
+  quad.base
+  quad.amr
+  quad.prim
+  hex.base
+  hex.amr
+  hex.prim
   core
   geom
   utils

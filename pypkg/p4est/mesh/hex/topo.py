@@ -1,8 +1,8 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from partis.utils import TYPING
 
-if TYPE_CHECKING:
+if TYPING:
   from ...typing import N, M, NV, NN, NE, NC
   from .typing import (
     Cells,

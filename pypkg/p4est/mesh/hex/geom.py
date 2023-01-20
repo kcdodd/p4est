@@ -1,14 +1,11 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from partis.utils import TYPING
 
-if TYPE_CHECKING:
+if TYPING:
   from typing import (
-    Optional,
     Union,
-    Literal,
-    TypeVar,
-    NewType )
+    Literal )
   from ...typing import N, M, NV, NN, NE, NC, Where
   from .typing import (
     CoordRel,
@@ -47,7 +44,7 @@ class HexGeometry:
 
     Returns
     -------
-    Absolute coordinates at each ``offset``
+    coord: Absolute coordinates at each ``offset``
     """
 
     raise NotImplementedError()
@@ -68,7 +65,7 @@ class HexGeometry:
 
     Returns
     -------
-    Jacobian at each ``offset``
+    jac: Jacobian at each ``offset``
     """
     raise NotImplementedError()
 

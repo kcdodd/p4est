@@ -1,14 +1,11 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from partis.utils import TYPING
 
-if TYPE_CHECKING:
+if TYPING:
   from typing import (
-    Optional,
     Union,
-    Literal,
-    TypeVar,
-    NewType )
+    Literal )
   from ...typing import N, M, NV, NN, NE, NC, Where
   from .typing import (
     Vertices,
@@ -81,9 +78,9 @@ class HexMesh:
   def __init__(self,
     verts : Vertices,
     cells : Cells,
-    vert_nodes : Optional[VertNodes] = None,
+    vert_nodes : VertNodes = None,
     geoms : Sequence[HexGeometry] = None,
-    vert_geom : Optional[VertGeom] = None ):
+    vert_geom : VertGeom = None ):
 
     verts = np.ascontiguousarray(
       verts,
@@ -402,17 +399,8 @@ class HexMesh:
   #-----------------------------------------------------------------------------
   def coord(self,
     offset : CoordRel,
-    where : Optional[Where] = None ) -> CoordAbs:
+    where : Where = None ) -> CoordAbs:
     r"""Transform to (physical/global) coordinates of a point relative to each cell
-
-    .. math::
-
-      \func{\rankone{r}}{\rankone{q}} =
-      \begin{bmatrix}
-        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
-        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
-        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2}
-      \end{bmatrix}
 
     Parameters
     ----------

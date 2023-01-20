@@ -1,15 +1,12 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-try:
+from partis.utils import TYPING
+
+if TYPING:
   from typing import (
-    Optional,
     Union,
-    Literal,
-    TypeVar,
-    NewType )
+    Literal )
   from .typing import N
-except:
-  pass
 
 import numpy as np
 
@@ -56,11 +53,12 @@ def trans_cart_to_sphere(
 
   Returns
   -------
-  Spherical coordinates are (in order):
+  uvr :
+    Spherical coordinates are (in order):
 
-  * polar angle (aka. colatitude) :math:`\in [0, \pi]`
-  * azimuthal angle (aka. longitude) :math:`\in [-\pi, \pi]`
-  * radius
+    * polar angle (aka. colatitude) :math:`\in [0, \pi]`
+    * azimuthal angle (aka. longitude) :math:`\in [-\pi, \pi]`
+    * radius
   """
 
   x = xyz[...,0]
@@ -87,7 +85,7 @@ def interp_linear(
   Parameters
   ----------
   eta :
-    Interpolation point :math:`\in [0.0, 1.0]^2`
+    Interpolation point :math:`\in [0.0, 1.0]`
   x0 :
     Value at :math:`0.0`
   x1 :
@@ -112,6 +110,7 @@ def interp_linear2(
     Values at the 4 limits of ``uv``.
   uv :
     Interpolation point :math:`\in [0.0, 1.0]^2`
+
   """
 
   m = np.prod(verts.shape[-2:])
@@ -163,7 +162,7 @@ def interp_slerp(
   Parameters
   ----------
   eta :
-    Interpolation point :math:`\in [0.0, 1.0]^2`
+    Interpolation point :math:`\in [0.0, 1.0]`
   x0 :
     Value at :math:`0.0`
   x1 :

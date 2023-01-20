@@ -18,6 +18,9 @@ def cube(length : float = 1.0) -> HexMesh:
   length :
     Length of sides
 
+  Returns
+  -------
+  mesh :
 
   Notes
   -----
@@ -65,6 +68,10 @@ def spherical_cube_shell(
     Inner radius
   r2 :
     Outer radius
+
+  Returns
+  -------
+  mesh :
 
   Notes
   -----
@@ -138,6 +145,10 @@ def spherical_cube(
     Inner radius
   r2 :
     Outer radius
+
+  Returns
+  -------
+  mesh :
 
   Notes
   -----
@@ -220,6 +231,10 @@ def slab_spherical_cube_hole(
   r :
     Radius of hole
 
+  Returns
+  -------
+  mesh :
+
   """
 
   # half-length of cube edges for distance (radius) to the vertices
@@ -280,6 +295,11 @@ def icosahedron_spherical_shell(
     Inner radius
   r2 :
     Outer radius
+
+  Returns
+  -------
+  mesh :
+
   """
 
   c3 = np.cos(np.pi/3)
@@ -360,6 +380,10 @@ def icosahedron_shell(
     Inner radius
   r2 :
     Outer radius
+
+  Returns
+  -------
+  mesh :
 
   Notes
   -----

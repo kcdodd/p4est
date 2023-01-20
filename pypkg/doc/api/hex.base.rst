@@ -6,22 +6,17 @@ Hexahedral Mesh
 
 .. automodule:: p4est.mesh.hex.base
 
-Mesh Geometry
--------------
+Hex Mesh Geometry
+-----------------
 
 .. automodule:: p4est.mesh.hex.geom
 
-Mesh Pimitives
---------------
-
-.. automodule:: p4est.mesh.hex.prim
-
-Topology Routines
------------------
+Hex Topology Routines
+---------------------
 
 .. automodule:: p4est.mesh.hex.topo
 
-Typing
-------
+Hex Typing
+----------
 
 .. automodule:: p4est.mesh.hex.typing

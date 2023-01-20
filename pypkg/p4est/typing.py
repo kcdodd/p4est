@@ -1,8 +1,6 @@
 from typing import (
-  Optional,
   Union,
-  Literal,
-  TypeVar )
+  Literal )
 import numpy as np
 from partis.utils.typing import NewType
 

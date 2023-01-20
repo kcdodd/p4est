@@ -11,6 +11,10 @@ from .base import QuadMesh
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def unit_square() -> QuadMesh:
   """Factory method to create a unit square
+
+  Returns
+  -------
+  mesh :
   """
 
   verts = np.array([
@@ -30,16 +34,24 @@ def unit_square() -> QuadMesh:
 def cube(length : float = 1.0) -> QuadMesh:
   """Factory method to create the surface of a cube
 
+  Parameters
+  ----------
+  length :
+    Length of sides
+
+  Returns
+  -------
+  mesh :
+
+  Notes
+  -----
+
   .. figure:: ../img/4estCube.png
     :width: 90%
     :align: center
 
     Topological elements.
 
-  Parameters
-  ----------
-  length :
-    Length of sides
   """
 
   half = 0.5*length
@@ -74,17 +86,23 @@ def cube(length : float = 1.0) -> QuadMesh:
 def spherical_cube(length : float = 1.0) -> QuadMesh[QuadCartesianSpherical]:
   """Factory method to create the surface of a cube
 
-  .. figure:: ../img/Spherical_Cube.png
-    :width: 90%
-    :align: center
-
-    Spherical Cube.
-
   Parameters
   ----------
   length : float
     Length of sides
 
+  Returns
+  -------
+  mesh :
+
+  Notes
+  -----
+
+  .. figure:: ../img/Spherical_Cube.png
+    :width: 90%
+    :align: center
+
+    Spherical Cube.
   """
 
   half = 0.5*length
@@ -153,6 +171,9 @@ def star(r1 : float = 1.0, r2 : float = 1.5) -> QuadMesh:
   r2 :
     Inner radius where points merge.
 
+  Returns
+  -------
+  mesh :
   """
 
   verts = np.zeros((13, 3), dtype = np.float64)
@@ -182,6 +203,10 @@ def star(r1 : float = 1.0, r2 : float = 1.5) -> QuadMesh:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def periodic_stack() -> QuadMesh:
   """Factory method to create a periodic stack of unit squares
+
+  Returns
+  -------
+  mesh :
   """
 
   verts = np.array([
@@ -217,19 +242,18 @@ def periodic_stack() -> QuadMesh:
 def icosahedron_golden() -> QuadMesh:
   """Factory method to create an icosahedron using golden ratio
 
+  Returns
+  -------
+  mesh :
+
+  Notes
+  -----
+
   .. figure:: ../img/icosahedron_golden.png
     :width: 90%
     :align: center
 
     Icosahedron Golden.
-
-  Parameters
-  ----------
-  radius : float
-
-  Returns
-  -------
-  QuadMesh
 
   """
 
@@ -286,7 +310,19 @@ def icosahedron_golden() -> QuadMesh:
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def icosahedron_spherical(radius : float = 1.0) -> QuadMesh[QuadSpherical]:
-  """Factory method to create an icosahedron in spherical coordinates
+  r"""Factory method to create an icosahedron in spherical coordinates
+
+  Parameters
+  ----------
+  radius :
+    Outer radius of points
+
+  Returns
+  -------
+  mesh :
+
+  Notes
+  -----
 
   .. figure:: ../img/Icosahedron_Spherical.png
     :width: 90%
@@ -294,10 +330,6 @@ def icosahedron_spherical(radius : float = 1.0) -> QuadMesh[QuadSpherical]:
 
     Icosahedron Spherical.
 
-  Parameters
-  ----------
-  radius :
-    Outer radius of points
   """
 
   c3 = np.cos(np.pi/3)
@@ -357,16 +389,24 @@ def icosahedron_spherical(radius : float = 1.0) -> QuadMesh[QuadSpherical]:
 def icosahedron(radius : float = 1.0) -> QuadMesh[QuadCartesianSpherical]:
   """Factory method to create an icosahedron in cartesian coordinates
 
+  Parameters
+  ----------
+  radius :
+    Outer radius of points
+
+  Returns
+  -------
+  mesh :
+
+  Notes
+  -----
+
   .. figure:: ../img/Icosahedron.png
     :width: 90%
     :align: center
 
     Icosahedron.
 
-  Parameters
-  ----------
-  radius : float
-    Outer radius of points
   """
   mesh = icosahedron_spherical(radius = radius)
 

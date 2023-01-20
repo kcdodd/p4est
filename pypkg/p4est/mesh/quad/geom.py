@@ -1,15 +1,17 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-try:
+from partis.utils import TYPING
+
+if TYPING:
   from typing import (
-    Optional,
     Union,
-    Literal,
-    TypeVar,
-    NewType )
-  from ...typing import N
-except:
-  pass
+    Literal )
+  from ...typing import N, M, NV, NN, NE, NC, Where
+  from .typing import (
+    CoordRel,
+    CoordAbs,
+    CoordAbsJac,
+    CoordGeom)
 
 import numpy as np
 from ...geom import (
@@ -28,50 +30,29 @@ class QuadGeometry:
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    cell_verts : np.ndarray[(Union[N,Literal[1]], ..., 2,2,3), np.dtype[np.floating]],
-    offset : np.ndarray[(Union[N,Literal[1]], ..., 2), np.dtype[np.floating]] ) \
-      -> np.ndarray[(N, ..., 3), np.dtype[np.floating]]:
+    cell_verts : CoordGeom,
+    offset : CoordRel ) -> CoordAbs:
     r"""Transform to (physical/global) coordinates of a point relative to each cell
-
-    .. math::
-
-      \func{\rankone{r}}{\rankone{q}} =
-      \begin{bmatrix}
-        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1} \\
-        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1} \\
-        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1}
-      \end{bmatrix}
 
     Parameters
     ----------
     cell_verts :
     offset :
-
       Relative coordinates from each cell origin to compute the coordinates,
       normalized :math:`\rankone{q} \in [0.0, 1.0]^2` along each edge of the cell.
 
     Returns
     -------
-    Absolute coordinates at each ``offset``
+    coord: Absolute coordinates at each ``offset``
     """
 
     raise NotImplementedError()
 
   #-----------------------------------------------------------------------------
   def coord_jac(self,
-    cell_verts : np.ndarray[(Union[N,Literal[1]], ..., 2,2,3), np.dtype[np.floating]],
-    offset : np.ndarray[(Union[N,Literal[1]], ..., 2), np.dtype[np.floating]] ) \
-      -> np.ndarray[(N, ..., 3,2), np.dtype[np.floating]]:
+    cell_verts : CoordGeom,
+    offset : CoordRel ) -> CoordAbsJac:
     r"""Jacobian of the absolute coordinates w.r.t local coordinates
-
-    .. math::
-
-      \ranktwo{J}_\rankone{r} = \nabla_{\rankone{q}} \rankone{r} =
-      \begin{bmatrix}
-        \frac{\partial x}{\partial q_0} & \frac{\partial x}{\partial q_1} \\
-        \frac{\partial y}{\partial q_0} & \frac{\partial y}{\partial q_1} \\
-        \frac{\partial z}{\partial q_0} & \frac{\partial z}{\partial q_1}
-      \end{bmatrix}
 
     Parameters
     ----------
@@ -83,7 +64,7 @@ class QuadGeometry:
 
     Returns
     -------
-    Jacobian at each ``offset``
+    jac: Jacobian at each ``offset``
     """
     raise NotImplementedError()
 
@@ -93,8 +74,8 @@ class QuadLinear(QuadGeometry):
   """
   #-----------------------------------------------------------------------------
   def coord(self,
-    cell_verts,
-    offset ):
+    cell_verts : CoordGeom,
+    offset : CoordRel ) -> CoordAbs:
 
     return interp_linear2(cell_verts, offset)
 
@@ -105,8 +86,8 @@ class QuadSpherical(QuadGeometry):
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    cell_verts,
-    offset ):
+    cell_verts : CoordGeom,
+    offset : CoordRel ) -> CoordAbs:
 
     return interp_sphere_to_cart_slerp2(cell_verts, offset)
 
@@ -116,7 +97,7 @@ class QuadCartesianSpherical(QuadGeometry):
   """
 
   #-----------------------------------------------------------------------------
-  def __init__(self, origin = None):
+  def __init__(self, origin : tuple[float,float,float] = None):
     super().__init__()
 
     if origin is None:
@@ -126,7 +107,7 @@ class QuadCartesianSpherical(QuadGeometry):
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    cell_verts,
-    offset ):
+    cell_verts : CoordGeom,
+    offset : CoordRel ) -> CoordAbs:
 
     return interp_slerp2(cell_verts - self.origin, offset) + self.origin
