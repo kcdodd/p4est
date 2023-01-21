@@ -220,14 +220,9 @@ cdef class P4est:
   #-----------------------------------------------------------------------------
   cdef void _partition(P4est self) nogil:
 
-    # cdef p4est_t* src = p4est_copy(
-    #   self._p4est,
-    #   # copy_data
-    #   1)
-
-    src_info = self._local
-
-    src_cell_idx = np.copy(ndarray_from_ptr(
+    rank = self._comm.rank
+    init_info = self._local
+    init_idx = np.copy(ndarray_from_ptr(
       write = False,
       dtype = np.int64,
       count = self._comm.size+1,
@@ -240,51 +235,23 @@ cdef class P4est:
         0,
         <p4est_weight_t>_weight_quadrant )
 
-    try:
+    final_idx = ndarray_from_ptr(
+      write = False,
+      dtype = np.int64,
+      count = self._comm.size+1,
+      arr = <char*>self._p4est.global_first_quadrant)
 
-      src_cell_idx = ndarray_from_ptr(
-        write = False,
-        dtype = np.int64,
-        count = self._comm.size+1,
-        arr = <char*>src.global_first_quadrant)
+    tx0 = init_idx[rank]
+    tx1 = init_idx[rank+1]
+    mtx = (final_idx[:-1] < tx1) & (final_idx[1:] >= tx0)
+    tx_idx = np.append(np.maximum(tx0, final_idx[mtx]), [tx1])
 
-      dst_cell_idx = ndarray_from_ptr(
-        write = False,
-        dtype = np.int64,
-        count = self._comm.size+1,
-        arr = <char*>self._p4est.global_first_quadrant)
-
-      rank = self._comm.rank
-
-      # dst_begin = dst_cell_idx[rank]
-      # dst_end = dst_cell_idx[rank + 1]
-
-      # src_begin = src_cell_idx[rank]
-      # src_end = src_cell_idx[rank + 1]
-
-      # first_sender = np.searchsorted(
-      #   src_cell_idx[1:],
-      #   dst_begin,
-      #   # a[i-1] <= v < a[i]
-      #   side = 'right')
-
-      # last_sender = first_sender + np.searchsorted(
-      #   src_cell_idx[first_sender+1:],
-      #   dst_end - 1,
-      #   # a[i-1] <= v < a[i]
-      #   side = 'right')
-
-      idx = self._local._idx + src_cell_idx[rank]
-      src = np.searchsorted(src_cell_idx, idx) - 1
+    rx0 = final_idx[rank]
+    rx1 = final_idx[rank+1]
+    mrx = (init_idx[:-1] < rx1) & (init_idx[1:] >= rx0)
+    rx_idx = np.append(np.maximum(rx0, init_idx[mrx]), [rx1])
 
 
-      dst = np.searchsorted(dst_cell_idx, idx) - 1
-
-      num_senders = last_sender - first_sender + 1
-      assert num_senders > 0 and last_sender < self._comm.size
-
-    finally:
-      p4est_destroy(src)
 
   #-----------------------------------------------------------------------------
   cdef _sync_info(P4est self):
