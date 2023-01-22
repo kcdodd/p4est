@@ -57,7 +57,7 @@ cdef class Info:
 
   #-----------------------------------------------------------------------------
   def __getitem__( self, idx ):
-    return type(self)( arr[idx] for arr in self.as_tuple() )
+    return type(self)( *[arr[idx] for arr in self.as_tuple()] )
 
   #-----------------------------------------------------------------------------
   def __setitem__( self, idx, info ):

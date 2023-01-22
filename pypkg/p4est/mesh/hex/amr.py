@@ -124,13 +124,26 @@ class HexAMR(P8est):
       where = where )
 
   #-----------------------------------------------------------------------------
-  def adapt(self) -> tuple[HexAdapted, HexAdapted]:
+  def adapt(self) -> tuple[HexAdapted, HexAdapted, HexAdapted]:
     """Applies refinement, coarsening, and then balances based on ``local.adapt``.
 
     Returns
     -------
+    moved :
     refined :
     coarsened :
     """
 
-    return super().adapt()
+    return self._adapt()
+
+  #-----------------------------------------------------------------------------
+  def partition(self) -> tuple[jagged_array[NP, HexLocalInfo], jagged_array[NP, HexLocalInfo]]:
+    """Applies partitioning based on ``local.weight``.
+
+    Returns
+    -------
+    send_to :
+    receive_from :
+    """
+
+    return self._partition()

@@ -229,7 +229,7 @@ cdef class P8est:
         <void*>self )
 
     self._p4est = p4est
-    self._sync_local()
+    self._sync_info()
 
   #-----------------------------------------------------------------------------
   def __dealloc__(self):
@@ -297,7 +297,7 @@ cdef class P8est:
     return coord.reshape(root.shape + shape[1:])
 
   #-----------------------------------------------------------------------------
-  def adapt(self):
+  def _adapt(self):
 
     _set_leaf_adapt(
       trees = <p8est_tree_t*>self._p4est.trees.array,
@@ -306,52 +306,90 @@ cdef class P8est:
       adapt = self._local.adapt )
 
     with nogil:
-      self._adapt()
+      p8est_refine_ext(
+        self._p4est,
+        # recursive
+        0,
+        self._max_level,
+        <p8est_refine_t>_refine_quadrant,
+        <p8est_init_t>_init_quadrant,
+        <p8est_replace_t> _replace_quadrants )
 
-    return self._sync_local()
+      p8est_coarsen_ext(
+        self._p4est,
+        # recursive
+        0,
+        # orphans
+        1,
+        <p8est_coarsen_t>_coarsen_quadrants,
+        <p8est_init_t>_init_quadrant,
+        <p8est_replace_t> _replace_quadrants )
 
-  #-----------------------------------------------------------------------------
-  cdef void _adapt(P8est self) nogil:
+      p8est_balance_ext(
+        self._p4est,
+        P8EST_CONNECT_FULL,
+        <p8est_init_t>_init_quadrant,
+        <p8est_replace_t> _replace_quadrants )
 
-    p8est_refine_ext(
-      self._p4est,
-      # recursive
-      0,
-      self._max_level,
-      <p8est_refine_t>_refine_quadrant,
-      <p8est_init_t>_init_quadrant,
-      <p8est_replace_t> _replace_quadrants )
-
-    p8est_coarsen_ext(
-      self._p4est,
-      # recursive
-      0,
-      # orphans
-      1,
-      <p8est_coarsen_t>_coarsen_quadrants,
-      <p8est_init_t>_init_quadrant,
-      <p8est_replace_t> _replace_quadrants )
-
-    p8est_balance_ext(
-      self._p4est,
-      P8EST_CONNECT_FULL,
-      <p8est_init_t>_init_quadrant,
-      <p8est_replace_t> _replace_quadrants )
+    return self._sync_info()
 
   #-----------------------------------------------------------------------------
-  cdef void _partition(P8est self) nogil:
+  def _partition(self):
+
+    rank = self._comm.rank
+    init_info = self._local
+    init_idx = np.copy(ndarray_from_ptr(
+      write = False,
+      dtype = np.int64,
+      count = self._comm.size+1,
+      arr = <char*>self._p4est.global_first_quadrant))
+
+    _set_leaf_weight(
+      trees = <p8est_tree_t*>self._p4est.trees.array,
+      first_local_tree = self._p4est.first_local_tree,
+      last_local_tree = self._p4est.last_local_tree,
+      weight = self._local._weight )
 
     with nogil:
       p8est_partition_ext(
         self._p4est,
-        1,
+        # partition_for_coarsening
+        0,
         <p8est_weight_t>_weight_quadrant )
 
+    moved, refined, coarsened = self._sync_info()
+
+    assert len(refined) == 0
+    assert len(coarsened) == 0
+
+    final_idx = np.copy(ndarray_from_ptr(
+      write = False,
+      dtype = np.int64,
+      count = self._comm.size+1,
+      arr = <char*>self._p4est.global_first_quadrant))
+
+    tx0 = init_idx[rank]
+    tx1 = init_idx[rank+1]
+    tx_idx = np.clip(final_idx - tx0, 0, tx1 - tx0)
+
+    tx = jagged_array(data = init_info, row_idx = tx_idx)
+
+    rx0 = final_idx[rank]
+    rx1 = final_idx[rank+1]
+    rx_idx = np.clip(init_idx - rx0, 0, rx1 - rx0)
+
+    rx = jagged_array(data = self._local, row_idx = rx_idx)
+
+    return tx, rx
+
   #-----------------------------------------------------------------------------
-  cdef _sync_local(P8est self):
+  cdef _sync_info(P8est self):
     cdef:
       p8est_ghost_t* ghost
       p8est_mesh_t* mesh
+
+      npy.npy_int32 num_moved = 0
+      npy.npy_int32 num_adapted = 0
 
     with nogil:
       ghost = p8est_ghost_new(
@@ -371,10 +409,21 @@ cdef class P8est:
     self._local = HexLocalInfo(mesh.local_num_quadrants)
     ghost_flat = HexGhostInfo(mesh.ghost_num_quadrants)
 
-    num_adapted = _count_leaf_adapted(
+    _count_leaf_changes(
+      rank = self._comm.rank,
       trees = <p8est_tree_t*>self._p4est.trees.array,
       first_local_tree = self._p4est.first_local_tree,
-      last_local_tree = self._p4est.last_local_tree )
+      last_local_tree = self._p4est.last_local_tree,
+      num_moved = &num_moved,
+      num_adapted = &num_adapted )
+
+    leaf_moved_from = -np.ones(
+      (num_moved,),
+      dtype = np.int32)
+
+    leaf_moved_to = -np.ones(
+      (num_moved,),
+      dtype = np.int32)
 
     leaf_adapted = np.zeros(
       (num_adapted,),
@@ -389,6 +438,7 @@ cdef class P8est:
       dtype = np.int32 )
 
     _sync_local(
+      self._comm.rank,
       trees = <p8est_tree_t*>self._p4est.trees.array,
       first_local_tree = self._p4est.first_local_tree,
       last_local_tree = self._p4est.last_local_tree,
@@ -418,6 +468,8 @@ cdef class P8est:
       cell_adj_subface = self._local.cell_adj_subface,
       cell_adj_order = self._local.cell_adj_order,
       cell_adj_level = self._local.cell_adj_level,
+      leaf_moved_from = leaf_moved_from,
+      leaf_moved_to = leaf_moved_to,
       leaf_adapted = leaf_adapted,
       leaf_adapted_fine = leaf_adapted_fine,
       leaf_adapted_coarse = leaf_adapted_coarse )
@@ -436,17 +488,6 @@ cdef class P8est:
         arr = <char*>mesh.ghost_to_proc)])
 
     self._local.cell_adj_rank = ranks[self._local.cell_adj]
-
-    # translate cell_adj indicies for ghost quadrants to {-ng..-1)
-    # NOTE: This can be used to flag ghost vs local based on the sign,
-    # but also, negative indexing can be used (without modification) for indexing
-    # ghost data either appended to the end of an array of local data, or stored
-    # in a separate array of only ghost data.
-    nl = mesh.local_num_quadrants
-    ng = mesh.ghost_num_quadrants
-    cell_adj = self._local.cell_adj
-
-    self._local.cell_adj -= (ng + nl) * (cell_adj // nl)
 
     ghost_proc_offsets = np.copy(ndarray_from_ptr(
       write = False,
@@ -509,19 +550,19 @@ cdef class P8est:
     coarse_idx = leaf_adapted_coarse[coarsened_mask]
     coarsened_idx = leaf_adapted_fine[coarsened_mask]
 
+    moved = HexAdapted(
+      dst = self._local[leaf_moved_to],
+      src = prev_local[leaf_moved_from] )
+
     refined = HexAdapted(
-      idx = fine_idx,
-      info = self._local[fine_idx],
-      replaced_idx = refined_idx,
-      replaced_info = prev_local[refined_idx] )
+      dst = self._local[fine_idx],
+      src = prev_local[refined_idx] )
 
     coarsened = HexAdapted(
-      idx = coarse_idx,
-      info = self._local[coarse_idx],
-      replaced_idx = coarsened_idx,
-      replaced_info = prev_local[coarsened_idx] )
+      dst = self._local[coarse_idx],
+      src = prev_local[coarsened_idx] )
 
-    return refined, coarsened
+    return moved, refined, coarsened
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
@@ -555,10 +596,42 @@ cdef void _set_leaf_adapt(
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
-cdef npy.npy_int32 _count_leaf_adapted(
+cdef void _set_leaf_weight(
+  p8est_tree_t* trees,
+  npy.npy_int32 first_local_tree,
+  npy.npy_int32 last_local_tree,
+  npy.npy_int32[:] weight ) nogil:
+
+  cdef:
+    p8est_tree_t* tree = NULL
+    p8est_quadrant_t* quads = NULL
+    p8est_quadrant_t* cell = NULL
+    aux_quadrant_data_t* cell_aux
+
+    npy.npy_int32 root_idx = 0
+    npy.npy_int32 q = 0
+
+
+  for root_idx in range(first_local_tree, last_local_tree+1):
+    tree = &trees[root_idx]
+    quads = <p8est_quadrant_t*>tree.quadrants.array
+
+    for q in range(tree.quadrants.elem_count):
+      cell = &quads[q]
+      cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+      cell_aux.idx = tree.quadrants_offset + q
+      cell_aux.weight = weight[cell_aux.idx]
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# @cython.boundscheck(False)
+# @cython.wraparound(False)
+cdef void _count_leaf_changes(
+  npy.npy_int32 rank,
   const p8est_tree_t* trees,
   npy.npy_int32 first_local_tree,
-  npy.npy_int32 last_local_tree ) nogil:
+  npy.npy_int32 last_local_tree,
+  npy.npy_int32* num_moved,
+  npy.npy_int32* num_adapted ) nogil:
 
   cdef:
     const p8est_tree_t* tree = NULL
@@ -568,7 +641,9 @@ cdef npy.npy_int32 _count_leaf_adapted(
 
     npy.npy_int32 root_idx = 0
     npy.npy_int32 q = 0
-    npy.npy_int32 adapt_idx = 0
+    npy.npy_int32 refine_idx = 0
+    npy.npy_int32 coarse_idx = 0
+    npy.npy_int32 move_idx = 0
 
 
   for root_idx in range(first_local_tree, last_local_tree+1):
@@ -579,15 +654,22 @@ cdef npy.npy_int32 _count_leaf_adapted(
       cell = &quads[q]
       cell_aux = <aux_quadrant_data_t*>cell.p.user_data
 
-      if cell_aux.adapted != 0:
-        adapt_idx += 1
+      if cell_aux.rank == rank:
+        if cell_aux.adapted == 1:
+          refine_idx += 1
+        elif cell_aux.adapted == -1:
+          coarse_idx += 1
+        else:
+          move_idx += 1
 
-  return adapt_idx
+  num_moved[0] = move_idx
+  num_adapted[0] = coarse_idx + refine_idx // 8
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # @cython.boundscheck(False)
 # @cython.wraparound(False)
 cdef _sync_local(
+  npy.npy_int32 rank,
   p8est_tree_t* trees,
   npy.npy_int32 first_local_tree,
   npy.npy_int32 last_local_tree,
@@ -608,6 +690,8 @@ cdef _sync_local(
   npy.npy_int8[:,:,:] cell_adj_subface,
   npy.npy_int8[:,:,:] cell_adj_order,
   npy.npy_int8[:,:,:] cell_adj_level,
+  npy.npy_int32[:] leaf_moved_from,
+  npy.npy_int32[:] leaf_moved_to,
   npy.npy_int8[:] leaf_adapted,
   npy.npy_int32[:,:,:,:] leaf_adapted_fine,
   npy.npy_int32[:] leaf_adapted_coarse ):
@@ -624,10 +708,12 @@ cdef _sync_local(
     npy.npy_int32 j = 0
     npy.npy_int32 k = 0
     npy.npy_int32 m = 0
+    npy.npy_int32 n = 0
     npy.npy_int32 q = 0
 
     npy.npy_int32 root_idx = 0
     npy.npy_int32 adapt_idx = 0
+    npy.npy_int32 move_idx = 0
     npy.npy_int8 max_prev_adapt = 0
 
     npy.npy_int32 cell_idx = 0
@@ -654,9 +740,7 @@ cdef _sync_local(
       # now that the indices are known, and thus able to map previous quadrants
       if cell_aux.adapted == 1:
         # refined
-        leaf_adapted[adapt_idx] = 1
-
-        #  which octant of the replaced cell
+        # which octant of the replaced cell
         m = (
           (cell_aux.replaced_idx[1] >= 0)
           + 2*(cell_aux.replaced_idx[2] >= 0)
@@ -666,17 +750,20 @@ cdef _sync_local(
           + 6*(cell_aux.replaced_idx[6] >= 0)
           + 7*(cell_aux.replaced_idx[7] >= 0) )
 
-        if m == 0:
-          prev_cell_idx = cell_aux.replaced_idx[0]
-          leaf_adapted_coarse[adapt_idx] = prev_cell_idx
-
         k = m // 4
-        m %= 4
-        j = m // 2
-        i = m % 2
+        n = m % 4
+        j = n // 2
+        i = n % 2
 
         leaf_adapted_fine[adapt_idx, k, j, i] = cell_idx
-        adapt_idx += 1
+        # print(f"{cell_idx}, adapt= {adapt_idx}, refine: {i},{j},{k}")
+
+        if m == 7:
+          leaf_adapted[adapt_idx] = 1
+          prev_cell_idx = cell_aux.replaced_idx[7]
+          leaf_adapted_coarse[adapt_idx] = prev_cell_idx
+          # print(f"{cell_idx}, adapt= {adapt_idx}, replaced: {prev_cell_idx}")
+          adapt_idx += 1
 
       elif cell_aux.adapted == -1:
         # coarsened
@@ -693,13 +780,18 @@ cdef _sync_local(
         prev_fine_idx[1,1,0] = cell_aux.replaced_idx[6]
         prev_fine_idx[1,1,1] = cell_aux.replaced_idx[7]
 
+        # print(f"{cell_idx}, adapt= {adapt_idx}, coarse: {prev_fine_idx}")
         adapt_idx += 1
 
-      else:
-        #??
-        pass
+      elif cell_aux.rank == rank:
+        prev_cell_idx = cell_aux.idx
+        leaf_moved_from[move_idx] = prev_cell_idx
+        leaf_moved_to[move_idx] = cell_idx
+        # print(f"{cell_idx}, move= {move_idx}: {prev_cell_idx}")
+        move_idx += 1
 
       # reset auxiliary information
+      cell_aux.rank = rank
       cell_aux.idx = cell_idx
       cell_aux.adapted = 0
 
@@ -809,6 +901,7 @@ cdef void _init_quadrant(
   p8est_quadrant_t* quadrant ) nogil:
   # print(f"+ quadrant: root= {root_idx}, level= {quadrant.level}, x= {quadrant.x}, y=, {quadrant.y}, data= {<int>quadrant.p.user_data})")
   cdef aux_quadrant_data_t* cell_aux = <aux_quadrant_data_t*>quadrant.p.user_data
+  cell_aux.rank = -1
   cell_aux.idx = -1
   cell_aux.adapt = 0
   cell_aux.weight = 1
@@ -870,6 +963,7 @@ cdef void _replace_quadrants(
 
       cell_aux.replaced_idx[k] = _cell_aux.idx
 
+    cell_aux.rank = _cell_aux.rank
     cell_aux.adapt = prev_adapt + 1
     cell_aux.weight = prev_weight
 
@@ -889,6 +983,7 @@ cdef void _replace_quadrants(
       cell = incoming[k]
 
       cell_aux = <aux_quadrant_data_t*>cell.p.user_data
+      cell_aux.rank = _cell_aux.rank
       cell_aux.adapt = prev_adapt - 1
       cell_aux.weight = prev_weight
 

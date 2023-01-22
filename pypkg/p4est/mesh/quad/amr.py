@@ -141,13 +141,26 @@ class QuadAMR(P4est):
       where = where )
 
   #-----------------------------------------------------------------------------
-  def adapt(self) -> tuple[QuadAdapted, QuadAdapted]:
+  def adapt(self) -> tuple[QuadAdapted, QuadAdapted, QuadAdapted]:
     """Applies refinement, coarsening, and then balances based on ``leaf_info.adapt``.
 
     Returns
     -------
+    moved :
     refined :
     coarsened :
     """
 
-    return super().adapt()
+    return self._adapt()
+
+  #-----------------------------------------------------------------------------
+  def partition(self) -> tuple[jagged_array[NP, QuadLocalInfo], jagged_array[NP, QuadLocalInfo]]:
+    """Applies partitioning based on ``local.weight``.
+
+    Returns
+    -------
+    send_to :
+    receive_from :
+    """
+
+    return self._partition()

@@ -404,6 +404,7 @@ cdef extern from "p8est_extended.h" nogil:
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ctypedef struct aux_quadrant_data_t:
+  np.npy_int32 rank
   np.npy_int32 idx
   np.npy_int8 adapt
   np.npy_int32 weight
@@ -453,11 +454,11 @@ cdef class P8est:
   #-----------------------------------------------------------------------------
   cdef _init(P8est self)
 
-  #-----------------------------------------------------------------------------
-  cdef void _adapt(P8est self) nogil
+  # #-----------------------------------------------------------------------------
+  # cdef void _adapt(P8est self) nogil
+
+  # #-----------------------------------------------------------------------------
+  # cdef void _partition(P8est self) nogil
 
   #-----------------------------------------------------------------------------
-  cdef void _partition(P8est self) nogil
-
-  #-----------------------------------------------------------------------------
-  cdef _sync_local(P8est self)
+  cdef _sync_info(P8est self)

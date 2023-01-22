@@ -64,6 +64,40 @@ def mpi_ghost_exchange(grid, local_value):
   return np.concatenate([local_value, recvbuf])
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def mpi_partition_exchange(comm, tx, rx, local_value):
+
+  # exchange process neighbor information
+  sendbuf = np.ascontiguousarray(local_value[tx.flat.idx])
+  recvbuf = np.empty((len(rx.flat),), dtype = local_value.dtype)
+
+  mpi_datatype = from_numpy_dtype(local_value.dtype)
+
+  comm.Alltoallv(
+    sendbuf = [
+      sendbuf, (
+        # counts
+        tx.row_counts,
+        # displs
+        tx.row_idx[:-1] ),
+      mpi_datatype ],
+    recvbuf = [
+      recvbuf, (
+        rx.row_counts,
+        rx.row_idx[:-1] ),
+      mpi_datatype ])
+
+  tx0 = tx.row_idx[comm.rank]
+  tx1 = tx.row_idx[comm.rank+1]
+
+  rx0 = rx.row_idx[comm.rank]
+  rx1 = rx.row_idx[comm.rank+1]
+
+  print(f"  {grid.comm.rank}: tx= [{tx0:,}, {tx1:,}), rx= [{rx0:,}, {rx1:,})")
+  recvbuf[rx0:rx1] = sendbuf[tx0:tx1]
+
+  return recvbuf
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def plot_grid(grid, scalars = None):
   scale = 0.99
   _scale = 1.0 - scale
@@ -113,6 +147,7 @@ for p in range(4):
 
 
 for r in range(6):
+  print(f"{grid.comm.rank} len(local)= {len(grid.local):,}")
 
   points = trans_cart_to_sphere(grid.coord(offset = (0.5, 0.5)))
   local_value = f(*points[:,:2].transpose(1,0), grid = False)
@@ -128,15 +163,28 @@ for r in range(6):
   if not np.any(refine):
     break
 
-  refined, coarsened = grid.adapt()
-  print(f"{grid.comm.rank} refined: {refined.replaced_idx.shape} -> {refined.idx.shape} (total= {len(grid.local):,})")
+  moved, refined, coarsened = grid.adapt()
+  print(f"  {grid.comm.rank} refined: {refined.src.shape} -> {refined.dst.shape} (total= {len(grid.local):,})")
 
+  _local_value = -np.ones(len(grid.local), dtype = local_value.dtype)
+  _local_value[moved.dst.idx] = local_value[moved.src.idx]
+  _local_value[refined.dst.idx] = local_value[refined.src.idx,None,None]
+  local_value = _local_value
+
+  grid.local.weight = (local_value * 255).astype(np.int32)
+
+  w0 = np.sum(grid.local.weight)
+  tx, rx = grid.partition()
+  w1 = np.sum(grid.local.weight)
+
+  print(f"  {grid.comm.rank} partitioned: weight= {w0:,} -> {w1:,}, tx= {tx.row_counts}, rx= {rx.row_counts}")
+  local_value = mpi_partition_exchange(grid.comm, tx, rx, local_value)
+
+  sys.stdout.flush()
+  grid.comm.barrier()
 
 points = trans_cart_to_sphere(grid.coord(offset = (0.5,0.5)))
 local_value = f(*points[:,:2].transpose(1,0), grid = False)
 
 plot_grid(grid, scalars = local_value)
-
-
-
 
