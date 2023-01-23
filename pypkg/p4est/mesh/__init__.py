@@ -1,6 +1,3 @@
-from .info import (
-  Info,
-  InfoUpdate)
 from .quad import (
   QuadMesh,
   QuadAMR,

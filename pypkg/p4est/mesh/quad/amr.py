@@ -21,7 +21,6 @@ if TYPING:
     CoordRel,
     CoordAbs)
 
-from collections import namedtuple
 from collections.abc import (
   Iterable,
   Sequence,
@@ -29,9 +28,7 @@ from collections.abc import (
 import numpy as np
 from mpi4py import MPI
 
-from ...utils import jagged_array
-from ..info import (
-  InfoUpdate )
+from ...utils import jagged_array, InfoUpdate
 from .info import (
   QuadLocalInfo,
   QuadGhostInfo )
@@ -185,9 +182,9 @@ class QuadAMR(P4est):
 
   #-----------------------------------------------------------------------------
   def adapt(self) -> tuple[
-    InfoUpdate[NAM, NAM],
-    InfoUpdate[(NAF,2,2), NAF],
-    InfoUpdate[NAC, (NAC,2,2)]]:
+    InfoUpdate[QuadLocalInfo[NAM], QuadLocalInfo[NAM]],
+    InfoUpdate[QuadLocalInfo[NAF,2,2], QuadLocalInfo[NAF]],
+    InfoUpdate[QuadLocalInfo[NAC], QuadLocalInfo[NAC,2,2]]]:
     """Applies refinement, coarsening, and then balances based on ``leaf_info.adapt``.
 
     Returns
@@ -215,8 +212,8 @@ class QuadAMR(P4est):
 
   #-----------------------------------------------------------------------------
   def partition(self) -> tuple[
-    jagged_array[NP, HexLocalInfo[NTX]],
-    jagged_array[NP, HexLocalInfo[NRX]]]:
+    jagged_array[NP, QuadLocalInfo[NTX]],
+    jagged_array[NP, QuadLocalInfo[NRX]]]:
     """Applies partitioning based on ``local.weight``.
 
     Returns

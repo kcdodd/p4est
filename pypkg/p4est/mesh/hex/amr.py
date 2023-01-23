@@ -21,7 +21,6 @@ if TYPING:
     CoordRel,
     CoordAbs)
 
-from collections import namedtuple
 from collections.abc import (
   Iterable,
   Sequence,
@@ -29,9 +28,7 @@ from collections.abc import (
 import numpy as np
 from mpi4py import MPI
 
-from ...utils import jagged_array
-from ..info import (
-  InfoUpdate )
+from ...utils import jagged_array, InfoUpdate
 from .info import (
   HexLocalInfo,
   HexGhostInfo )
@@ -168,9 +165,9 @@ class HexAMR(P8est):
 
   #-----------------------------------------------------------------------------
   def adapt(self) -> tuple[
-    InfoUpdate[NAM, NAM],
-    InfoUpdate[(NAF,2,2,2), NAF],
-    InfoUpdate[NAC, (NAC,2,2,2)]]:
+    InfoUpdate[HexLocalInfo[NAM], HexLocalInfo[NAM]],
+    InfoUpdate[HexLocalInfo[NAF,2,2,2], HexLocalInfo[NAF]],
+    InfoUpdate[HexLocalInfo[NAC], HexLocalInfo[NAC,2,2,2]]]:
     """Applies refinement, coarsening, and then balances based on ``local.adapt``.
 
     Returns

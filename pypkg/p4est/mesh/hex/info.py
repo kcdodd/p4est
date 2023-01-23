@@ -1,4 +1,4 @@
-from ..info import Info, InfoField
+from ...utils import Info, InfoField
 import numpy as np
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

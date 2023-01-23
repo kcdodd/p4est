@@ -11,8 +11,7 @@ import numpy as np
 from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
 
-from p4est.utils import jagged_array
-from p4est.mesh.info import InfoUpdate
+from p4est.utils import jagged_array, InfoUpdate
 from p4est.mesh.hex import (
   HexLocalInfo,
   HexGhostInfo,
@@ -350,7 +349,7 @@ cdef class P8est:
       trees = <p8est_tree_t*>self._p4est.trees.array,
       first_local_tree = self._p4est.first_local_tree,
       last_local_tree = self._p4est.last_local_tree,
-      weight = self._local._weight )
+      weight = self._local.weight )
 
     with nogil:
       p8est_partition_ext(

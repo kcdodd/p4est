@@ -19,25 +19,28 @@ from ...utils import (
   unique_full)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def quad_cell_nodes(cells, vert_nodes):
+def quad_cell_nodes(
+  cells : Cells,
+  vert_nodes : VertNodes ) \
+  -> tuple[VertNodes, CellNodes, NodeCells, NodeCellsInv]:
   """Derives topological nodes between quad. cells
 
   Parameters
   ----------
-  cells : ndarray with shape = (NC, 2, 2), dtype = np.int32
+  cells :
     Quadrilateral cells, each defined by the indices of its 4 vertices.
-  vert_nodes : ndarray with shape = (NV,), dtype = np.int32
+  vert_nodes :
     The topological node associated with each vertex.
 
   Returns
   -------
-  vert_nodes : ndarray with shape = (NV,), dtype = np.int32
+  vert_nodes :
     Updated ``vert_nodes`` with additional nodes for any detected mesh
     singularities.
-  cell_nodes : ndarray with shape = (NC, 2, 2), dtype = np.int32
+  cell_nodes :
     Mapping of quadrilateral cells to the indices of their (up to) 4 nodes.
-  node_cells : jagged_array, dtype = np.int32
-  node_cells_inv : jagged_array, dtype = np.int32
+  node_cells :
+  node_cells_inv :
     node_cells_inv.row_idx == node_cells.row_idx
   """
 
@@ -134,19 +137,19 @@ def quad_cell_nodes(cells, vert_nodes):
     node_cells_inv )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def quad_cell_adj(cell_nodes):
+def quad_cell_adj(cell_nodes : CellNodes) -> tuple[CellAdj, CellAdjFace]:
   """Derives topological adjacency between quad. cells accross shared faces
 
   Parameters
   ----------
-  cell_nodes : ndarray with shape = (NC, 2, 2), dtype = np.int32
+  cell_nodes :
     Quadrilateral cells, each defined by the indices of its 4 vertices.
 
   Returns
   -------
-  cell_adj : ndarray with shape (NC, 2, 2) and dtype np.int32
+  cell_adj :
     Topological connectivity to other cells accross each face.
-  cell_adj_face : ndarray with shape (NC, 2, 2) and dtype np.int8
+  cell_adj_face :
     Topological order of the faces of each connected cell.
 
   """
