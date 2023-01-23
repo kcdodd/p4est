@@ -6,7 +6,17 @@ if TYPING:
   from typing import (
     Union,
     Literal )
-  from ...typing import N, NP, M, NV, NN, NE, NC, Where
+  from ...typing import (
+    NP,
+    NTX,
+    NRX,
+    NL,
+    NG,
+    NM,
+    NAM,
+    NAF,
+    NAC,
+    Where )
   from .typing import (
     CoordRel,
     CoordAbs)
@@ -20,10 +30,11 @@ import numpy as np
 from mpi4py import MPI
 
 from ...utils import jagged_array
-from ...core._info import (
+from ..info import (
+  InfoUpdate )
+from .info import (
   HexLocalInfo,
   HexGhostInfo )
-from ...core._adapted import HexAdapted
 from ...core._p8est import P8est
 from .base import HexMesh
 
@@ -76,14 +87,14 @@ class HexAMR(P8est):
 
   #-----------------------------------------------------------------------------
   @property
-  def local(self) -> HexLocalInfo:
+  def local(self) -> HexLocalInfo[NL]:
     """Cells local to the process ``comm.rank``.
     """
     return self._local
 
   #-----------------------------------------------------------------------------
   @property
-  def ghost(self) -> jagged_array[NP, HexGhostInfo]:
+  def ghost(self) -> jagged_array[NP, HexGhostInfo[NG]]:
     """Cells outside the process boundary (*not* local) that neighbor one or more
     local cells, grouped by the rank of the *ghost's* local process.
 
@@ -123,7 +134,7 @@ class HexAMR(P8est):
 
   #-----------------------------------------------------------------------------
   @property
-  def mirror(self) -> jagged_array[NP, np.ndarray[np.dtype[np.integer]]]:
+  def mirror(self) -> jagged_array[NP, np.ndarray[NM, np.dtype[np.integer]]]:
     """Indicies into ``local`` for cells that touch the parallel boundary
     of each rank.
     """
@@ -156,7 +167,10 @@ class HexAMR(P8est):
       where = where )
 
   #-----------------------------------------------------------------------------
-  def adapt(self) -> tuple[HexAdapted, HexAdapted, HexAdapted]:
+  def adapt(self) -> tuple[
+    InfoUpdate[NAM, NAM],
+    InfoUpdate[(NAF,2,2,2), NAF],
+    InfoUpdate[NAC, (NAC,2,2,2)]]:
     """Applies refinement, coarsening, and then balances based on ``local.adapt``.
 
     Returns
@@ -184,7 +198,9 @@ class HexAMR(P8est):
     return self._adapt()
 
   #-----------------------------------------------------------------------------
-  def partition(self) -> tuple[jagged_array[NP, HexLocalInfo], jagged_array[NP, HexLocalInfo]]:
+  def partition(self) -> tuple[
+    jagged_array[NP, HexLocalInfo[NTX]],
+    jagged_array[NP, HexLocalInfo[NRX]]]:
     """Applies partitioning based on ``local.weight``.
 
     Returns

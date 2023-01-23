@@ -10,6 +10,7 @@ API Reference
   hex.base
   hex.amr
   hex.prim
+  mesh
   core
   geom
   utils

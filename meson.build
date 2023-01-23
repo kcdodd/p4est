@@ -224,7 +224,7 @@ if target_pypkg
 
 
   cython_args = [
-    '-3',
+    '--3str',
     '--fast-fail',
     '-X embedsignature=True' ]
 

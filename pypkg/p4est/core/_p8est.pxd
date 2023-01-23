@@ -3,9 +3,6 @@ from p4est.core._sc cimport (
   sc_MPI_Comm,
   sc_array_t,
   sc_mempool_t )
-from p4est.core._info cimport (
-  HexLocalInfo,
-  HexGhostInfo )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # NOTE: Some important definitions are not in p8est.h
@@ -444,7 +441,7 @@ cdef class P8est:
   cdef public _comm
   cdef public np.npy_int8 _max_level
 
-  cdef public HexLocalInfo _local
+  cdef public _local
   cdef public _ghost
   cdef public _mirror
 

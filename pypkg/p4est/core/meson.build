@@ -11,16 +11,12 @@ install_files = [
   '__init__.pxd',
   '_utils.pxd',
   '_sc.pxd',
-  '_info.pxd',
-  '_adapted.pxd',
   '_p4est.pxd',
   '_p8est.pxd' ]
 
 modules = [
   '_utils',
   '_sc',
-  '_info',
-  '_adapted',
   '_p4est',
   '_p8est' ]
 

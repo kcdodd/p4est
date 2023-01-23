@@ -13,4 +13,7 @@ from .prim import (
   icosahedron_shell )
 from .topo import (
   hex_cell_nodes )
+from .info import (
+  HexLocalInfo,
+  HexGhostInfo )
 from .amr import HexAMR

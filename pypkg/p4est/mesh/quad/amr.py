@@ -6,7 +6,17 @@ if TYPING:
   from typing import (
     Union,
     Literal )
-  from ...typing import N, M, NP, NV, NN, NC, Where
+  from ...typing import (
+    NP,
+    NTX,
+    NRX,
+    NL,
+    NG,
+    NM,
+    NAM,
+    NAF,
+    NAC,
+    Where )
   from .typing import (
     CoordRel,
     CoordAbs)
@@ -20,10 +30,11 @@ import numpy as np
 from mpi4py import MPI
 
 from ...utils import jagged_array
-from ...core._info import (
+from ..info import (
+  InfoUpdate )
+from .info import (
   QuadLocalInfo,
   QuadGhostInfo )
-from ...core._adapted import QuadAdapted
 from ...core._p4est import P4est
 from .base import QuadMesh
 
@@ -93,14 +104,14 @@ class QuadAMR(P4est):
 
   #-----------------------------------------------------------------------------
   @property
-  def local(self) -> QuadLocalInfo:
+  def local(self) -> QuadLocalInfo[NL]:
     """Cells local to the process ``comm.rank``.
     """
     return self._local
 
   #-----------------------------------------------------------------------------
   @property
-  def ghost(self) -> jagged_array[NP, QuadGhostInfo]:
+  def ghost(self) -> jagged_array[NP, QuadGhostInfo[NG]]:
     """Cells outside the process boundary (*not* local) that neighbor one or more
     local cells, grouped by the rank of the *ghost's* local process.
 
@@ -140,7 +151,7 @@ class QuadAMR(P4est):
 
   #-----------------------------------------------------------------------------
   @property
-  def mirror(self) -> jagged_array[NP, np.ndarray[np.dtype[np.integer]]]:
+  def mirror(self) -> jagged_array[NP, np.ndarray[NM, np.dtype[np.integer]]]:
     """Indicies into ``local`` for cells that touch the parallel boundary
     of each rank.
     """
@@ -173,7 +184,10 @@ class QuadAMR(P4est):
       where = where )
 
   #-----------------------------------------------------------------------------
-  def adapt(self) -> tuple[QuadAdapted, QuadAdapted, QuadAdapted]:
+  def adapt(self) -> tuple[
+    InfoUpdate[NAM, NAM],
+    InfoUpdate[(NAF,2,2), NAF],
+    InfoUpdate[NAC, (NAC,2,2)]]:
     """Applies refinement, coarsening, and then balances based on ``leaf_info.adapt``.
 
     Returns
@@ -200,7 +214,9 @@ class QuadAMR(P4est):
     return self._adapt()
 
   #-----------------------------------------------------------------------------
-  def partition(self) -> tuple[jagged_array[NP, QuadLocalInfo], jagged_array[NP, QuadLocalInfo]]:
+  def partition(self) -> tuple[
+    jagged_array[NP, HexLocalInfo[NTX]],
+    jagged_array[NP, HexLocalInfo[NRX]]]:
     """Applies partitioning based on ``local.weight``.
 
     Returns

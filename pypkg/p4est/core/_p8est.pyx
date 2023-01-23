@@ -10,12 +10,14 @@ cimport numpy as npy
 import numpy as np
 from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
+
 from p4est.utils import jagged_array
-from p4est.mesh.hex import HexMesh
-from p4est.core._info import (
+from p4est.mesh.info import InfoUpdate
+from p4est.mesh.hex import (
   HexLocalInfo,
-  HexGhostInfo )
-from p4est.core._adapted import HexAdapted
+  HexGhostInfo,
+  HexMesh )
+
 from p4est.core._utils cimport (
   ndarray_from_ptr )
 from p4est.core._sc cimport (
@@ -550,15 +552,15 @@ cdef class P8est:
     coarse_idx = leaf_adapted_coarse[coarsened_mask]
     coarsened_idx = leaf_adapted_fine[coarsened_mask]
 
-    moved = HexAdapted(
+    moved = InfoUpdate(
       dst = self._local[leaf_moved_to],
       src = prev_local[leaf_moved_from] )
 
-    refined = HexAdapted(
+    refined = InfoUpdate(
       dst = self._local[fine_idx],
       src = prev_local[refined_idx] )
 
-    coarsened = HexAdapted(
+    coarsened = InfoUpdate(
       dst = self._local[coarse_idx],
       src = prev_local[coarsened_idx] )
 

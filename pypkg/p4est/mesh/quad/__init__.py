@@ -16,4 +16,7 @@ from .prim import (
   icosahedron)
 from .topo import (
   quad_cell_nodes)
+from .info import (
+  QuadLocalInfo,
+  QuadGhostInfo )
 from .amr import QuadAMR

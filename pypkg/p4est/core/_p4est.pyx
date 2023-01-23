@@ -9,18 +9,19 @@ cimport numpy as npy
 import numpy as np
 from mpi4py import MPI
 from mpi4py.MPI cimport MPI_Comm, Comm
+
 from p4est.utils import jagged_array
-from p4est.mesh.quad import QuadMesh
-from p4est.mesh.quad import quad_cell_nodes
-from p4est.core._info import (
+from p4est.mesh.info import InfoUpdate
+from p4est.mesh.quad import (
+  QuadMesh,
   QuadLocalInfo,
-  QuadGhostInfo )
-from p4est.core._adapted import QuadAdapted
+  QuadGhostInfo,
+  quad_cell_nodes )
+
 from p4est.core._utils cimport (
   ndarray_from_ptr )
 from p4est.core._sc cimport (
   ndarray_from_sc_array )
-
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4estConnectivity:
@@ -507,15 +508,15 @@ cdef class P4est:
     coarse_idx = leaf_adapted_coarse[coarsened_mask]
     coarsened_idx = leaf_adapted_fine[coarsened_mask]
 
-    moved = QuadAdapted(
+    moved = InfoUpdate(
       dst = self._local[leaf_moved_to],
       src = prev_info[leaf_moved_from] )
 
-    refined = QuadAdapted(
+    refined = InfoUpdate(
       dst = self._local[fine_idx],
       src = prev_info[refined_idx] )
 
-    coarsened = QuadAdapted(
+    coarsened = InfoUpdate(
       dst = self._local[coarse_idx],
       src = prev_info[coarsened_idx] )
 
