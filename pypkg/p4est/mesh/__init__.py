@@ -1,5 +1,7 @@
 from .quad import (
   QuadMesh,
+  QuadLocalInfo,
+  QuadGhostInfo,
   QuadAMR,
   QuadGeometry,
   QuadLinear,
@@ -7,6 +9,8 @@ from .quad import (
   QuadCartesianSpherical )
 from .hex import (
   HexMesh,
+  HexLocalInfo,
+  HexGhostInfo,
   HexAMR,
   HexGeometry,
   HexLinear,

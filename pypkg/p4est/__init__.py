@@ -1,6 +1,9 @@
 from pathlib import Path
 import ctypes
-
+from .utils import (
+  InfoField,
+  Info,
+  InfoUpdate)
 from .geom import (
   trans_sphere_to_cart,
   trans_cart_to_sphere,
@@ -18,15 +21,17 @@ from .mesh import (
   QuadLinear,
   QuadSpherical,
   QuadCartesianSpherical,
+  QuadLocalInfo,
+  QuadGhostInfo,
+  QuadAMR,
   HexMesh,
   HexGeometry,
   HexLinear,
   HexSpherical,
-  HexCartesianSpherical )
-
-from .mesh import (
-  QuadAMR,
-  HexAMR )
+  HexCartesianSpherical,
+  HexLocalInfo,
+  HexGhostInfo,
+  HexAMR)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def get_include():

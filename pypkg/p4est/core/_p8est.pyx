@@ -543,7 +543,7 @@ cdef class P8est:
     p8est_ghost_destroy(ghost)
 
     refined_mask = leaf_adapted > 0
-    coarsened_mask = ~refined_mask
+    coarsened_mask = leaf_adapted < 0
 
     fine_idx = leaf_adapted_fine[refined_mask]
     refined_idx = leaf_adapted_coarse[refined_mask]
@@ -1014,10 +1014,17 @@ cdef int _coarsen_quadrants(
   p4est_topidx_t root_idx,
   p8est_quadrant_t* quadrants[] ) nogil:
 
-  cdef aux_quadrant_data_t* cell_aux
+  cdef:
+    p8est_quadrant_t* quad
+    aux_quadrant_data_t* cell_aux
 
   for k in range(8):
-    cell_aux = <aux_quadrant_data_t*>quadrants[k].p.user_data
+    quad = quadrants[k]
+
+    if quad == NULL:
+      break
+
+    cell_aux = <aux_quadrant_data_t*>quad.p.user_data
 
     if cell_aux.adapt >= 0:
       return 0
