@@ -1,0 +1,878 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html" /><link rel="search" title="Search" href="../../../../search.html" />
+
+    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
+        <title>p4est.mesh.hex.base - p4est 0.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx_paramlinks.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/tables.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #d2dae8;
+  --color-code-foreground: #1c1d1f;
+  --color-foreground-primary: #31363B;
+  --color-foreground-muted: #454545;
+  --color-foreground-secondary: #292727;
+  --color-foreground-border: #BAB9B8;
+  --color-background-primary: #EFF0F1;
+  --color-background-secondary: #d6e6de;
+  --color-background-border: #b1b5b9;
+  --color-inline-code-background: #e7f9f0;
+  --color-brand-primary: #39845f;
+  --color-brand-content: #39845f;
+  --color-highlighted-background: #3daee90;
+  --color-guilabel-background: #30506b80;
+  --color-guilabel-border: #1c466a80;
+  --color-highlight-on-target: #e2d0b7;
+  --color-problematic: #875e05;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #282c34;
+  --color-code-foreground: #c9cdd1;
+  --color-foreground-primary: #eff0f1;
+  --color-foreground-muted: #736f6f;
+  --color-foreground-secondary: #a7aaad;
+  --color-foreground-border: #76797c;
+  --color-background-primary: #373b39;
+  --color-background-secondary: #4f5955;
+  --color-background-border: #51575d;
+  --color-inline-code-background: #424745;
+  --color-brand-primary: #6af4af;
+  --color-brand-content: #6af4af;
+  --color-highlighted-background: #3daee90;
+  --color-guilabel-background: #30506b80;
+  --color-guilabel-border: #1c466a80;
+  --color-highlight-on-target: #7c5418;
+  --color-problematic: #e6c07b;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #282c34;
+  --color-code-foreground: #c9cdd1;
+  --color-foreground-primary: #eff0f1;
+  --color-foreground-muted: #736f6f;
+  --color-foreground-secondary: #a7aaad;
+  --color-foreground-border: #76797c;
+  --color-background-primary: #373b39;
+  --color-background-secondary: #4f5955;
+  --color-background-border: #51575d;
+  --color-inline-code-background: #424745;
+  --color-brand-primary: #6af4af;
+  --color-brand-content: #6af4af;
+  --color-highlighted-background: #3daee90;
+  --color-guilabel-background: #30506b80;
+  --color-guilabel-border: #1c466a80;
+  --color-highlight-on-target: #7c5418;
+  --color-problematic: #e6c07b;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../../index.html"><div class="brand">p4est 0.0.0</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand centered" href="../../../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../../../../_static/logo2.png" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">p4est 0.0.0</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/quad.base.html">Quad Mesh <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.quad</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/quad.amr.html">Quad AMR <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.quad.amr</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/quad.prim.html">Quad Primitives <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.quad.prim</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/hex.base.html">Hex Mesh <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.hex</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/hex.amr.html">Hex AMR <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.hex.amr</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/hex.prim.html">Hex Primitives <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.hex.prim</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/core.html">Core <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.core</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/geom.html">Geometry <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.geom</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/utils.html">Utilities <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/typing.html">Typing <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.typing</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <h1>Source code for p4est.mesh.hex.base</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Enable postponed evaluation of annotations</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">partis.utils</span> <span class="kn">import</span> <span class="n">TYPING</span>
+
+<span class="k">if</span> <span class="n">TYPING</span><span class="p">:</span>
+  <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Union</span><span class="p">,</span>
+    <span class="n">Literal</span> <span class="p">)</span>
+  <span class="kn">from</span> <span class="nn">...typing</span> <span class="kn">import</span> <span class="n">N</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">NV</span><span class="p">,</span> <span class="n">NN</span><span class="p">,</span> <span class="n">NE</span><span class="p">,</span> <span class="n">NC</span><span class="p">,</span> <span class="n">Where</span>
+  <span class="kn">from</span> <span class="nn">.typing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Vertices</span><span class="p">,</span>
+    <span class="n">VertGeom</span><span class="p">,</span>
+    <span class="n">VertNodes</span><span class="p">,</span>
+    <span class="n">Cells</span><span class="p">,</span>
+    <span class="n">CellAdj</span><span class="p">,</span>
+    <span class="n">CellAdjFace</span><span class="p">,</span>
+    <span class="n">CellNodes</span><span class="p">,</span>
+    <span class="n">NodeCells</span><span class="p">,</span>
+    <span class="n">NodeCellsInv</span><span class="p">,</span>
+    <span class="n">NodeEdgeCounts</span><span class="p">,</span>
+    <span class="n">CellEdges</span><span class="p">,</span>
+    <span class="n">EdgeCells</span><span class="p">,</span>
+    <span class="n">EdgeCellsInv</span><span class="p">,</span>
+    <span class="n">EdgeCellCounts</span><span class="p">,</span>
+    <span class="n">CoordRel</span><span class="p">,</span>
+    <span class="n">CoordAbs</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">copy</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">...utils</span> <span class="kn">import</span> <span class="p">(</span>
+  <span class="n">jagged_array</span> <span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.geom</span> <span class="kn">import</span> <span class="p">(</span>
+  <span class="n">HexGeometry</span><span class="p">,</span>
+  <span class="n">HexLinear</span> <span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.topo</span> <span class="kn">import</span> <span class="p">(</span>
+  <span class="n">hex_cell_nodes</span><span class="p">,</span>
+  <span class="n">hex_cell_edges</span><span class="p">,</span>
+  <span class="n">hex_cell_adj</span> <span class="p">)</span>
+
+<span class="c1">#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<div class="viewcode-block" id="HexMesh"><a class="viewcode-back" href="../../../../api/hex.base.html#p4est.mesh.hex.base.HexMesh">[docs]</a><span class="k">class</span> <span class="nc">HexMesh</span><span class="p">:</span>
+<span class="w">  </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Base container for hexahedral mesh</span>
+
+<span class="sd">  Parameters</span>
+<span class="sd">  ----------</span>
+<span class="sd">  verts :</span>
+<span class="sd">    Position of each vertex.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.vertices`)</span>
+<span class="sd">    Indexing is ``[vertex, (x,y,z)]``</span>
+<span class="sd">  cells :</span>
+<span class="sd">    Mapping of hexahedral cells to the indices of their 8 vertices.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.tree_to_vertex`)</span>
+<span class="sd">  vert_nodes :</span>
+<span class="sd">    The topological node associated with each vertex, causing cells to be connected</span>
+<span class="sd">    by having vertices associated with the same node in addition to directly</span>
+<span class="sd">    sharing vertices.</span>
+<span class="sd">    A value of ``-1`` is used to indicate independent vertices.</span>
+<span class="sd">    If not given, each vertex is assumed to be independent, and cells are only</span>
+<span class="sd">    connected by shared vertices.</span>
+<span class="sd">  geoms :</span>
+<span class="sd">    The available geometries that may be referenced by &#39;vert_geom&#39;.</span>
+<span class="sd">    (default: [:class:`~p4est.mesh.hex.geom.HexLinear`])</span>
+<span class="sd">  vert_geom :</span>
+<span class="sd">    Indices into &#39;geoms&#39; to get the geometry associated with each vertex.</span>
+<span class="sd">    (default: zeros(:class:`~p4est.typing.NV`))</span>
+
+<span class="sd">  Notes</span>
+<span class="sd">  -----</span>
+
+<span class="sd">  .. figure:: ../img/topology.svg.png</span>
+<span class="sd">    :width: 90%</span>
+<span class="sd">    :align: center</span>
+
+<span class="sd">    Topological elements.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="n">verts</span> <span class="p">:</span> <span class="n">Vertices</span><span class="p">,</span>
+    <span class="n">cells</span> <span class="p">:</span> <span class="n">Cells</span><span class="p">,</span>
+    <span class="n">vert_nodes</span> <span class="p">:</span> <span class="n">VertNodes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">geoms</span> <span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">HexGeometry</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">vert_geom</span> <span class="p">:</span> <span class="n">VertGeom</span> <span class="o">=</span> <span class="kc">None</span> <span class="p">):</span>
+
+    <span class="n">verts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span>
+      <span class="n">verts</span><span class="p">,</span>
+      <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span> <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="n">cells</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span>
+      <span class="n">cells</span><span class="p">,</span>
+      <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span> <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1">#...........................................................................</span>
+    <span class="k">if</span> <span class="n">vert_nodes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">vert_nodes</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="n">vert_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span>
+      <span class="n">vert_nodes</span><span class="p">,</span>
+      <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span> <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+      <span class="n">vert_nodes</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span>
+      <span class="ow">and</span> <span class="n">vert_nodes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span> <span class="p">):</span>
+
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;vert_nodes&#39; must have shape (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span><span class="si">}</span><span class="s2">,): </span><span class="si">{</span><span class="n">vert_nodes</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">vert_nodes</span><span class="p">)</span>
+    <span class="n">_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">vert_nodes</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">_min</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">_max</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;vert_nodes&#39; values must be in the range [-1,</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s2">]: [</span><span class="si">{</span><span class="n">_min</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">_max</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+
+    <span class="c1">#...........................................................................</span>
+    <span class="k">if</span> <span class="n">geoms</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">geoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">HexLinear</span><span class="p">()]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geoms</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+      <span class="c1"># raise ValueError(f&quot;&#39;geoms&#39; must be list of HexGeometry: {type(geoms)}&quot;)</span>
+      <span class="n">geoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">geoms</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">geoms</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;geoms&#39; must have at least one HexGeometry&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">geom</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">geoms</span><span class="p">):</span>
+      <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">HexGeometry</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;geoms&#39; must be list of HexGeometry: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># TODO: remove when implementing inhomogenous geometry</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">geoms</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Inhomogenous geometry not implemented&quot;</span><span class="p">)</span>
+
+    <span class="c1">#...........................................................................</span>
+    <span class="k">if</span> <span class="n">vert_geom</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">vert_geom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="n">vert_geom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span>
+      <span class="n">vert_geom</span><span class="p">,</span>
+      <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span> <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+      <span class="n">vert_geom</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span>
+      <span class="ow">and</span> <span class="n">vert_geom</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span> <span class="p">):</span>
+
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;vert_geom&#39; must have shape (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span><span class="si">}</span><span class="s2">,): </span><span class="si">{</span><span class="n">vert_geom</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">vert_geom</span><span class="p">)</span>
+    <span class="n">_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">vert_geom</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">_min</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">_max</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">geoms</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;vert_geom&#39; values must be in the range [0,</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">geoms</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s2">]: [</span><span class="si">{</span><span class="n">_min</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">_max</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+
+    <span class="c1">#...........................................................................</span>
+    <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vert_nodes</span><span class="p">,</span>
+      <span class="n">cell_nodes</span><span class="p">,</span>
+      <span class="n">node_cells</span><span class="p">,</span>
+      <span class="n">node_cells_inv</span> <span class="p">)</span> <span class="o">=</span> <span class="n">hex_cell_nodes</span><span class="p">(</span><span class="n">cells</span><span class="p">,</span> <span class="n">vert_nodes</span><span class="p">)</span>
+
+
+    <span class="n">cell_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vert_nodes</span><span class="p">[</span><span class="n">cells</span><span class="p">]</span>
+
+    <span class="p">(</span> <span class="n">cell_edges</span><span class="p">,</span>
+      <span class="n">edge_cells</span><span class="p">,</span>
+      <span class="n">edge_cells_inv</span><span class="p">,</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_edge_cell_counts</span><span class="p">,</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_node_edge_counts</span> <span class="p">)</span> <span class="o">=</span> <span class="n">hex_cell_edges</span><span class="p">(</span><span class="n">cell_nodes</span><span class="p">)</span>
+
+    <span class="p">(</span> <span class="n">cell_adj</span><span class="p">,</span>
+      <span class="n">cell_adj_face</span> <span class="p">)</span> <span class="o">=</span> <span class="n">hex_cell_adj</span><span class="p">(</span><span class="n">cell_nodes</span><span class="p">)</span>
+
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_verts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span>
+      <span class="n">verts</span><span class="p">,</span>
+      <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span> <span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_cells</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span>
+      <span class="n">cells</span><span class="p">,</span>
+      <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span> <span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_cell_adj</span> <span class="o">=</span> <span class="n">cell_adj</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_cell_adj_face</span> <span class="o">=</span> <span class="n">cell_adj_face</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_cell_edges</span> <span class="o">=</span> <span class="n">cell_edges</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_cell_nodes</span> <span class="o">=</span> <span class="n">cell_nodes</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_geoms</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">geoms</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_vert_geom</span> <span class="o">=</span> <span class="n">vert_geom</span>
+
+    <span class="c1">#...........................................................................</span>
+    <span class="c1"># TODO: ensure proper dtype of the jagged_array?</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+      <span class="nb">isinstance</span><span class="p">(</span><span class="n">edge_cells</span><span class="p">,</span> <span class="n">jagged_array</span><span class="p">)</span>
+      <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">edge_cells_inv</span><span class="p">,</span> <span class="n">jagged_array</span><span class="p">)</span>
+      <span class="ow">and</span> <span class="n">edge_cells</span><span class="o">.</span><span class="n">flat</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">edge_cells_inv</span><span class="o">.</span><span class="n">flat</span><span class="o">.</span><span class="n">shape</span>
+      <span class="ow">and</span> <span class="p">(</span>
+        <span class="n">edge_cells</span><span class="o">.</span><span class="n">row_idx</span> <span class="ow">is</span> <span class="n">edge_cells_inv</span><span class="o">.</span><span class="n">row_idx</span>
+        <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">edge_cells</span><span class="o">.</span><span class="n">row_idx</span> <span class="o">==</span> <span class="n">edge_cells_inv</span><span class="o">.</span><span class="n">row_idx</span><span class="p">)</span> <span class="p">)</span> <span class="p">):</span>
+
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;edge_cells and edge_cells_inv must have the same structure&quot;</span><span class="p">)</span>
+
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">edge_cells</span><span class="p">)),</span> <span class="n">edge_cells</span><span class="o">.</span><span class="n">row_counts</span><span class="p">)</span>
+    <span class="n">_edges</span> <span class="o">=</span> <span class="n">cell_edges</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">12</span><span class="p">)[(</span><span class="n">edge_cells</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">edge_cells_inv</span><span class="o">.</span><span class="n">flat</span><span class="p">)]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">_edges</span> <span class="o">==</span> <span class="n">edges</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;&#39;cell_edges&#39; is not consistent with &#39;edge_cells&#39; and &#39;edge_cells_inv&#39;&quot;</span><span class="p">)</span>
+
+    <span class="c1">#...........................................................................</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+      <span class="nb">isinstance</span><span class="p">(</span><span class="n">node_cells</span><span class="p">,</span> <span class="n">jagged_array</span><span class="p">)</span>
+      <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node_cells_inv</span><span class="p">,</span> <span class="n">jagged_array</span><span class="p">)</span>
+      <span class="ow">and</span> <span class="n">node_cells</span><span class="o">.</span><span class="n">flat</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">node_cells_inv</span><span class="o">.</span><span class="n">flat</span><span class="o">.</span><span class="n">shape</span>
+      <span class="ow">and</span> <span class="p">(</span>
+        <span class="n">node_cells</span><span class="o">.</span><span class="n">row_idx</span> <span class="ow">is</span> <span class="n">node_cells_inv</span><span class="o">.</span><span class="n">row_idx</span>
+        <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">node_cells</span><span class="o">.</span><span class="n">row_idx</span> <span class="o">==</span> <span class="n">node_cells_inv</span><span class="o">.</span><span class="n">row_idx</span><span class="p">)</span> <span class="p">)</span> <span class="p">):</span>
+
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;node_cells and node_cells_inv must have the same structure&quot;</span><span class="p">)</span>
+
+
+    <span class="n">nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">node_cells</span><span class="p">)),</span> <span class="n">node_cells</span><span class="o">.</span><span class="n">row_counts</span><span class="p">)</span>
+    <span class="n">_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cell_nodes</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">)[(</span><span class="n">node_cells</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">node_cells_inv</span><span class="o">.</span><span class="n">flat</span><span class="p">)]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">_nodes</span> <span class="o">==</span> <span class="n">nodes</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;&#39;cell_nodes&#39; is not consistent with &#39;node_cells&#39; and &#39;node_cells_inv&#39;.&quot;</span><span class="p">)</span>
+
+    <span class="c1">#...........................................................................</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_edge_cells</span> <span class="o">=</span> <span class="n">edge_cells</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_edge_cells_inv</span> <span class="o">=</span> <span class="n">edge_cells_inv</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_node_cells</span> <span class="o">=</span> <span class="n">node_cells</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_node_cells_inv</span> <span class="o">=</span> <span class="n">node_cells_inv</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">__class_getitem__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">GenericAlias</span>
+    <span class="k">return</span> <span class="n">GenericAlias</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_verts</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_verts</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_cells</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cells</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_cell_adj</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cell_adj</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_cell_adj_face</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cell_adj_face</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_cell_edges</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cell_edges</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_cell_nodes</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cell_nodes</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_edge_cells</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_edge_cells</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_edge_cells_inv</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_edge_cells_inv</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_node_cells</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_cells</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_node_cells_inv</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_cells_inv</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_vert_nodes</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vert_nodes</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_edge_cell_counts</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_edge_cell_counts</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_node_edge_counts</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_edge_counts</span><span class="p">)</span>
+
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_geoms</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geoms</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">_vert_geom</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vert_geom</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">mesh</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">verts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Vertices</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Position of each vertex.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.vertices`)</span>
+<span class="sd">    Indexing is ``[vertex, (x,y,z)]``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verts</span>
+
+ <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">vert_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VertNodes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The topological node associated with each vertex, causing cells to be connected</span>
+<span class="sd">    by having vertices associated with the same node in addition to directly</span>
+<span class="sd">    sharing vertices.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vert_nodes</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">cells</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Cells</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mapping of hexahedral cells to the indices of their 8 vertices.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.tree_to_vertex`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cells</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">cell_adj</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CellAdj</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mapping of cells to the indices of their (up to) 6 face-adjacent neighbors.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.tree_to_tree`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cell_adj</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">cell_adj_face</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CellAdjFace</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Topological order of the faces of each connected cell.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.tree_to_face`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cell_adj_face</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">cell_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CellEdges</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mapping of cells to the indices of their (up to) 12 edges</span>
+<span class="sd">    in ``edge_cells`` and ``edge_cells_``,</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.tree_to_edge`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cell_edges</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">edge_cells</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EdgeCells</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mapping to cells sharing each edge, all ``len(edge_cells[i]) &gt; 1``.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.edge_to_tree`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_cells</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">edge_cells_inv</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EdgeCellsInv</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mapping to the cell&#39;s local edge {0,...11} in ``cell_edges``  which maps</span>
+<span class="sd">    back to the edge.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.edge_to_edge`)</span>
+
+<span class="sd">    .. code-block::</span>
+
+<span class="sd">      edges = np.repeat(np.arange(len(edge_cells)), edge_cells.row_counts)</span>
+<span class="sd">      _edges = cell_edges.reshape(-1,12)[(edge_cells.flat, edge_cells_inv.flat)]</span>
+<span class="sd">      assert np.all(edges == _edges)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_cells_inv</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">cell_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Cells</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mapping of cells to the indices of their (up to) 8 nodes</span>
+<span class="sd">    in ``node_cells`` and ``node_cells_inv``,</span>
+<span class="sd">    ``-1`` used where nodes are not specified.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.tree_to_corner`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cell_nodes</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">node_cells</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NodeCells</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mapping to cells sharing each node, all ``len(node_cells[i]) &gt; 1``.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.corner_to_tree`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_cells</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">node_cells_inv</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NodeCellsInv</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mapping to the cell&#39;s local vertex {0,...7} in ``cell_nodes`` which maps</span>
+<span class="sd">    back to the node.</span>
+<span class="sd">    (AKA :c:var:`p8est_connectivity_t.corner_to_corner`)</span>
+
+<span class="sd">    .. code-block::</span>
+
+<span class="sd">      nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)</span>
+<span class="sd">      _nodes = cell_nodes.reshape(-1,8)[(node_cells.flat, node_cells_inv.flat)]</span>
+<span class="sd">      assert np.all(nodes == _nodes)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_cells_inv</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">edge_cell_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EdgeCellCounts</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_cell_counts</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">node_edge_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NodeEdgeCounts</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_edge_counts</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">geoms</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">HexGeometry</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The available geometries referenced by &#39;vert_geom&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_geoms</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">vert_geom</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VertGeom</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Indices into &#39;geoms&#39; to get the geometry associated with each vertex.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vert_geom</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="HexMesh.coord"><a class="viewcode-back" href="../../../../api/hex.base.html#p4est.mesh.hex.base.HexMesh.coord">[docs]</a>  <span class="k">def</span> <span class="nf">coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="n">offset</span> <span class="p">:</span> <span class="n">CoordRel</span><span class="p">,</span>
+    <span class="n">where</span> <span class="p">:</span> <span class="n">Where</span> <span class="o">=</span> <span class="kc">None</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CoordAbs</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Transform to (physical/global) coordinates of a point relative to each cell</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    offset :</span>
+<span class="sd">      Relative coordinates from each cell origin to compute the coordinates,</span>
+<span class="sd">      normalized :math:`\rankone{q} \in [0.0, 1.0]^3` along each edge of the cell.</span>
+<span class="sd">      ``N = len(cells[where])``</span>
+<span class="sd">    where :</span>
+<span class="sd">      Subset of cells. (default: slice(None))</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Absolute coordinates at each ``offset``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">where</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">where</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">offset</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+    <span class="n">shape</span> <span class="o">=</span> <span class="n">offset</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">offset</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])),</span> <span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">))[</span><span class="n">where</span><span class="p">])</span>
+    <span class="n">_shape</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])))</span>
+
+    <span class="k">assert</span> <span class="n">idx</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">offset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">idx</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">offset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">idx</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">offset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># (:,:,2,2,2)</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="c1"># (:,:,2,2,2,3)</span>
+    <span class="n">cell_verts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verts</span><span class="p">[</span><span class="n">cells</span><span class="p">]</span>
+
+    <span class="n">cell_geoms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vert_geom</span><span class="p">[</span><span class="n">cells</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geoms</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="c1"># homogenous geometry</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">geoms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">coord</span><span class="p">(</span><span class="n">cell_verts</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
+
+    <span class="c1"># determined by multiple geometries on surface of each cell</span>
+    <span class="c1"># TODO: mixing geometries not quite working in general</span>
+    <span class="n">coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">cell_verts</span><span class="p">),</span> <span class="o">*</span><span class="n">offset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="c1"># tri-linear interpolation of geometries within mixed cells</span>
+    <span class="c1"># TODO: optimize for cells that are *not* mixed?</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">offset</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">offset</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">w</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">w</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">w</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">w</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">w</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">w</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">w</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">w</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">axes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">cell_geoms</span><span class="o">.</span><span class="n">ndim</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">geom</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geoms</span><span class="p">):</span>
+      <span class="c1"># mask of cells that have at least one vertex/surface of given geometry</span>
+      <span class="n">m</span> <span class="o">=</span> <span class="n">cell_geoms</span> <span class="o">==</span> <span class="n">i</span>
+      <span class="n">_m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+
+      <span class="n">_offset</span> <span class="o">=</span> <span class="n">offset</span> <span class="k">if</span> <span class="n">offset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">offset</span><span class="p">[</span><span class="n">_m</span><span class="p">]</span>
+      <span class="n">_verts</span> <span class="o">=</span> <span class="n">cell_verts</span><span class="p">[</span><span class="n">_m</span><span class="p">]</span>
+
+      <span class="n">v</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">coord</span><span class="p">(</span><span class="n">_verts</span><span class="p">,</span> <span class="n">_offset</span><span class="p">)</span>
+
+      <span class="c1"># weight coordinates by how much each geometry participates</span>
+      <span class="n">_w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="n">_m</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="p">[</span><span class="n">_m</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+
+      <span class="n">coord</span><span class="p">[</span><span class="n">_m</span><span class="p">]</span> <span class="o">+=</span> <span class="n">_w</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">v</span>
+
+    <span class="k">return</span> <span class="n">coord</span></div>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">pyvista</span> <span class="k">as</span> <span class="nn">pv</span>
+
+    <span class="n">pv</span><span class="o">.</span><span class="n">set_plot_theme</span><span class="p">(</span><span class="s1">&#39;paraview&#39;</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">Plotter</span><span class="p">()</span>
+
+    <span class="n">verts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verts</span>
+
+    <span class="n">nc</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">)</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nc</span><span class="p">,</span> <span class="mi">9</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">cells</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">cells</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,:]</span>
+    <span class="n">cells</span><span class="p">[:,</span><span class="mi">3</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">cells</span><span class="p">[:,</span><span class="mi">5</span><span class="p">:</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,:]</span>
+    <span class="n">cells</span><span class="p">[:,</span><span class="mi">7</span><span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">_grid</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">UnstructuredGrid</span><span class="p">(</span><span class="n">cells</span><span class="p">,</span> <span class="p">[</span><span class="n">pv</span><span class="o">.</span><span class="n">CellType</span><span class="o">.</span><span class="n">HEXAHEDRON</span><span class="p">]</span><span class="o">*</span><span class="n">nc</span><span class="p">,</span> <span class="n">verts</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+    <span class="n">_grid</span><span class="o">.</span><span class="n">cell_data</span><span class="p">[</span><span class="s1">&#39;root&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nc</span><span class="p">)</span>
+
+    <span class="c1"># p.add_mesh_clip_plane(</span>
+    <span class="c1">#   mesh = _grid,</span>
+    <span class="c1">#   # scalars = &#39;root&#39;,</span>
+    <span class="c1">#   show_edges = True,</span>
+    <span class="c1">#   line_width = 1,</span>
+    <span class="c1">#   normal=&#39;x&#39;,</span>
+    <span class="c1">#   invert = True,</span>
+    <span class="c1">#   crinkle = True,</span>
+    <span class="c1">#   show_scalar_bar = False)</span>
+
+    <span class="n">edge_verts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
+      <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+          <span class="p">(</span> <span class="c1"># x-edges</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,:],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,:],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,:],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,:],</span>
+            <span class="c1"># y-edges</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,:,</span><span class="mi">0</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,:,</span><span class="mi">1</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,:,</span><span class="mi">0</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,:,</span><span class="mi">1</span><span class="p">],</span>
+            <span class="c1"># z-edges</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cells</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="p">),</span>
+          <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">12</span><span class="o">*</span><span class="n">nc</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">),</span>
+      <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">)</span>
+
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">edge_verts</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">lines</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">lines</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">edge_verts</span>
+
+    <span class="n">edge_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vert_nodes</span><span class="p">[</span><span class="n">edge_verts</span><span class="p">]</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
+      <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span>
+        <span class="n">edge_nodes</span><span class="p">,</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">),</span>
+      <span class="n">return_inverse</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+      <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">)</span>
+
+    <span class="n">_edges</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">PolyData</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verts</span><span class="p">,</span> <span class="n">lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">)</span>
+    <span class="n">_edges</span><span class="o">.</span><span class="n">cell_data</span><span class="p">[</span><span class="s1">&#39;edge_cell_counts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_cell_counts</span><span class="p">[</span><span class="n">edges</span><span class="p">]</span> <span class="o">-</span> <span class="mi">4</span>
+
+    <span class="n">p</span><span class="o">.</span><span class="n">add_mesh</span><span class="p">(</span>
+      <span class="n">_edges</span><span class="p">,</span>
+      <span class="n">scalars</span> <span class="o">=</span> <span class="s1">&#39;edge_cell_counts&#39;</span><span class="p">,</span>
+      <span class="n">show_edges</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+      <span class="n">line_width</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+      <span class="n">opacity</span> <span class="o">=</span> <span class="mf">0.75</span><span class="p">,</span>
+      <span class="n">clim</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+      <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;Set1&#39;</span> <span class="p">)</span>
+
+    <span class="n">_nodes</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">PolyData</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span>
+    <span class="n">_nodes</span><span class="o">.</span><span class="n">point_data</span><span class="p">[</span><span class="s1">&#39;node_edge_counts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_edge_counts</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vert_nodes</span><span class="p">]</span> <span class="o">-</span> <span class="mi">6</span>
+
+    <span class="n">p</span><span class="o">.</span><span class="n">add_mesh</span><span class="p">(</span>
+      <span class="n">_nodes</span><span class="p">,</span>
+      <span class="n">scalars</span> <span class="o">=</span> <span class="s1">&#39;node_edge_counts&#39;</span><span class="p">,</span>
+      <span class="n">render_points_as_spheres</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+      <span class="n">point_size</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+      <span class="n">opacity</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+      <span class="n">clim</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
+      <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;Set2&#39;</span><span class="p">)</span>
+
+    <span class="n">p</span><span class="o">.</span><span class="n">add_axes</span><span class="p">()</span>
+    <span class="c1"># p.add_cursor(</span>
+    <span class="c1">#   bounds = np.array([</span>
+    <span class="c1">#     np.amin(self.verts, axis = 0),</span>
+    <span class="c1">#     np.amax(self.verts, axis = 0)]).T.ravel() )</span>
+
+    <span class="n">p</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, p4est ( p4est@ins.uni-bonn.de )
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/scripts/furo.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
+    <script src="../../../../_static/design-tabs.js"></script>
+    </body>
+</html>

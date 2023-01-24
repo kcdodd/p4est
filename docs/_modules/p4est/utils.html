@@ -1,0 +1,796 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" />
+
+    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
+        <title>p4est.utils - p4est 0.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_paramlinks.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/tables.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #d2dae8;
+  --color-code-foreground: #1c1d1f;
+  --color-foreground-primary: #31363B;
+  --color-foreground-muted: #454545;
+  --color-foreground-secondary: #292727;
+  --color-foreground-border: #BAB9B8;
+  --color-background-primary: #EFF0F1;
+  --color-background-secondary: #d6e6de;
+  --color-background-border: #b1b5b9;
+  --color-inline-code-background: #e7f9f0;
+  --color-brand-primary: #39845f;
+  --color-brand-content: #39845f;
+  --color-highlighted-background: #3daee90;
+  --color-guilabel-background: #30506b80;
+  --color-guilabel-border: #1c466a80;
+  --color-highlight-on-target: #e2d0b7;
+  --color-problematic: #875e05;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #282c34;
+  --color-code-foreground: #c9cdd1;
+  --color-foreground-primary: #eff0f1;
+  --color-foreground-muted: #736f6f;
+  --color-foreground-secondary: #a7aaad;
+  --color-foreground-border: #76797c;
+  --color-background-primary: #373b39;
+  --color-background-secondary: #4f5955;
+  --color-background-border: #51575d;
+  --color-inline-code-background: #424745;
+  --color-brand-primary: #6af4af;
+  --color-brand-content: #6af4af;
+  --color-highlighted-background: #3daee90;
+  --color-guilabel-background: #30506b80;
+  --color-guilabel-border: #1c466a80;
+  --color-highlight-on-target: #7c5418;
+  --color-problematic: #e6c07b;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #282c34;
+  --color-code-foreground: #c9cdd1;
+  --color-foreground-primary: #eff0f1;
+  --color-foreground-muted: #736f6f;
+  --color-foreground-secondary: #a7aaad;
+  --color-foreground-border: #76797c;
+  --color-background-primary: #373b39;
+  --color-background-secondary: #4f5955;
+  --color-background-border: #51575d;
+  --color-inline-code-background: #424745;
+  --color-brand-primary: #6af4af;
+  --color-brand-content: #6af4af;
+  --color-highlighted-background: #3daee90;
+  --color-guilabel-background: #30506b80;
+  --color-guilabel-border: #1c466a80;
+  --color-highlight-on-target: #7c5418;
+  --color-problematic: #e6c07b;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">p4est 0.0.0</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand centered" href="../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../../_static/logo2.png" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">p4est 0.0.0</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/quad.base.html">Quad Mesh <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.quad</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/quad.amr.html">Quad AMR <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.quad.amr</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/quad.prim.html">Quad Primitives <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.quad.prim</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/hex.base.html">Hex Mesh <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.hex</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/hex.amr.html">Hex AMR <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.hex.amr</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/hex.prim.html">Hex Primitives <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.hex.prim</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/core.html">Core <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.core</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/geom.html">Geometry <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.geom</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utilities <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/typing.html">Typing <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.typing</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <h1>Source code for p4est.utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Enable postponed evaluation of annotations</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">partis.utils</span> <span class="kn">import</span> <span class="n">TYPING</span>
+
+<span class="k">if</span> <span class="n">TYPING</span><span class="p">:</span>
+  <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Union</span><span class="p">,</span>
+    <span class="n">Literal</span><span class="p">)</span>
+  <span class="kn">from</span> <span class="nn">.typing</span> <span class="kn">import</span> <span class="n">N</span><span class="p">,</span> <span class="n">M</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">copy</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="p">(</span>
+  <span class="n">Sequence</span><span class="p">,</span>
+  <span class="n">Mapping</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1">#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<div class="viewcode-block" id="jagged_array"><a class="viewcode-back" href="../../api/utils.html#p4est.utils.jagged_array">[docs]</a><span class="k">class</span> <span class="nc">jagged_array</span><span class="p">(</span><span class="n">Sequence</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Container for jagged (ragged) array</span>
+
+<span class="sd">  Eeach &#39;row&#39; potentially has a different number of entries, but also each row</span>
+<span class="sd">  is contiguous (not a general &#39;sparse&#39; array).</span>
+<span class="sd">  The array is stored as a single contiguous array of one less dimension.</span>
+<span class="sd">  Similar to compressed sparse row format, except that &#39;column&#39; indices are not</span>
+<span class="sd">  explicitly stored.</span>
+
+<span class="sd">  Parameters</span>
+<span class="sd">  ----------</span>
+<span class="sd">  data :</span>
+<span class="sd">    The data of all rows</span>
+<span class="sd">  row_idx :</span>
+<span class="sd">    Indices of each row, where row ``i`` is ``data[row_idx[i]:row_idx[i+1]]``,</span>
+<span class="sd">    with ``row_idx[0] == 0`` and ``row_idx[-1] == len(data)``.</span>
+
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="n">data</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">[(</span><span class="n">N</span><span class="p">,</span> <span class="o">...</span><span class="p">)],</span>
+    <span class="n">row_idx</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">[(</span><span class="n">M</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]]):</span>
+
+    <span class="n">row_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">row_idx</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">row_idx</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Must have integral row_idx.dtype: </span><span class="si">{</span><span class="n">row_idx</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span>
+      <span class="n">row_idx</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span>
+      <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">row_idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">):</span>
+
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Must have row_idx.ndim = 1 and len(row_idx) &gt; 0: </span><span class="si">{</span><span class="n">row_idx</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">row_idx</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">row_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Must have row_idx[0] = 0: </span><span class="si">{</span><span class="n">row_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">row_idx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Must have row_idx[-1] = len(data) = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">row_idx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">row_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">row_idx</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">row_counts</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Must have row_idx[i] &lt;= row_idx[i+i]&quot;</span><span class="p">)</span>
+
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_row_idx</span> <span class="o">=</span> <span class="n">row_idx</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_row_counts</span> <span class="o">=</span> <span class="n">row_counts</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">__class_getitem__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">GenericAlias</span>
+    <span class="k">return</span> <span class="n">GenericAlias</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="n">arr</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+
+    <span class="n">arr</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+    <span class="n">arr</span><span class="o">.</span><span class="n">_row_idx</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_row_idx</span><span class="p">)</span>
+    <span class="n">arr</span><span class="o">.</span><span class="n">_row_counts</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_row_counts</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">arr</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">flat</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">[(</span><span class="n">N</span><span class="p">,</span> <span class="o">...</span><span class="p">)]:</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">row_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">[(</span><span class="n">M</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]]:</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_row_idx</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">row_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_row_counts</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">dtype</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">row_idx</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">row_idx</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+      <span class="k">yield</span> <span class="bp">self</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span> <span class="p">):</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">row_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span><span class="bp">self</span><span class="o">.</span><span class="n">row_idx</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">)</span>
+    <span class="n">mask</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">data_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span> <span class="n">mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_row_counts</span> <span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span>
+      <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">data_mask</span><span class="p">],</span>
+      <span class="n">row_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(([</span><span class="mi">0</span><span class="p">],</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_row_counts</span><span class="p">[</span><span class="n">mask</span><span class="p">])))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span> <span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row_data</span> <span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">row_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span><span class="bp">self</span><span class="o">.</span><span class="n">row_idx</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">row_data</span></div>
+
+<span class="c1">#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<div class="viewcode-block" id="unique_full"><a class="viewcode-back" href="../../api/utils.html#p4est.utils.unique_full">[docs]</a><span class="k">def</span> <span class="nf">unique_full</span><span class="p">(</span>
+  <span class="n">arr</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">[(</span><span class="o">...</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="o">...</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">]],</span>
+  <span class="n">axis</span> <span class="p">:</span> <span class="nb">int</span> <span class="p">)</span> \
+  <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">[(</span><span class="n">N</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]],</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">[(</span><span class="n">N</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="nb">bool</span><span class="p">]],</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">[(</span><span class="n">M</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]],</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">[(</span><span class="n">N</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]]</span> <span class="p">]:</span>
+<span class="w">  </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;This is a reimplementation of np.unique, but returns the needed intermediate</span>
+<span class="sd">  arrays needed to construct the outputs, instead of the standard outputs</span>
+<span class="sd">  (numpy/lib/arraysetops.py).</span>
+
+<span class="sd">  Parameters</span>
+<span class="sd">  ----------</span>
+<span class="sd">  arr :</span>
+<span class="sd">    Values to sort along given axis.</span>
+<span class="sd">  axis :</span>
+<span class="sd">    Axis to perform sort, ``arr.shape[axis] == N``</span>
+
+<span class="sd">  Returns</span>
+<span class="sd">  -------</span>
+<span class="sd">  sort_idx :</span>
+<span class="sd">    The &#39;argsort&#39; of the array along given axis, with all other axes collapsed</span>
+<span class="sd">    to participate in sorting.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">      unique_with_repeats = arr[sort_idx]</span>
+
+<span class="sd">  unique_mask :</span>
+<span class="sd">    Mask of the first occurance of each unique value in the *sorted*</span>
+<span class="sd">    array along the given axis.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">      unique = arr[sort_idx[unique_mask]]</span>
+
+<span class="sd">  unique_idx :</span>
+<span class="sd">    Offset to the first occurance of each unique value in the *sorted*</span>
+<span class="sd">    array along the given axis, plus an additional entry at the end that</span>
+<span class="sd">    is the total count.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">      unique = arr[sort_idx[unique_idx[:-1]]]</span>
+<span class="sd">      counts = np.diff(unique_idx)</span>
+
+<span class="sd">  inv_idx :</span>
+<span class="sd">    Indices of sorted unique values to reconstruct the original (unsorted) array.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">      np.all(arr == unique[inv_idx])</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+  <span class="n">orig_shape</span><span class="p">,</span> <span class="n">orig_dtype</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">dtype</span>
+  <span class="n">n</span> <span class="o">=</span> <span class="n">orig_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+  <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">orig_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span>
+
+  <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">m</span><span class="p">))</span>
+
+  <span class="n">dtype</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;f</span><span class="si">{i}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">),</span> <span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+  <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+  <span class="n">sort_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;mergesort&#39;</span><span class="p">)</span>
+
+  <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+
+  <span class="c1"># mask of first occurance of each value</span>
+  <span class="n">unique_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">)</span>
+  <span class="n">unique_mask</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+  <span class="n">unique_mask</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">!=</span> <span class="n">arr</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+  <span class="c1"># get the indices of the first occurence of each value</span>
+  <span class="c1"># NOTE: 0 &lt; len(unique_idx) &lt;= len(arr[axis])+1</span>
+  <span class="c1"># NOTE: &#39;nonzero&#39; returns a tuple of arrays</span>
+  <span class="n">unique_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">unique_mask</span><span class="p">)</span> <span class="o">+</span> <span class="p">([</span><span class="n">n</span><span class="p">],))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span>
+
+  <span class="n">inv_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">unique_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span>
+  <span class="n">inv_idx</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">unique_mask</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+  <span class="k">return</span> <span class="n">sort_idx</span><span class="p">,</span> <span class="n">unique_mask</span><span class="p">,</span> <span class="n">unique_idx</span><span class="p">,</span> <span class="n">inv_idx</span></div>
+
+
+<span class="c1">#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<div class="viewcode-block" id="InfoField"><a class="viewcode-back" href="../../api/utils.html#p4est.utils.InfoField">[docs]</a><span class="k">class</span> <span class="nc">InfoField</span><span class="p">:</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Descriptor for accessing info fields</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_shape&#39;</span><span class="p">,</span> <span class="s1">&#39;_dtype&#39;</span><span class="p">,</span> <span class="s1">&#39;_name&#39;</span><span class="p">,</span> <span class="s1">&#39;_idx&#39;</span><span class="p">,</span> <span class="s1">&#39;fget&#39;</span><span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span> <span class="o">=</span> <span class="n">shape</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span> <span class="o">=</span> <span class="n">dtype</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">dummy_fget</span><span class="p">():</span>
+      <span class="k">pass</span>
+
+    <span class="k">if</span> <span class="n">TYPING</span><span class="p">:</span>
+      <span class="c1"># NOTE: this is a hack to get return-type annotation into the &#39;property&#39;</span>
+      <span class="n">dummy_fget</span><span class="o">.</span><span class="vm">__annotations__</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;return&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">[(</span><span class="o">...</span><span class="p">,</span> <span class="o">*</span><span class="n">shape</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">dtype</span><span class="p">]]</span> <span class="p">}</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">fget</span> <span class="o">=</span> <span class="n">dummy_fget</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">__set_name__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">set_tuple_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">=</span> <span class="n">idx</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__get__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">objtype</span> <span class="o">=</span> <span class="kc">None</span> <span class="p">):</span>
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">]</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__set__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">value</span> <span class="p">):</span>
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Re-defining info property not allowed: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">obj</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__delete__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deleting info property not allowed: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">getter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Changing getter not allowed&quot;</span><span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">setter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fset</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Changing setter not allowed&quot;</span><span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">deleter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdel</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Changing deleter not allowed&quot;</span><span class="p">)</span></div>
+
+<span class="c1">#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<div class="viewcode-block" id="InfoMeta"><a class="viewcode-back" href="../../api/utils.html#p4est.utils.InfoMeta">[docs]</a><span class="k">class</span> <span class="nc">InfoMeta</span><span class="p">(</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Metaclass for Info, defines fields from class definition</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span> <span class="n">mcls</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">,</span>
+    <span class="n">bases</span><span class="p">,</span>
+    <span class="n">namespace</span> <span class="p">):</span>
+
+    <span class="n">fields</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bases</span><span class="p">:</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">InfoMeta</span><span class="p">):</span>
+        <span class="n">fields</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">fields</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">namespace</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">InfoField</span><span class="p">):</span>
+        <span class="n">fields</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">_shape</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">_dtype</span><span class="p">)</span>
+
+    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">fields</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+      <span class="n">namespace</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">set_tuple_idx</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+    <span class="n">tuple_cls</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s1">&#39;Fields&#39;</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span>
+
+    <span class="n">namespace</span><span class="p">[</span><span class="s1">&#39;_fields&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fields</span>
+    <span class="n">namespace</span><span class="p">[</span><span class="s1">&#39;_field_keys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">keys</span>
+    <span class="n">namespace</span><span class="p">[</span><span class="s1">&#39;_tuple_cls&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tuple_cls</span>
+
+    <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span>
+      <span class="n">mcls</span><span class="p">,</span>
+      <span class="n">name</span><span class="p">,</span>
+      <span class="n">bases</span><span class="p">,</span>
+      <span class="n">namespace</span> <span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">fields</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Field array specification</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fields</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">tuple_cls</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">namedtuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Named type class used to store field arrays</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tuple_cls</span></div>
+
+<span class="c1">#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<div class="viewcode-block" id="Info"><a class="viewcode-back" href="../../api/utils.html#p4est.utils.Info">[docs]</a><span class="k">class</span> <span class="nc">Info</span><span class="p">(</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">metaclass</span> <span class="o">=</span> <span class="n">InfoMeta</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Container for state of AMR</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_shape&#39;</span><span class="p">,</span> <span class="s1">&#39;_data&#39;</span><span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tuple_cls</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fields</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Arguments must be only size, or all info values&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+      <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">set_from</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_from</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">set_from</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base (common) shape of all field arrays</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Info</span><span class="o">.</span><span class="n">tuple_cls</span><span class="p">:</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span> <span class="p">):</span>
+    <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span> <span class="o">*</span><span class="p">[</span><span class="n">arr</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">arr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span> <span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">info</span> <span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tuple_cls</span><span class="p">)):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">info</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+      <span class="n">info</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">_data</span>
+
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
+      <span class="n">a</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">set_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span> <span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_tuple</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">_validate_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
+    <span class="bp">cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tuple_cls</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fields</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">info</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">*</span><span class="n">info</span><span class="p">)</span>
+
+    <span class="n">base_shape</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)),</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">info</span><span class="p">):</span>
+      <span class="c1"># number of trailing dimensions that must match the field spec</span>
+      <span class="n">ndim</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">ndim</span><span class="p">:]</span> <span class="o">!=</span> <span class="n">shape</span> <span class="ow">or</span> <span class="n">v</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">dtype</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&#39; must have trailing shape[</span><span class="si">{</span><span class="n">ndim</span><span class="si">}</span><span class="s2">:] == </span><span class="si">{</span><span class="n">shape</span><span class="si">}</span><span class="s2">, dtype == </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">ndim</span><span class="p">:]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">base_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">base_shape</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="n">ndim</span><span class="p">]</span>
+
+      <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="n">ndim</span><span class="p">]</span> <span class="o">!=</span> <span class="n">base_shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;All arrays must have same leading shape </span><span class="si">{</span><span class="n">base_shape</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="n">ndim</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">base_shape</span><span class="p">,</span> <span class="n">info</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="Info.resize"><a class="viewcode-back" href="../../api/utils.html#p4est.utils.Info.resize">[docs]</a>  <span class="k">def</span> <span class="nf">resize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resize the first dimension of all field arrays</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">size</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+      <span class="k">return</span>
+
+    <span class="n">info</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)),</span> <span class="n">_arr</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fields</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">):</span>
+
+      <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">size</span><span class="p">,</span> <span class="o">*</span><span class="n">shape</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">_arr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">arr</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">_arr</span><span class="p">)]</span> <span class="o">=</span> <span class="n">_arr</span><span class="p">[:</span><span class="n">size</span><span class="p">]</span>
+
+      <span class="n">info</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">set_from</span><span class="p">(</span><span class="n">info</span><span class="p">)</span></div>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="Info.contiguous"><a class="viewcode-back" href="../../api/utils.html#p4est.utils.Info.contiguous">[docs]</a>  <span class="k">def</span> <span class="nf">contiguous</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Info</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a new Info object with all contiguous arrays, making a copy</span>
+<span class="sd">    only when necessary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> <span class="k">for</span> <span class="n">arr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="p">)</span></div>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">__class_getitem__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">GenericAlias</span>
+    <span class="k">return</span> <span class="n">GenericAlias</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></div>
+
+<span class="c1">#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<div class="viewcode-block" id="InfoUpdate"><a class="viewcode-back" href="../../api/utils.html#p4est.utils.InfoUpdate">[docs]</a><span class="k">class</span> <span class="nc">InfoUpdate</span><span class="p">:</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Data associated with changes during adaptive mesh refinement</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="n">dst</span><span class="p">,</span>
+    <span class="n">src</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Adapted data must all be the same: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">src</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">=</span> <span class="n">dst</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">=</span> <span class="n">src</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_src</span><span class="p">)</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Info</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;New leaf info</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">src</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Info</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Replaced (old) leaf info</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_src</span>
+
+  <span class="c1">#-----------------------------------------------------------------------------</span>
+  <span class="k">def</span> <span class="nf">__class_getitem__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">GenericAlias</span>
+    <span class="k">return</span> <span class="n">GenericAlias</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></div>
+
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, p4est ( p4est@ins.uni-bonn.de )
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/scripts/furo.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    <script src="../../_static/design-tabs.js"></script>
+    </body>
+</html>

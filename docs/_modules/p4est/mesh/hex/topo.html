@@ -1,0 +1,629 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html" /><link rel="search" title="Search" href="../../../../search.html" />
+
+    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
+        <title>p4est.mesh.hex.topo - p4est 0.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx_paramlinks.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/tables.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #d2dae8;
+  --color-code-foreground: #1c1d1f;
+  --color-foreground-primary: #31363B;
+  --color-foreground-muted: #454545;
+  --color-foreground-secondary: #292727;
+  --color-foreground-border: #BAB9B8;
+  --color-background-primary: #EFF0F1;
+  --color-background-secondary: #d6e6de;
+  --color-background-border: #b1b5b9;
+  --color-inline-code-background: #e7f9f0;
+  --color-brand-primary: #39845f;
+  --color-brand-content: #39845f;
+  --color-highlighted-background: #3daee90;
+  --color-guilabel-background: #30506b80;
+  --color-guilabel-border: #1c466a80;
+  --color-highlight-on-target: #e2d0b7;
+  --color-problematic: #875e05;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #282c34;
+  --color-code-foreground: #c9cdd1;
+  --color-foreground-primary: #eff0f1;
+  --color-foreground-muted: #736f6f;
+  --color-foreground-secondary: #a7aaad;
+  --color-foreground-border: #76797c;
+  --color-background-primary: #373b39;
+  --color-background-secondary: #4f5955;
+  --color-background-border: #51575d;
+  --color-inline-code-background: #424745;
+  --color-brand-primary: #6af4af;
+  --color-brand-content: #6af4af;
+  --color-highlighted-background: #3daee90;
+  --color-guilabel-background: #30506b80;
+  --color-guilabel-border: #1c466a80;
+  --color-highlight-on-target: #7c5418;
+  --color-problematic: #e6c07b;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #282c34;
+  --color-code-foreground: #c9cdd1;
+  --color-foreground-primary: #eff0f1;
+  --color-foreground-muted: #736f6f;
+  --color-foreground-secondary: #a7aaad;
+  --color-foreground-border: #76797c;
+  --color-background-primary: #373b39;
+  --color-background-secondary: #4f5955;
+  --color-background-border: #51575d;
+  --color-inline-code-background: #424745;
+  --color-brand-primary: #6af4af;
+  --color-brand-content: #6af4af;
+  --color-highlighted-background: #3daee90;
+  --color-guilabel-background: #30506b80;
+  --color-guilabel-border: #1c466a80;
+  --color-highlight-on-target: #7c5418;
+  --color-problematic: #e6c07b;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../../index.html"><div class="brand">p4est 0.0.0</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand centered" href="../../../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../../../../_static/logo2.png" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">p4est 0.0.0</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/quad.base.html">Quad Mesh <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.quad</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/quad.amr.html">Quad AMR <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.quad.amr</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/quad.prim.html">Quad Primitives <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.quad.prim</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/hex.base.html">Hex Mesh <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.hex</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/hex.amr.html">Hex AMR <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.hex.amr</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/hex.prim.html">Hex Primitives <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.mesh.hex.prim</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/core.html">Core <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.core</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/geom.html">Geometry <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.geom</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/utils.html">Utilities <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/typing.html">Typing <code class="xref py py-mod docutils literal notranslate"><span class="pre">p4est.typing</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <h1>Source code for p4est.mesh.hex.topo</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Enable postponed evaluation of annotations</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">partis.utils</span> <span class="kn">import</span> <span class="n">TYPING</span>
+
+<span class="k">if</span> <span class="n">TYPING</span><span class="p">:</span>
+  <span class="kn">from</span> <span class="nn">...typing</span> <span class="kn">import</span> <span class="n">N</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">NV</span><span class="p">,</span> <span class="n">NN</span><span class="p">,</span> <span class="n">NE</span><span class="p">,</span> <span class="n">NC</span>
+  <span class="kn">from</span> <span class="nn">.typing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Cells</span><span class="p">,</span>
+    <span class="n">VertNodes</span><span class="p">,</span>
+    <span class="n">CellNodes</span><span class="p">,</span>
+    <span class="n">CellAdj</span><span class="p">,</span>
+    <span class="n">CellAdjFace</span><span class="p">,</span>
+    <span class="n">NodeCells</span><span class="p">,</span>
+    <span class="n">NodeCellsInv</span><span class="p">,</span>
+    <span class="n">NodeEdgeCounts</span><span class="p">,</span>
+    <span class="n">CellEdges</span><span class="p">,</span>
+    <span class="n">EdgeCells</span><span class="p">,</span>
+    <span class="n">EdgeCellsInv</span><span class="p">,</span>
+    <span class="n">EdgeCellCounts</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">...utils</span> <span class="kn">import</span> <span class="p">(</span>
+  <span class="n">jagged_array</span><span class="p">,</span>
+  <span class="n">unique_full</span> <span class="p">)</span>
+
+<span class="c1">#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<div class="viewcode-block" id="hex_cell_nodes"><a class="viewcode-back" href="../../../../api/hex.base.html#p4est.mesh.hex.topo.hex_cell_nodes">[docs]</a><span class="k">def</span> <span class="nf">hex_cell_nodes</span><span class="p">(</span>
+  <span class="n">cells</span> <span class="p">:</span> <span class="n">Cells</span><span class="p">,</span>
+  <span class="n">vert_nodes</span> <span class="p">:</span> <span class="n">VertNodes</span> <span class="p">)</span> \
+  <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">VertNodes</span><span class="p">,</span> <span class="n">CellNodes</span><span class="p">,</span> <span class="n">NodeCells</span><span class="p">,</span> <span class="n">NodeCellsInv</span><span class="p">]:</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Derives topological nodes between hex. cells</span>
+
+<span class="sd">  Parameters</span>
+<span class="sd">  ----------</span>
+<span class="sd">  cells :</span>
+<span class="sd">    Hexahedral cells, each defined by the indices of its 4 vertices.</span>
+<span class="sd">  vert_nodes :</span>
+<span class="sd">    The topological node associated with each vertex.</span>
+
+<span class="sd">  Returns</span>
+<span class="sd">  -------</span>
+<span class="sd">  vert_nodes :</span>
+<span class="sd">    Updated ``vert_nodes`` with additional nodes for any detected mesh</span>
+<span class="sd">    singularities.</span>
+<span class="sd">  cell_nodes :</span>
+<span class="sd">    Mapping of hexahedral cells to the indices of their (up to) 8 nodes.</span>
+<span class="sd">  node_cells :</span>
+<span class="sd">  node_cells_inv :</span>
+<span class="sd">    ``node_cells_inv.row_idx == node_cells.row_idx``</span>
+
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="n">independent</span> <span class="o">=</span> <span class="p">(</span><span class="n">vert_nodes</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">ns</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">independent</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">ns</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="c1"># add new nodes for any that need them</span>
+    <span class="n">vert_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">vert_nodes</span><span class="p">)</span>
+    <span class="n">new_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ns</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">vert_nodes</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">vert_nodes</span><span class="p">[</span><span class="n">independent</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_nodes</span>
+
+  <span class="c1"># get unique nodes, and the number of vertices associated with each one</span>
+  <span class="n">nodes</span><span class="p">,</span> <span class="n">node_verts_count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
+    <span class="n">vert_nodes</span><span class="p">,</span>
+    <span class="n">return_counts</span> <span class="o">=</span> <span class="kc">True</span> <span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+    <span class="c1"># put independent (-1) nodes at the end for proper indexing</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">node_verts_count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">node_verts_count</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="c1"># aka. tree_to_corner, but as a (NC,2,2) array</span>
+  <span class="n">cell_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span>
+    <span class="n">vert_nodes</span><span class="p">[</span><span class="n">cells</span><span class="p">],</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span> <span class="p">)</span>
+
+  <span class="n">_cell_nodes</span> <span class="o">=</span> <span class="n">cell_nodes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+  <span class="c1"># sorting the nodes (in raveled array) would put repeated entries into</span>
+  <span class="c1"># contiguous groups.</span>
+  <span class="c1"># Put the *indices* of where the nodes were into these groups using argsort</span>
+  <span class="c1"># NOTE: the default is &#39;quicksort&#39;, but made explicit in case at some point</span>
+  <span class="c1"># a stable sort is needed to preserve the relative order of the cell indices</span>
+  <span class="n">sort_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">_cell_nodes</span><span class="p">,</span> <span class="n">kind</span> <span class="o">=</span> <span class="s1">&#39;quicksort&#39;</span><span class="p">)</span>
+
+  <span class="c1"># put independent (-1) nodes at the end for proper indexing</span>
+  <span class="n">sort_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">sort_idx</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">_cell_nodes</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+  <span class="c1"># map the indices back to the cell with which the nodes were associated</span>
+  <span class="c1"># gives a (raveled) jagged array of all the cells associated with</span>
+  <span class="c1"># each node</span>
+
+  <span class="c1"># aka. corner_to_tree</span>
+  <span class="n">node_cells</span> <span class="o">=</span> <span class="p">(</span><span class="n">sort_idx</span> <span class="o">//</span> <span class="mi">8</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+  <span class="c1"># also, map which vertex (within the cell)</span>
+  <span class="c1"># aka. corner_to_corner</span>
+  <span class="n">node_cells_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">sort_idx</span> <span class="o">%</span> <span class="mi">8</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+
+  <span class="c1"># Since these are raveled, the offset for each node is needed</span>
+  <span class="c1"># to reconstruct the individual &#39;rows&#39; of the jagged array</span>
+
+  <span class="c1"># NOTE: This should be equivalent to using np.unique, but..</span>
+  <span class="c1"># - does not sort the array again.</span>
+  <span class="c1"># - node_cells_idx is computed directly from intermediate step,</span>
+  <span class="c1">#   instead of using cumsum to undo the diff</span>
+  <span class="n">_nodes</span> <span class="o">=</span> <span class="n">_cell_nodes</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+
+  <span class="n">_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">_nodes</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">)</span>
+  <span class="n">_mask</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+  <span class="n">_mask</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">_nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">!=</span> <span class="n">_nodes</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+  <span class="c1"># get the indices of the first occurence of each value</span>
+  <span class="c1"># aka. ctt_offset</span>
+  <span class="c1"># NOTE: 0 &lt; len(node_cells_idx) &lt;= len(nodes)+1</span>
+  <span class="n">node_cells_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">_mask</span><span class="p">)</span> <span class="o">+</span> <span class="p">([</span><span class="n">_mask</span><span class="o">.</span><span class="n">size</span><span class="p">],))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+  <span class="n">node_cells</span> <span class="o">=</span> <span class="n">jagged_array</span><span class="p">(</span><span class="n">node_cells</span><span class="p">,</span> <span class="n">node_cells_idx</span><span class="p">)</span>
+  <span class="n">node_cells_inv</span> <span class="o">=</span> <span class="n">jagged_array</span><span class="p">(</span><span class="n">node_cells_inv</span><span class="p">,</span> <span class="n">node_cells_idx</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="n">vert_nodes</span><span class="p">,</span>
+    <span class="n">cell_nodes</span><span class="p">,</span>
+    <span class="n">node_cells</span><span class="p">,</span>
+    <span class="n">node_cells_inv</span> <span class="p">)</span></div>
+
+<span class="c1">#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<div class="viewcode-block" id="hex_cell_edges"><a class="viewcode-back" href="../../../../api/hex.base.html#p4est.mesh.hex.topo.hex_cell_edges">[docs]</a><span class="k">def</span> <span class="nf">hex_cell_edges</span><span class="p">(</span><span class="n">cell_nodes</span><span class="p">:</span> <span class="n">CellNodes</span><span class="p">)</span> \
+  <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">CellEdges</span><span class="p">,</span> <span class="n">EdgeCells</span><span class="p">,</span> <span class="n">EdgeCellsInv</span><span class="p">,</span> <span class="n">NodeEdgeCounts</span><span class="p">,</span> <span class="n">EdgeCellCounts</span><span class="p">]:</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Derives topological edges shared by cells</span>
+
+<span class="sd">  Parameters</span>
+<span class="sd">  ----------</span>
+<span class="sd">  cell_nodes : ndarray with shape = (NC, 2, 2, 2), dtype = np.int32</span>
+<span class="sd">    Mapping of cells to the indices of their (up to) 8 nodes</span>
+
+<span class="sd">  Returns</span>
+<span class="sd">  -------</span>
+<span class="sd">  cell_edges :</span>
+<span class="sd">  edge_cells :</span>
+<span class="sd">  edge_cells_inv :</span>
+<span class="sd">  node_edge_counts :</span>
+<span class="sd">  edge_cell_counts :</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">nc</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cell_nodes</span><span class="p">)</span>
+  <span class="n">cidx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nc</span><span class="p">)</span>
+
+  <span class="c1"># build edges from per-cell node list (NC,12,2)</span>
+  <span class="n">cell_edge_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+    <span class="p">(</span> <span class="c1"># x-edges</span>
+      <span class="n">cell_nodes</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,:],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,:],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,:],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,:],</span>
+      <span class="c1"># y-edges</span>
+      <span class="n">cell_nodes</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,:,</span><span class="mi">0</span><span class="p">],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,:,</span><span class="mi">1</span><span class="p">],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,:,</span><span class="mi">0</span><span class="p">],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,:,</span><span class="mi">1</span><span class="p">],</span>
+      <span class="c1"># z-edges</span>
+      <span class="n">cell_nodes</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="p">),</span>
+    <span class="c1"># NOTE: put the new face index as axis = 1, instead of axis = 0,</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">)</span>
+
+  <span class="c1"># sort nodes for each face, removing differences in node order</span>
+  <span class="n">_cell_edge_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span>
+    <span class="c1"># also reshape to a list of 4-node faces (NC,12,2) -&gt; (12*NC,2)</span>
+    <span class="n">cell_edge_nodes</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">12</span><span class="o">*</span><span class="n">nc</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="c1"># sort over the 2 nodes of each edge</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">)</span>
+
+  <span class="c1"># reduce edges down to unique sets of 2 nodes</span>
+  <span class="n">sort_idx</span><span class="p">,</span> <span class="n">unique_mask</span><span class="p">,</span> <span class="n">unique_idx</span><span class="p">,</span> <span class="n">inv_idx</span> <span class="o">=</span> <span class="n">unique_full</span><span class="p">(</span>
+    <span class="n">_cell_edge_nodes</span><span class="p">,</span>
+    <span class="c1"># unique over all cells</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">)</span>
+
+  <span class="n">edge_nodes</span> <span class="o">=</span> <span class="n">_cell_edge_nodes</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">[</span><span class="n">unique_mask</span><span class="p">]]</span>
+
+  <span class="c1"># mapping of cell to unique edges</span>
+  <span class="n">_cell_edges</span> <span class="o">=</span> <span class="n">inv_idx</span>
+  <span class="c1"># mapping of unique edges to the cells that share it</span>
+  <span class="n">edge_cells</span> <span class="o">=</span> <span class="p">(</span><span class="n">sort_idx</span> <span class="o">//</span> <span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+  <span class="c1"># mapping to cell&#39;s local index of each edge</span>
+  <span class="n">edge_cells_inv</span> <span class="o">=</span> <span class="p">(</span><span class="n">sort_idx</span> <span class="o">%</span> <span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+
+  <span class="n">edge_cell_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">unique_idx</span><span class="p">)</span>
+  <span class="n">edge_cells_idx</span> <span class="o">=</span> <span class="n">unique_idx</span>
+
+  <span class="c1"># (12*NC,) -&gt; (NC, 3, 2, 2)</span>
+  <span class="n">cell_edges</span> <span class="o">=</span> <span class="n">_cell_edges</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nc</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+  <span class="n">edge_cells</span> <span class="o">=</span> <span class="n">jagged_array</span><span class="p">(</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">edge_cells</span><span class="p">,</span>
+    <span class="n">row_idx</span> <span class="o">=</span> <span class="n">edge_cells_idx</span> <span class="p">)</span>
+
+  <span class="n">edge_cells_inv</span> <span class="o">=</span> <span class="n">jagged_array</span><span class="p">(</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">edge_cells_inv</span><span class="p">,</span>
+    <span class="n">row_idx</span> <span class="o">=</span> <span class="n">edge_cells_idx</span> <span class="p">)</span>
+
+  <span class="c1"># compute the number of edges incident on each node</span>
+  <span class="n">nodes</span><span class="p">,</span> <span class="n">node_edge_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">edge_nodes</span><span class="p">,</span> <span class="n">return_counts</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+    <span class="n">node_edge_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">node_edge_counts</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="n">cell_edges</span><span class="p">,</span>
+    <span class="n">edge_cells</span><span class="p">,</span>
+    <span class="n">edge_cells_inv</span><span class="p">,</span>
+    <span class="n">edge_cell_counts</span><span class="p">,</span>
+    <span class="n">node_edge_counts</span> <span class="p">)</span></div>
+
+<span class="c1">#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<div class="viewcode-block" id="hex_cell_adj"><a class="viewcode-back" href="../../../../api/hex.base.html#p4est.mesh.hex.topo.hex_cell_adj">[docs]</a><span class="k">def</span> <span class="nf">hex_cell_adj</span><span class="p">(</span><span class="n">cell_nodes</span><span class="p">:</span> <span class="n">CellNodes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">CellAdj</span><span class="p">,</span> <span class="n">CellAdjFace</span><span class="p">]:</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Derives topological adjacency between hex. cells accross shared faces</span>
+
+<span class="sd">  Parameters</span>
+<span class="sd">  ----------</span>
+<span class="sd">  cell_nodes :</span>
+<span class="sd">    Mapping of cells to the indices of their (up to) 8 nodes</span>
+
+<span class="sd">  Returns</span>
+<span class="sd">  -------</span>
+<span class="sd">  cell_adj :</span>
+<span class="sd">    Topological connectivity to other cells accross each face.</span>
+<span class="sd">  cell_adj_face :</span>
+<span class="sd">    Topological order of the faces of each connected cell</span>
+
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">nc</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cell_nodes</span><span class="p">)</span>
+  <span class="n">cidx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nc</span><span class="p">)</span>
+
+  <span class="c1"># build adjacency from per-cell node list (NC,6,2,2) -&gt; (NC,6,4)</span>
+  <span class="n">cell_face_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+    <span class="c1"># 6 faces, defined from 4 nodes each -&gt; (NC,6,2,2)</span>
+    <span class="p">(</span> <span class="c1"># -/+ xfaces</span>
+      <span class="n">cell_nodes</span><span class="p">[:,:,:,</span><span class="mi">0</span><span class="p">],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,:,:,</span><span class="mi">1</span><span class="p">],</span>
+      <span class="c1"># -/+ yfaces</span>
+      <span class="n">cell_nodes</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">,:],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">,:],</span>
+      <span class="c1"># -/+ zfaces</span>
+      <span class="n">cell_nodes</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,:,:],</span>
+      <span class="n">cell_nodes</span><span class="p">[:,</span><span class="mi">1</span><span class="p">,:,:]</span> <span class="p">),</span>
+    <span class="c1"># NOTE: put the new face index as axis = 1, instead of axis = 0,</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nc</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+
+
+  <span class="c1"># reduce faces down to unique sets of 4 nodes</span>
+  <span class="n">sort_idx</span><span class="p">,</span> <span class="n">unique_mask</span><span class="p">,</span> <span class="n">unique_idx</span><span class="p">,</span> <span class="n">inv_idx</span> <span class="o">=</span> <span class="n">unique_full</span><span class="p">(</span>
+    <span class="c1"># sort nodes for each face, removing differences in node order</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span>
+      <span class="c1"># also reshape to a list of 4-node faces (NC,6,2,2) -&gt; (6*NC,4)</span>
+      <span class="n">cell_face_nodes</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">6</span><span class="o">*</span><span class="n">nc</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
+      <span class="c1"># sort over the 4 nodes of each face</span>
+      <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">),</span>
+    <span class="c1"># unique over all cells</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">)</span>
+
+  <span class="n">face_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">unique_idx</span><span class="p">)</span>
+
+
+  <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">face_counts</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Face shared by more than two cells.&quot;</span><span class="p">)</span>
+
+  <span class="c1"># define (arbitrary) indices for list of unique faces</span>
+  <span class="n">nf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">unique_mask</span><span class="p">)</span>
+  <span class="n">fidx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nf</span><span class="p">)</span>
+
+  <span class="c1"># reconstruct, for each face, the (up to) two cells it connects</span>
+  <span class="c1"># NOTE: each face index appears up to two times in cell_faces,</span>
+  <span class="c1"># repeat the cell for faces that *don&#39;t* connect to another cell</span>
+  <span class="n">repeats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">3</span><span class="o">-</span><span class="n">face_counts</span><span class="p">,</span> <span class="n">face_counts</span><span class="p">)</span>
+  <span class="n">face_cells</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">sort_idx</span> <span class="o">//</span> <span class="mi">6</span><span class="p">,</span> <span class="n">repeats</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nf</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+  <span class="c1"># NOTE: becomes the mapping from each cell to the 6 unique faces</span>
+  <span class="c1"># (6*NC,) -&gt; (NC,6)</span>
+  <span class="n">cell_faces</span> <span class="o">=</span> <span class="n">inv_idx</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nc</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+
+
+  <span class="c1"># indices of first cell of all faces</span>
+  <span class="n">c0</span> <span class="o">=</span> <span class="n">face_cells</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+  <span class="c1"># local indices of shared face in first cells</span>
+  <span class="n">f0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">cell_faces</span><span class="p">[</span><span class="n">c0</span><span class="p">]</span> <span class="o">==</span> <span class="n">fidx</span><span class="p">[:,</span><span class="kc">None</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
+
+  <span class="c1"># indices of second cell of all faces</span>
+  <span class="n">c1</span> <span class="o">=</span> <span class="n">face_cells</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
+  <span class="c1"># local indices of shared face in second cells</span>
+  <span class="n">f1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">cell_faces</span><span class="p">[</span><span class="n">c1</span><span class="p">]</span> <span class="o">==</span> <span class="n">fidx</span><span class="p">[:,</span><span class="kc">None</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
+
+  <span class="n">cell_adj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nc</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+  <span class="c1"># default adjacency back onto own index</span>
+  <span class="n">cell_adj</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nc</span><span class="p">)[:,</span><span class="kc">None</span><span class="p">]</span>
+  <span class="c1"># computed adjacency</span>
+  <span class="n">cell_adj</span><span class="p">[</span><span class="n">c0</span><span class="p">,</span><span class="n">f0</span><span class="p">]</span> <span class="o">=</span> <span class="n">c1</span>
+  <span class="n">cell_adj</span><span class="p">[</span><span class="n">c1</span><span class="p">,</span><span class="n">f1</span><span class="p">]</span> <span class="o">=</span> <span class="n">c0</span>
+  <span class="n">cell_adj</span> <span class="o">=</span> <span class="n">cell_adj</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nc</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+  <span class="c1"># Let my_face and other_face</span>
+  <span class="c1"># be the two face numbers of the connecting trees in 0..5.  Then the first</span>
+  <span class="c1"># face corner of the lower of my_face and other_face connects to a face</span>
+  <span class="c1"># corner numbered 0..3 in the higher of my_face and other_face.  The face</span>
+  <span class="c1"># orientation is defined as this number.</span>
+
+  <span class="n">f0_lower</span> <span class="o">=</span> <span class="n">f0</span> <span class="o">&lt;</span> <span class="n">f1</span>
+
+  <span class="n">ref_node</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+    <span class="n">f0_lower</span><span class="p">,</span>
+    <span class="n">cell_face_nodes</span><span class="p">[</span><span class="n">c0</span><span class="p">,</span><span class="n">f0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">cell_face_nodes</span><span class="p">[</span><span class="n">c1</span><span class="p">,</span><span class="n">f1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span>
+
+  <span class="n">orientation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+    <span class="n">f0_lower</span><span class="p">,</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">cell_face_nodes</span><span class="p">[</span><span class="n">c1</span><span class="p">,</span><span class="n">f1</span><span class="p">]</span> <span class="o">==</span> <span class="n">ref_node</span><span class="p">[:,</span><span class="kc">None</span><span class="p">])[</span><span class="mi">1</span><span class="p">],</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">cell_face_nodes</span><span class="p">[</span><span class="n">c0</span><span class="p">,</span><span class="n">f0</span><span class="p">]</span> <span class="o">==</span> <span class="n">ref_node</span><span class="p">[:,</span><span class="kc">None</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span> <span class="p">)</span>
+
+  <span class="c1"># set the corresponding index of the face and relative orientation to adjacent cell</span>
+  <span class="n">cell_adj_face</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nc</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+  <span class="c1"># default adjacent face is same face</span>
+  <span class="n">cell_adj_face</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">6</span><span class="p">)[</span><span class="kc">None</span><span class="p">,:]</span>
+  <span class="c1"># computed adjacent face</span>
+  <span class="n">cell_adj_face</span><span class="p">[</span><span class="n">c0</span><span class="p">,</span><span class="n">f0</span><span class="p">]</span> <span class="o">=</span> <span class="n">f1</span> <span class="o">+</span> <span class="mi">6</span><span class="o">*</span><span class="n">orientation</span>
+  <span class="n">cell_adj_face</span><span class="p">[</span><span class="n">c1</span><span class="p">,</span><span class="n">f1</span><span class="p">]</span> <span class="o">=</span> <span class="n">f0</span> <span class="o">+</span> <span class="mi">6</span><span class="o">*</span><span class="n">orientation</span>
+  <span class="n">cell_adj_face</span> <span class="o">=</span> <span class="n">cell_adj_face</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nc</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">cell_adj</span><span class="p">,</span> <span class="n">cell_adj_face</span></div>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, p4est ( p4est@ins.uni-bonn.de )
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/scripts/furo.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
+    <script src="../../../../_static/design-tabs.js"></script>
+    </body>
+</html>
