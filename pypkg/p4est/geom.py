@@ -19,7 +19,7 @@ def trans_sphere_to_cart(
   Parameters
   ----------
   uvr :
-    Spherical coordinates are (in order):
+    Spherical coordinates with indexing ``[polar, azimuthal, radius]``
 
     * polar angle (aka. colatitude) :math:`\in [0, \pi]`
     * azimuthal angle (aka. longitude) :math:`\in [-\pi, \pi]`
@@ -49,12 +49,12 @@ def trans_cart_to_sphere(
   Parameters
   ----------
   xyz :
-    Cartesian coordinates
+    Cartesian coordinates with indexing ``[x,y,z]``
 
   Returns
   -------
   uvr :
-    Spherical coordinates are (in order):
+    Spherical coordinates with indexing ``[polar, azimuthal, radius]``
 
     * polar angle (aka. colatitude) :math:`\in [0, \pi]`
     * azimuthal angle (aka. longitude) :math:`\in [-\pi, \pi]`

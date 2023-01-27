@@ -27,12 +27,15 @@ cdef class P4estConnectivity:
   #-----------------------------------------------------------------------------
   def __init__(self, mesh):
 
-    #...........................................................................
     if not isinstance(mesh, QuadMesh):
       raise ValueError(f"mesh must be a QuadMesh: {type(mesh)}")
 
+    # NOTE: the transpose is applied so that the array will put the
+    # order of nodes in p4est "z-order": [00, 10, 01, 11],
+    # which is the opposite as what would come from raveling the initial 'C' array
+
     # The corners are only stored when they connect trees.
-    cell_nodes = mesh.cell_nodes
+    cell_nodes = mesh.cell_nodes.transpose(0,2,1)
     node_cells = mesh.node_cells
     node_cells_inv = mesh.node_cells_inv
 
@@ -54,7 +57,7 @@ cdef class P4estConnectivity:
       dtype = np.double,
       requirements = requirements)
     self.tree_to_vertex = np.require(
-      mesh.cells,
+      mesh.cells.transpose(0,3,2,1),
       dtype = np.int32,
       requirements = requirements)
     self.tree_to_tree = np.require(
@@ -664,6 +667,7 @@ cdef void _sync_local_info(
     npy.npy_int32 i = 0
     npy.npy_int32 j = 0
     npy.npy_int32 k = 0
+    npy.npy_int32 m = 0
     npy.npy_int32 q = 0
 
     npy.npy_int32 root_idx = 0
@@ -696,20 +700,19 @@ cdef void _sync_local_info(
       if cell_aux.adapted == 1:
         # refined
         # which quadrant of the replaced cell
-        k = (
-          (cell_aux.replaced_idx[1] >= 0)
-          + 2*(cell_aux.replaced_idx[2] >= 0)
-          + 3*(cell_aux.replaced_idx[3] >= 0) )
+        m = cell_aux.replacement
 
-        j = k // 2
-        i = k % 2
+        j = m // 2
+        i = m % 2
 
-        leaf_adapted_fine[adapt_idx, j, i] = cell_idx
+        # NOTE: this convention was chosen so that the order of indices matches
+        # the order of the 'origin' coordinates of the corresponding octants
+        leaf_adapted_fine[adapt_idx, i, j] = cell_idx
         # print(f"{cell_idx}, adapt= {adapt_idx}, refine: {i},{j}")
 
         if k == 3:
           leaf_adapted[adapt_idx] = 1
-          prev_cell_idx = cell_aux.replaced_idx[3]
+          prev_cell_idx = cell_aux.fine_idx[3]
           leaf_adapted_coarse[adapt_idx] = prev_cell_idx
           # print(f"{cell_idx}, adapt= {adapt_idx}, replaced: {prev_cell_idx}")
           adapt_idx += 1
@@ -720,10 +723,10 @@ cdef void _sync_local_info(
         leaf_adapted_coarse[adapt_idx] = cell_idx
 
         prev_fine_idx = leaf_adapted_fine[adapt_idx]
-        prev_fine_idx[0,0] = cell_aux.replaced_idx[0]
-        prev_fine_idx[0,1] = cell_aux.replaced_idx[1]
-        prev_fine_idx[1,0] = cell_aux.replaced_idx[2]
-        prev_fine_idx[1,1] = cell_aux.replaced_idx[3]
+        prev_fine_idx[0,0] = cell_aux.fine_idx[0]
+        prev_fine_idx[1,0] = cell_aux.fine_idx[1]
+        prev_fine_idx[0,1] = cell_aux.fine_idx[2]
+        prev_fine_idx[1,1] = cell_aux.fine_idx[3]
 
         # print(f"{cell_idx}, adapt= {adapt_idx}, coarse: {prev_fine_idx}")
         adapt_idx += 1
@@ -749,7 +752,9 @@ cdef void _sync_local_info(
       origin[cell_idx,1] = cell.y
 
       # get adjacency information from the mesh
+      # loop x0, x1
       for i in range(2):
+        # loop -x,+x
         for j in  range(2):
 
           cell_adj_idx = quad_to_quad[cell_idx,i,j]
@@ -774,7 +779,7 @@ cdef void _sync_local_info(
           else:
             # In this case the corresponding quad_to_quad index points into the
             # quad_to_half array that stores two quadrant numbers per index,
-            cell_adj[cell_idx,i,j] = quad_to_half[cell_adj_idx]
+            cell_adj[cell_idx,i,j,:] = quad_to_half[cell_adj_idx]
             cell_adj_level[cell_idx,i,j] = 1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -839,10 +844,12 @@ cdef void _init_quadrant(
   cell_aux.weight = 1
 
   cell_aux.adapted = 0
-  cell_aux.replaced_idx[0] = -1
-  cell_aux.replaced_idx[1] = -1
-  cell_aux.replaced_idx[2] = -1
-  cell_aux.replaced_idx[3] = -1
+  cell_aux.replacement = -1
+  cell_aux.coarse_idx = -1
+  cell_aux.fine_idx[0] = -1
+  cell_aux.fine_idx[1] = -1
+  cell_aux.fine_idx[2] = -1
+  cell_aux.fine_idx[3] = -1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef void _replace_quadrants(
@@ -887,7 +894,7 @@ cdef void _replace_quadrants(
       prev_adapt = max(prev_adapt, _cell_aux.adapt)
       prev_weight = max(prev_weight, _cell_aux.weight)
 
-      cell_aux.replaced_idx[k] = _cell_aux.idx
+      cell_aux.fine_idx[k] = _cell_aux.idx
 
     cell_aux.rank = _cell_aux.rank
     cell_aux.adapt = prev_adapt + 1
@@ -911,12 +918,9 @@ cdef void _replace_quadrants(
       cell_aux.rank = _cell_aux.rank
       cell_aux.adapt = prev_adapt - 1
       cell_aux.weight = prev_weight
-
+      cell_aux.coarse_idx = _cell_aux.idx
       cell_aux.adapted = 1
-      cell_aux.replaced_idx[k] = _cell_aux.idx
-      cell_aux.replaced_idx[(k+1)%4] = -1
-      cell_aux.replaced_idx[(k+2)%4] = -1
-      cell_aux.replaced_idx[(k+3)%4] = -1
+      cell_aux.replacement = k
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef int _refine_quadrant(
@@ -934,10 +938,17 @@ cdef int _coarsen_quadrants(
   p4est_topidx_t root_idx,
   p4est_quadrant_t* quadrants[] ) nogil:
 
-  cdef aux_quadrant_data_t* cell_aux
+  cdef:
+    p4est_quadrant_t* quad
+    aux_quadrant_data_t* cell_aux
 
   for k in range(4):
-    cell_aux = <aux_quadrant_data_t*>quadrants[k].p.user_data
+    quad = quadrants[k]
+
+    if quad == NULL:
+      break
+
+    cell_aux = <aux_quadrant_data_t*>quad.p.user_data
 
     if cell_aux.adapt >= 0:
       return 0

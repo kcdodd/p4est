@@ -59,7 +59,7 @@ class HexLocalInfo(Info):
     ---+----+----+---
        |100 | 101|
 
-    Indexing: ``[(x-normal, y-normal, z-normal), (-face, +face), (-half, +half)]``
+    Indexing: ``[(axis0, axis1, axis2), (-face, +face), (-half, +half)]``
     If ``cell_adj[i,j,0] == cell_adj[i,j,1]``, then both halfs are shared with
     the same cell (of equal or greater size).
     Otherwise each half is shared with different cells of 1/2 size.

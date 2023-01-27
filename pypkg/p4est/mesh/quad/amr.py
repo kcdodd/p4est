@@ -120,7 +120,7 @@ class QuadAMR(P4est):
       from mpi4py.util.dtlib import from_numpy_dtype
 
       # exchange process neighbor information
-      sendbuf = np.ascontiguousarray(local_value[grid.local.idx[grid.mirror.flat]])
+      sendbuf = np.ascontiguousarray(local_value[grid.mirror.flat])
       recvbuf = np.empty((len(grid.ghost.flat),), dtype = local_value.dtype)
 
       mpi_datatype = from_numpy_dtype(local_value.dtype)

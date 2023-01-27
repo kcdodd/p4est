@@ -64,17 +64,15 @@ def hex_cell_nodes(
     vert_nodes,
     return_counts = True )
 
-  if nodes[0] == -1:
-    # put independent (-1) nodes at the end for proper indexing
-    nodes = np.roll(nodes, -1)
-    node_verts_count = np.roll(node_verts_count, -1)
-
-  # aka. tree_to_corner, but as a (NC,2,2) array
+  # aka. tree_to_corner, but as a (NC,2,2,2) array
   cell_nodes = np.ascontiguousarray(
     vert_nodes[cells],
     dtype = np.int32 )
 
-  _cell_nodes = cell_nodes.ravel()
+  # NOTE: the transpose is applied so that the array will put the
+  # order of nodes in p4est "z-order": [000, 100, 010, 110, ..., 111],
+  # which is the opposite as what would come from raveling the initial 'C' array
+  _cell_nodes = cell_nodes.transpose(0,3,2,1).ravel()
 
   # sorting the nodes (in raveled array) would put repeated entries into
   # contiguous groups.
@@ -82,9 +80,6 @@ def hex_cell_nodes(
   # NOTE: the default is 'quicksort', but made explicit in case at some point
   # a stable sort is needed to preserve the relative order of the cell indices
   sort_idx = np.argsort(_cell_nodes, kind = 'quicksort')
-
-  # put independent (-1) nodes at the end for proper indexing
-  sort_idx = np.roll(sort_idx, -np.count_nonzero(_cell_nodes == -1))
 
   # map the indices back to the cell with which the nodes were associated
   # gives a (raveled) jagged array of all the cells associated with
@@ -144,6 +139,11 @@ def hex_cell_edges(cell_nodes: CellNodes) \
   """
   nc = len(cell_nodes)
   cidx = np.arange(nc)
+
+  # NOTE: the transpose is applied so that the array will put the
+  # order of nodes in p4est "z-order": [000, 100, 010, 110, ..., 111],
+  # which is the opposite as what would come from raveling the initial 'C' array
+  cell_nodes = cell_nodes.transpose(0,3,2,1)
 
   # build edges from per-cell node list (NC,12,2)
   cell_edge_nodes = np.stack(

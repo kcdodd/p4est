@@ -502,14 +502,15 @@ cdef extern from "p4est_iterate.h" nogil:
 ctypedef struct aux_quadrant_data_t:
   np.npy_int32 rank
   np.npy_int32 idx
-  np.npy_int8 adapt
   np.npy_int32 weight
 
-  np.npy_int8 adapted
-  np.npy_int8 _future_flag1
-  np.npy_int8 _future_flag2
+  np.npy_int32 coarse_idx
+  np.npy_int32 fine_idx[4]
 
-  np.npy_int32 replaced_idx[4]
+  np.npy_int8 adapt
+  np.npy_int8 adapted
+  np.npy_int8 replacement
+  np.npy_int8 _future_flag1
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4estConnectivity:

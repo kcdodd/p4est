@@ -6,19 +6,34 @@ from ...typing import N, M, NV, NN, NC, NewType
 from ...utils import jagged_array
 
 CoordRel = NewType('CoordRel', np.ndarray[(Union[N,Literal[1]], ..., 2), np.dtype[np.floating]])
-r"""Relative coordinates :math:`\in [0.0, 1.0]^2`
+r"""Relative local coordinates :math:`\in [0.0, 1.0]^2`
+
+Indexing is ``[..., (axis0, axis1)]``
+
+.. code-block:: python
+
+  local_coord[..., axis0] ⟶ local_coord0
+  local_coord[..., axis1] ⟶ local_coord1
+
 """
 
 CoordAbs = NewType('CoordAbs', np.ndarray[(N, ..., 3), np.dtype[np.floating]])
-r"""Absolute coordinates :math:`\in \mathbb{R}^3`
+r"""Absolute global coordinates :math:`\in \mathbb{R}^3`
+
+Indexing is ``[..., (axis0, axis1)]``
+
+.. code-block:: python
+
+  global_coord[..., axis0] ⟶ global_coord0
+  global_coord[..., axis1] ⟶ global_coord1
 
 .. math::
 
-  \func{\rankone{r}}{\rankone{q}} =
+  \func{\rankone{x}}{\rankone{q}} =
   \begin{bmatrix}
-    \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1} \\
-    \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1} \\
-    \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1}
+    \func{\rankzero{x_0}}{\rankzero{q}_0, \rankzero{q}_1} \\
+    \func{\rankzero{x_1}}{\rankzero{q}_0, \rankzero{q}_1} \\
+    \func{\rankzero{x_2}}{\rankzero{q}_0, \rankzero{q}_1}
   \end{bmatrix}
 
 
@@ -29,11 +44,11 @@ r"""Jacobian of the absolute coordinates w.r.t local coordinates
 
 .. math::
 
-  \ranktwo{J}_\rankone{r} = \nabla_{\rankone{q}} \rankone{r} =
+  \ranktwo{J}_\rankone{x} = \nabla_{\rankone{q}} \rankone{x} =
   \begin{bmatrix}
-    \frac{\partial x}{\partial q_0} & \frac{\partial x}{\partial q_1} \\
-    \frac{\partial y}{\partial q_0} & \frac{\partial y}{\partial q_1} \\
-    \frac{\partial z}{\partial q_0} & \frac{\partial z}{\partial q_1}
+    \frac{\partial x_0}{\partial q_0} & \frac{\partial x_0}{\partial q_1} \\
+    \frac{\partial x_1}{\partial q_0} & \frac{\partial x_1}{\partial q_1} \\
+    \frac{\partial x_2}{\partial q_0} & \frac{\partial x_2}{\partial q_1}
   \end{bmatrix}
 """
 
@@ -62,14 +77,15 @@ Cells = NewType('Cells', np.ndarray[(NC, 2, 2), np.dtype[np.integer]])
 r"""Mapping cell :math:`\in` :class:`~p4est.typing.NC` ⟶ vertex
 :math:`\in` :class:`~p4est.typing.NV`.
 
-Indexing is ``[cell, ∓y, ∓x]``
+Indexing is ``[cell, ∓axis0, ∓axis1]``
 
 .. code-block::
 
-  cells[:,0,0] ⟶ Vertex(-y, -x)
-  cells[:,0,1] ⟶ Vertex(-y, +x)
-  cells[:,1,0] ⟶ Vertex(+y, -x)
-  cells[:,1,1] ⟶ Vertex(+y, +x)
+  cells[:,0,0] ⟶ vert(-axis0, -axis1)
+  cells[:,0,1] ⟶ vert(-axis0, +axis1)
+
+  cells[:,1,0] ⟶ vert(+axis0, -axis1)
+  cells[:,1,1] ⟶ vert(+axis0, +axis1)
 """
 
 CellAdj = NewType('CellAdj', np.ndarray[(NC, 2, 2), np.dtype[np.integer]])
@@ -77,36 +93,37 @@ r"""Topological connectivity to other cells accross each face,
 cell :math:`\in` :class:`~p4est.typing.NC` ⟶ *cell*
 :math:`\in` :class:`~p4est.typing.NC`.
 
-Indexing is ``[cell, (x,y), ∓(x|y)]``
+Indexing is ``[cell, (axis0, axis1), ∓{axis0|axis1}]``
 
 .. code-block::
 
-  cell_adj[:,0,0] ⟶ Cell(-xface)
-  cell_adj[:,0,1] ⟶ Cell(+xface)
-  cell_adj[:,1,0] ⟶ Cell(-yface)
-  cell_adj[:,1,1] ⟶ Cell(+yface)
+  cell_adj[:,0,0] ⟶ face_axis0(-axis0)
+  cell_adj[:,0,1] ⟶ face_axis0(+axis0)
+
+  cell_adj[:,1,0] ⟶ face_axis1(-axis1)
+  cell_adj[:,1,1] ⟶ face_axis1(+axis1)
 """
 
 CellAdjFace = NewType('CellAdjFace', np.ndarray[(NC, 2, 2), np.dtype[np.integer]])
 r"""Topological order of the faces of each connected cell,
 cell :math:`\in` :class:`~p4est.typing.NC` ⟶ *cell-face* :math:`\in [0,7]`
 
-Indexing is ``[cell, (x,y), ∓(x|y)]``
+Indexing is ``[cell, (axis0, axis1), ∓{axis0|axis1}]``
 """
 
 CellNodes = NewType('CellNodes', np.ndarray[(NC, 2, 2), np.dtype[np.integer]])
 r"""Mapping cell :math:`\in` :class:`~p4est.typing.NC` ⟶ node
 :math:`\in` :class:`~p4est.typing.NN`
 
-Indexing is ``[cell, ∓y, ∓x]``
+Indexing is ``[cell, ∓axis0, ∓axis1]``
 
 .. code-block::
 
-  cell_nodes[:,0,0] ⟶ Node(-y, -x)
-  cell_nodes[:,0,1] ⟶ Node(-y, +x)
+  cell_nodes[:,0,0] ⟶ node(-axis0, -axis1)
+  cell_nodes[:,0,1] ⟶ node(-axis0, +axis1)
 
-  cell_nodes[:,1,0] ⟶ Node(+y, -x)
-  cell_nodes[:,1,1] ⟶ Node(+y, +x)
+  cell_nodes[:,1,0] ⟶ node(+axis0, -axis1)
+  cell_nodes[:,1,1] ⟶ node(+axis0, +axis1)
 """
 
 NodeCells = NewType('NodeCells', jagged_array[NN, np.ndarray[M, np.dtype[np.integer]]])

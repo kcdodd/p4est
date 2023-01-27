@@ -63,17 +63,15 @@ def quad_cell_nodes(
     vert_nodes,
     return_counts = True )
 
-  if nodes[0] == -1:
-    # put independent (-1) nodes at the end for proper indexing
-    nodes = np.roll(nodes, -1)
-    node_verts_count = np.roll(node_verts_count, -1)
-
   # aka. tree_to_corner, but as a (NC,2,2) array
   cell_nodes = np.ascontiguousarray(
     vert_nodes[cells],
     dtype = np.int32 )
 
-  _cell_nodes = cell_nodes.ravel()
+  # NOTE: the transpose is applied so that the array will put the
+  # order of nodes in p4est "z-order": [000, 100, 010, 110, ..., 111],
+  # which is the opposite as what would come from raveling the initial 'C' array
+  _cell_nodes = cell_nodes.transpose(0,2,1).ravel()
 
   # sorting the nodes (in raveled array) would put repeated entries into
   # contiguous groups.
@@ -81,9 +79,6 @@ def quad_cell_nodes(
   # NOTE: the default is 'quicksort', but made explicit in case at some point
   # a stable sort is needed to preserve the relative order of the cell indices
   sort_idx = np.argsort(_cell_nodes, kind = 'quicksort')
-
-  # put independent (-1) nodes at the end for proper indexing
-  sort_idx = np.roll(sort_idx, -np.count_nonzero(_cell_nodes == -1))
 
   # map the indices back to the cell with which the nodes were associated
   # gives a (raveled) jagged array of all the cells associated with
@@ -113,19 +108,6 @@ def quad_cell_nodes(
   # aka. ctt_offset
   # NOTE: 0 < len(node_cells_idx) <= len(nodes)+1
   node_cells_idx = np.concatenate(np.nonzero(_mask) + ([_mask.size],)).astype(np.int32)
-
-  # the difference between these indices is the count of repeats of the node
-  #_counts = np.diff(node_cells_idx)
-  #_nodes = _nodes[_mask]
-
-
-  # NOTE: this is back to len(nodes), with all 'unused' node counts set to zero
-  #node_cells_count = np.zeros((len(nodes),), dtype = np.int32)
-  #node_cells_count[_nodes] = _counts
-
-  # Only store nodes that:
-  # Are associated with 2 or more vertices ("non-local" connections),
-  # or connect 5 or more cells (mesh singularities )
 
   node_cells = jagged_array(node_cells, node_cells_idx)
   node_cells_inv = jagged_array(node_cells_inv, node_cells_idx)
@@ -163,11 +145,11 @@ def quad_cell_adj(cell_nodes : CellNodes) -> tuple[CellAdj, CellAdjFace]:
   # NOTE: put the new face index as axis = 1, instead of axis = 0
   cell_face_nodes = np.stack((
     # -/+ xfaces
-    cell_nodes[:,:,0],
-    cell_nodes[:,:,1],
-    # -/+ yfaces
     cell_nodes[:,0,:],
-    cell_nodes[:,1,:] ),
+    cell_nodes[:,1,:],
+    # -/+ yfaces
+    cell_nodes[:,:,0],
+    cell_nodes[:,:,1] ),
     axis = 1 )
 
   sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
@@ -184,7 +166,6 @@ def quad_cell_adj(cell_nodes : CellNodes) -> tuple[CellAdj, CellAdjFace]:
 
   if np.any(face_counts > 2):
     raise ValueError(f"Face shared by more than two cells.")
-
 
   # define (arbitrary) indices for list of unique faces
   nf = np.count_nonzero(unique_mask)
