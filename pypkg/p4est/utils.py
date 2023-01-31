@@ -151,40 +151,42 @@ def unique_full(
   axis :
     Axis to perform sort, ``arr.shape[axis] == N``
 
+
   Returns
   -------
   sort_idx :
     The 'argsort' of the array along given axis, with all other axes collapsed
     to participate in sorting.
 
-    .. code-block:: python
-
-      unique_with_repeats = arr[sort_idx]
-
   unique_mask :
-    Mask of the first occurance of each unique value in the *sorted*
+    Mask of the first occurrence of each unique value in the *sorted*
     array along the given axis.
 
-    .. code-block:: python
-
-      unique = arr[sort_idx[unique_mask]]
-
   unique_idx :
-    Offset to the first occurance of each unique value in the *sorted*
+    Offset to the first occurrence of each unique value in the *sorted*
     array along the given axis, plus an additional entry at the end that
     is the total count.
-
-    .. code-block:: python
-
-      unique = arr[sort_idx[unique_idx[:-1]]]
-      counts = np.diff(unique_idx)
 
   inv_idx :
     Indices of sorted unique values to reconstruct the original (unsorted) array.
 
-    .. code-block:: python
 
-      np.all(arr == unique[inv_idx])
+
+  Examples
+  --------
+
+  .. code-block:: python
+
+    sort_idx, unique_mask, unique_idx, inv_idx = unique_full(arr, axis = 0)
+
+    unique = arr[sort_idx[unique_mask]]
+    unique = arr[sort_idx[unique_idx[:-1]]]
+    np.all(arr == unique[inv_idx])
+
+    unique_with_repeats = arr[sort_idx]
+    counts = np.diff(unique_idx)
+    np.all(unique_with_repeats == np.repeat(unique, counts))
+
   """
 
   arr = np.moveaxis(arr, axis, 0)

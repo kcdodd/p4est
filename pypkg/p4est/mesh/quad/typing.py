@@ -30,12 +30,13 @@ Indexing is ``[..., (axis0, axis1)]``
 .. math::
 
   \func{\rankone{x}}{\rankone{q}} =
-  \begin{bmatrix}
+  \left[
+  \begin{array}{cc}
     \func{\rankzero{x_0}}{\rankzero{q}_0, \rankzero{q}_1} \\
     \func{\rankzero{x_1}}{\rankzero{q}_0, \rankzero{q}_1} \\
     \func{\rankzero{x_2}}{\rankzero{q}_0, \rankzero{q}_1}
-  \end{bmatrix}
-
+  \end{array}
+  \right]
 
 """
 
@@ -44,12 +45,15 @@ r"""Jacobian of the absolute coordinates w.r.t local coordinates
 
 .. math::
 
-  \ranktwo{J}_\rankone{x} = \nabla_{\rankone{q}} \rankone{x} =
-  \begin{bmatrix}
+  \ranktwo{J}_{\rankone{x}} = \nabla_{\rankone{q}} \rankone{x} =
+  \left[
+  \begin{array}{cc}
     \frac{\partial x_0}{\partial q_0} & \frac{\partial x_0}{\partial q_1} \\
     \frac{\partial x_1}{\partial q_0} & \frac{\partial x_1}{\partial q_1} \\
     \frac{\partial x_2}{\partial q_0} & \frac{\partial x_2}{\partial q_1}
-  \end{bmatrix}
+  \end{array}
+  \right]
+
 """
 
 CoordGeom = NewType('CoordGeom', np.ndarray[(Union[N,Literal[1]], ..., 2,2,3), np.dtype[np.floating]])

@@ -64,7 +64,7 @@ class QuadAMR(P4est):
       :width: 95%
 
     Earth texture on AMR mesh, refinement set from tolerance on difference in
-    value beteen adjacent cells.
+    value between adjacent cells.
   """
 
   #-----------------------------------------------------------------------------

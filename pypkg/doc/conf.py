@@ -8,13 +8,19 @@ from partis.utils.sphinx import basic_conf
 # configuration
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+src_dir = Path(__file__).parent
+# autodoc_capture = src_dir.parent.parent / 'build' / 'autodoc'
+autodoc_capture = None
+
 globals().update( basic_conf(
   package = 'p4est',
   author = "p4est",
   email = "p4est@ins.uni-bonn.de",
-  copyright_year = '2023' ) )
+  copyright_year = '2023',
+  src_dir = src_dir,
+  autodoc_capture = autodoc_capture ) )
 
-html_logo = os.fspath(Path(__file__).parent / '_static' / 'logo2.png')
+html_logo = os.fspath(src_dir / '_static' / 'logo2.png')
 
 
 html_theme_options = {
@@ -68,52 +74,3 @@ html_theme_options = {
     'color-highlight-on-target' : '#7c5418',
     'color-problematic' : '#e6c07b'
   } }
-
-def _setup(app):
-
-
-    sys_dwb = sys.dont_write_bytecode
-    sys.dont_write_bytecode = True
-    import apidoc
-    sys.dont_write_bytecode = sys_dwb
-
-    name = MPI.__name__
-    here = Path(__file__).resolve().parent
-    outdir = here / apidoc.OUTDIR
-    source = os.path.join(outdir, f'{name}.py')
-    getmtime = os.path.getmtime
-    generate = (
-        not os.path.exists(source)
-        or getmtime(source) < getmtime(MPI.__file__)
-        or getmtime(source) < getmtime(apidoc.__file__)
-    )
-    if generate:
-        apidoc.generate(source)
-    module = apidoc.load_module(source)
-    apidoc.replace_module(module)
-
-    for name in dir(module):
-        attr = getattr(module, name)
-        if isinstance(attr, type):
-            if attr.__module__ == module.__name__:
-                autodoc_type_aliases[name] = name
-
-    synopsis = autosummary_context['synopsis']
-    synopsis[module.__name__] = module.__doc__.strip()
-    autotype = autosummary_context['autotype']
-    autotype[module.Exception.__name__] = 'exception'
-
-
-    modules = [
-        'mpi4py',
-        'mpi4py.run',
-        'mpi4py.util.dtlib',
-        'mpi4py.util.pkl5',
-    ]
-    typing_overload = typing.overload
-    typing.overload = lambda arg: arg
-    for name in modules:
-        mod = importlib.import_module(name)
-        ann = apidoc.load_module(f'{mod.__file__}i', name)
-        apidoc.annotate(mod, ann)
-    typing.overload = typing_overload
