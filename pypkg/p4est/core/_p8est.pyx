@@ -36,39 +36,77 @@ cdef class P8estConnectivity:
     # order of nodes in p4est "z-order": [000, 100, 010, 110, ..., 111],
     # which is the opposite as what would come from raveling the initial 'C' array
 
-    # The edges are only stored when they connect trees.
-    cell_edges = mesh.cell_edges
-    edge_cells = mesh.edge_cells
-    edge_cells_inv = mesh.edge_cells_inv
-
-    edge_keep = mesh.edge_cells.row_counts > 1
-    num_edges = np.count_nonzero(edge_keep)
-
-    if num_edges < len(edge_cells):
-      cell_edges = -np.ones_like(cell_edges)
-      edge_cells = edge_cells[edge_keep]
-      edge_cells_inv = edge_cells_inv[edge_keep]
-
-      edges = np.repeat(np.arange(len(edge_cells)), edge_cells.row_counts)
-      cell_edges.reshape(-1,12)[(edge_cells.flat, edge_cells_inv.flat)] = edges
-
+    cells = mesh.cells.transpose(0,3,2,1)
 
     # The corners are only stored when they connect trees.
     cell_nodes = mesh.cell_nodes.transpose(0,3,2,1)
-    node_cells = mesh.node_cells
-    node_cells_inv = mesh.node_cells_inv
+    node_cells = mesh.node_cells.flat
+    node_cells_inv = mesh.node_cells_inv.flat
 
-    node_keep = node_cells.row_counts > 1
+    node_cell_counts = mesh.node_cells.row_counts
+
+    node_keep = node_cell_counts > 1
     num_nodes = np.count_nonzero(node_keep)
 
     if num_nodes < len(node_cells):
+      _node_keep = np.repeat(node_keep, node_cell_counts)
+
       cell_nodes = -np.ones_like(cell_nodes)
-      node_cells = node_cells[node_keep]
-      node_cells_inv = node_cells_inv[node_keep]
+      node_cells = node_cells[_node_keep]
+      node_cells_inv = node_cells_inv[_node_keep]
+      node_cell_counts = node_cell_counts[node_keep]
 
-      nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
-      cell_nodes.reshape(-1,8)[(node_cells.flat, node_cells_inv.flat)] = nodes
+      nodes = np.repeat(np.arange(num_nodes), node_cell_counts)
 
+      idx = (
+        node_cells,
+        node_cells_inv[:,0],
+        node_cells_inv[:,1],
+        node_cells_inv[:,2])
+      cell_nodes[idx] = nodes
+
+    # convert to 'z-order' index
+    node_cells_inv = (
+      node_cells_inv[:,0]
+      + 2*node_cells_inv[:,1]
+      + 4*node_cells_inv[:,2] )
+
+    #...........................................................................
+    # The edges are only stored when they connect trees.
+    cell_edges = mesh.cell_edges.transpose(0,1,3,2)
+    edge_cells = mesh.edge_cells.flat
+    edge_cells_inv = mesh.edge_cells_inv.flat
+
+    edge_cell_counts = mesh.edge_cells.row_counts
+
+    edge_keep = edge_cell_counts > 1
+    num_edges = np.count_nonzero(edge_keep)
+
+    if num_edges < len(edge_cells):
+      _edge_keep = np.repeat(edge_keep, edge_cell_counts)
+
+      cell_edges = -np.ones_like(cell_edges)
+      edge_cells = edge_cells[_edge_keep]
+      edge_cells_inv = edge_cells_inv[_edge_keep]
+      edge_cell_counts = edge_cell_counts[edge_keep]
+
+      edges = np.repeat(np.arange(num_edges), edge_cell_counts)
+
+      idx = (
+        edge_cells,
+        edge_cells_inv[:,0],
+        edge_cells_inv[:,1],
+        edge_cells_inv[:,2])
+      cell_edges[idx] = edges
+
+
+    # convert to 'z-order' index
+    edge_cells_inv = (
+      4*edge_cells_inv[:,0]
+      + edge_cells_inv[:,1]
+      + 2*edge_cells_inv[:,2] )
+
+    #...........................................................................
     requirements = ['C_CONTIGUOUS', 'ALIGNED', 'OWNDATA']
 
     self.vertices = np.require(
@@ -76,7 +114,7 @@ cdef class P8estConnectivity:
       dtype = np.double,
       requirements = requirements)
     self.tree_to_vertex = np.require(
-      mesh.cells,
+      cells,
       dtype = np.int32,
       requirements = requirements)
     self.tree_to_tree = np.require(
@@ -88,37 +126,37 @@ cdef class P8estConnectivity:
       dtype = np.int8,
       requirements = requirements)
 
-    self.tree_to_edge = np.require(
-      cell_edges,
-      dtype = np.int32,
-      requirements = requirements)
-    self.ett_offset = np.require(
-      edge_cells.row_idx,
-      dtype = np.int32,
-      requirements = requirements)
-    self.edge_to_tree = np.require(
-      edge_cells.flat,
-      dtype = np.int32,
-      requirements = requirements)
-    self.edge_to_edge = np.require(
-      edge_cells_inv.flat,
-      dtype = np.int8,
-      requirements = requirements)
-
     self.tree_to_corner = np.require(
       cell_nodes,
       dtype = np.int32,
       requirements = requirements)
     self.ctt_offset = np.require(
-      node_cells.row_idx,
+      np.concatenate(([0],np.cumsum(node_cell_counts))),
       dtype = np.int32,
       requirements = requirements)
     self.corner_to_tree = np.require(
-      node_cells.flat,
+      node_cells,
       dtype = np.int32,
       requirements = requirements)
     self.corner_to_corner = np.require(
-      node_cells_inv.flat,
+      node_cells_inv,
+      dtype = np.int8,
+      requirements = requirements)
+
+    self.tree_to_edge = np.require(
+      cell_edges,
+      dtype = np.int32,
+      requirements = requirements)
+    self.ett_offset = np.require(
+      np.concatenate(([0],np.cumsum(edge_cell_counts))),
+      dtype = np.int32,
+      requirements = requirements)
+    self.edge_to_tree = np.require(
+      edge_cells,
+      dtype = np.int32,
+      requirements = requirements)
+    self.edge_to_edge = np.require(
+      edge_cells_inv,
       dtype = np.int8,
       requirements = requirements)
 

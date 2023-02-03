@@ -155,10 +155,10 @@ r"""Mapping node :math:`\in` :class:`~p4est.typing.NN` ⟶ cell
 Indexing is ``[node, cell]``
 """
 
-NodeCellsInv = NewType('NodeCellsInv', jagged_array[NN, np.ndarray[M, np.dtype[np.integer]]])
-r"""Mapping node :math:`\in` :class:`~p4est.typing.NN` ⟶ *cell-node* :math:`\in [0,7]`
+NodeCellsInv = NewType('NodeCellsInv', jagged_array[NN, np.ndarray[(M,3), np.dtype[np.integer]]])
+r"""Mapping node :math:`\in` :class:`~p4est.typing.NN` ⟶ *cell-node* :math:`\in [0,1]^3`
 
-Indexing is ``[node, cell]``
+Indexing is ``[node, cell, (axis0, axis1, axis2)]``
 """
 
 NodeEdgeCounts = NewType('NodeEdgeCounts', np.ndarray[NN, np.dtype[np.integer]])
@@ -168,7 +168,7 @@ r"""Number of edges incident upon each node ("valence" of node).
 CellEdges = NewType('CellEdges', np.ndarray[(NC, 3, 2, 2), np.dtype[np.integer]])
 r"""Mapping cell :math:`\in` :class:`~p4est.typing.NC` ⟶ edge :math:`\in` :class:`~p4est.typing.NE`
 
-Indexing is ``[cell, (axis0, axis1, axis2), ∓{axis1|axis2|axis0}, ∓{axis2|axis0|axis1}]``
+Indexing is ``[cell, (axis0, axis1, axis2), ∓{axis1|axis0|axis0}, ∓{axis2|axis2|axis1}]``
 
 .. code-block::
 
@@ -177,15 +177,15 @@ Indexing is ``[cell, (axis0, axis1, axis2), ∓{axis1|axis2|axis0}, ∓{axis2|ax
   cell_edges[:,0,1,0] ⟶ edge_axis0(+axis1, -axis2)
   cell_edges[:,0,1,1] ⟶ edge_axis0(+axis1, +axis2)
 
-  cell_edges[:,1,0,0] ⟶ edge_axis1(-axis2, -axis0)
-  cell_edges[:,1,0,1] ⟶ edge_axis1(-axis2, +axis0)
-  cell_edges[:,1,1,0] ⟶ edge_axis1(+axis2, -axis0)
-  cell_edges[:,1,1,1] ⟶ edge_axis1(+axis2, +axis0)
+  cell_edges[:,1,0,0] ⟶ edge_axis1(-axis0, -axis2)
+  cell_edges[:,1,0,1] ⟶ edge_axis1(-axis0, +axis2)
+  cell_edges[:,1,1,0] ⟶ edge_axis1(+axis0, -axis2)
+  cell_edges[:,1,1,1] ⟶ edge_axis1(+axis0, +axis2)
 
-  cell_edges[:,2,0,0] ⟶ edge_axis2(-axis1, -axis0)
-  cell_edges[:,2,0,1] ⟶ edge_axis2(-axis1, +axis0)
-  cell_edges[:,2,1,0] ⟶ edge_axis2(+axis1, -axis0)
-  cell_edges[:,2,1,1] ⟶ edge_axis2(+axis1, +axis0)
+  cell_edges[:,2,0,0] ⟶ edge_axis2(-axis0, -axis1)
+  cell_edges[:,2,0,1] ⟶ edge_axis2(-axis0, +axis1)
+  cell_edges[:,2,1,0] ⟶ edge_axis2(+axis0, -axis1)
+  cell_edges[:,2,1,1] ⟶ edge_axis2(+axis0, +axis1)
 """
 
 EdgeCells = NewType('EdgeCells', jagged_array[NE, np.ndarray[M, np.dtype[np.integer]]])
@@ -194,10 +194,10 @@ r"""Mapping edge :math:`\in` :class:`~p4est.typing.NE` ⟶ cell :math:`\in` :cla
 Indexing is ``[edge, cell]``
 """
 
-EdgeCellsInv = NewType('EdgeCellsInv', jagged_array[NE, np.ndarray[M, np.dtype[np.integer]]])
-r"""Mapping edge :math:`\in` :class:`~p4est.typing.NE` ⟶ *cell-edge* :math:`\in [0,12]`
+EdgeCellsInv = NewType('EdgeCellsInv', jagged_array[NE, np.ndarray[(M,3), np.dtype[np.integer]]])
+r"""Mapping edge :math:`\in` :class:`~p4est.typing.NE` ⟶ *cell-edge* :math:`\in [0,2]\times[0,1]^2`
 
-Indexing is ``[edge, cell]``
+Indexing is ``[edge, cell, (edge_axis0, axis1, axis2)]``
 """
 
 EdgeCellCounts = NewType('EdgeCellCounts', np.ndarray[NE, np.dtype[np.integer]])

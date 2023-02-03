@@ -91,6 +91,11 @@ def quad_cell_nodes(
   # aka. corner_to_corner
   node_cells_inv = (sort_idx % 4).astype(np.int8)
 
+  node_cells_inv = np.stack((
+    node_cells_inv % 2,
+    node_cells_inv // 2),
+    axis = 1 ).astype(np.int8)
+
   # Since these are raveled, the offset for each node is needed
   # to reconstruct the individual 'rows' of the jagged array
 

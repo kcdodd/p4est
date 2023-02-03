@@ -72,7 +72,7 @@ def hex_cell_nodes(
   # NOTE: the transpose is applied so that the array will put the
   # order of nodes in p4est "z-order": [000, 100, 010, 110, ..., 111],
   # which is the opposite as what would come from raveling the initial 'C' array
-  _cell_nodes = cell_nodes.transpose(0,3,2,1).ravel()
+  _cell_nodes = cell_nodes.ravel()
 
   # sorting the nodes (in raveled array) would put repeated entries into
   # contiguous groups.
@@ -91,6 +91,12 @@ def hex_cell_nodes(
   # also, map which vertex (within the cell)
   # aka. corner_to_corner
   node_cells_inv = (sort_idx % 8).astype(np.int8)
+
+  node_cells_inv = np.stack((
+    node_cells_inv // 4,
+    (node_cells_inv % 4) // 2,
+    node_cells_inv % 2),
+    axis = 1 ).astype(np.int8)
 
   # Since these are raveled, the offset for each node is needed
   # to reconstruct the individual 'rows' of the jagged array
@@ -120,101 +126,6 @@ def hex_cell_nodes(
     node_cells_inv )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def hex_cell_edges(cell_nodes: CellNodes) \
-  -> tuple[CellEdges, EdgeCells, EdgeCellsInv, NodeEdgeCounts, EdgeCellCounts]:
-  """Derives topological edges shared by cells
-
-  Parameters
-  ----------
-  cell_nodes : ndarray with shape = (NC, 2, 2, 2), dtype = np.int32
-    Mapping of cells to the indices of their (up to) 8 nodes
-
-  Returns
-  -------
-  cell_edges :
-  edge_cells :
-  edge_cells_inv :
-  node_edge_counts :
-  edge_cell_counts :
-  """
-  nc = len(cell_nodes)
-  cidx = np.arange(nc)
-
-  # NOTE: the transpose is applied so that the array will put the
-  # order of nodes in p4est "z-order": [000, 100, 010, 110, ..., 111],
-  # which is the opposite as what would come from raveling the initial 'C' array
-  cell_nodes = cell_nodes.transpose(0,3,2,1)
-
-  # build edges from per-cell node list (NC,12,2)
-  cell_edge_nodes = np.stack(
-    ( # x-edges
-      cell_nodes[:,0,0,:],
-      cell_nodes[:,0,1,:],
-      cell_nodes[:,1,0,:],
-      cell_nodes[:,1,1,:],
-      # y-edges
-      cell_nodes[:,0,:,0],
-      cell_nodes[:,0,:,1],
-      cell_nodes[:,1,:,0],
-      cell_nodes[:,1,:,1],
-      # z-edges
-      cell_nodes[:,:,0,0],
-      cell_nodes[:,:,0,1],
-      cell_nodes[:,:,1,0],
-      cell_nodes[:,:,1,1] ),
-    # NOTE: put the new face index as axis = 1, instead of axis = 0,
-    axis = 1 )
-
-  # sort nodes for each face, removing differences in node order
-  _cell_edge_nodes = np.sort(
-    # also reshape to a list of 4-node faces (NC,12,2) -> (12*NC,2)
-    cell_edge_nodes.reshape(12*nc, 2),
-    # sort over the 2 nodes of each edge
-    axis = 1 )
-
-  # reduce edges down to unique sets of 2 nodes
-  sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
-    _cell_edge_nodes,
-    # unique over all cells
-    axis = 0 )
-
-  edge_nodes = _cell_edge_nodes[sort_idx[unique_mask]]
-
-  # mapping of cell to unique edges
-  _cell_edges = inv_idx
-  # mapping of unique edges to the cells that share it
-  edge_cells = (sort_idx // 12).astype(np.int32)
-  # mapping to cell's local index of each edge
-  edge_cells_inv = (sort_idx % 12).astype(np.int8)
-
-  edge_cell_counts = np.diff(unique_idx)
-  edge_cells_idx = unique_idx
-
-  # (12*NC,) -> (NC, 3, 2, 2)
-  cell_edges = _cell_edges.reshape(nc, 3, 2, 2)
-
-  edge_cells = jagged_array(
-    data = edge_cells,
-    row_idx = edge_cells_idx )
-
-  edge_cells_inv = jagged_array(
-    data = edge_cells_inv,
-    row_idx = edge_cells_idx )
-
-  # compute the number of edges incident on each node
-  nodes, node_edge_counts = np.unique(edge_nodes, return_counts = True)
-
-  if nodes[0] == -1:
-    node_edge_counts = np.ascontiguousarray(node_edge_counts[1:])
-
-  return (
-    cell_edges,
-    edge_cells,
-    edge_cells_inv,
-    edge_cell_counts,
-    node_edge_counts )
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def hex_cell_adj(cell_nodes: CellNodes) -> tuple[CellAdj, CellAdjFace]:
   """Derives topological adjacency between hex. cells accross shared faces
 
@@ -234,6 +145,11 @@ def hex_cell_adj(cell_nodes: CellNodes) -> tuple[CellAdj, CellAdjFace]:
   nc = len(cell_nodes)
   cidx = np.arange(nc)
 
+  # NOTE: the transpose is applied so that the array will put the
+  # order of nodes in p4est "z-order": [000, 100, 010, 110, ..., 111],
+  # which is the opposite as what would come from raveling the initial 'C' array
+  cell_nodes = cell_nodes.transpose(0,3,2,1)
+
   # build adjacency from per-cell node list (NC,6,2,2) -> (NC,6,4)
   cell_face_nodes = np.stack(
     # 6 faces, defined from 4 nodes each -> (NC,6,2,2)
@@ -248,7 +164,6 @@ def hex_cell_adj(cell_nodes: CellNodes) -> tuple[CellAdj, CellAdjFace]:
       cell_nodes[:,1,:,:] ),
     # NOTE: put the new face index as axis = 1, instead of axis = 0,
     axis = 1 ).reshape(nc, 6, 4)
-
 
   # reduce faces down to unique sets of 4 nodes
   sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
@@ -328,3 +243,99 @@ def hex_cell_adj(cell_nodes: CellNodes) -> tuple[CellAdj, CellAdjFace]:
   cell_adj_face = cell_adj_face.reshape(nc, 3, 2)
 
   return cell_adj, cell_adj_face
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def hex_cell_edges(cell_nodes: CellNodes) \
+  -> tuple[CellEdges, EdgeCells, EdgeCellsInv, NodeEdgeCounts, EdgeCellCounts]:
+  """Derives topological edges shared by cells
+
+  Parameters
+  ----------
+  cell_nodes : ndarray with shape = (NC, 2, 2, 2), dtype = np.int32
+    Mapping of cells to the indices of their (up to) 8 nodes
+
+  Returns
+  -------
+  cell_edges :
+  edge_cells :
+  edge_cells_inv :
+  node_edge_counts :
+  edge_cell_counts :
+  """
+  nc = len(cell_nodes)
+  cidx = np.arange(nc)
+
+  # build edges from per-cell node list (NC,12,2)
+  cell_edge_nodes = np.stack(
+    ( # x-edges
+      cell_nodes[:,:,0,0],
+      cell_nodes[:,:,0,1],
+      cell_nodes[:,:,1,0],
+      cell_nodes[:,:,1,1],
+      # y-edges
+      cell_nodes[:,0,:,0],
+      cell_nodes[:,0,:,1],
+      cell_nodes[:,1,:,0],
+      cell_nodes[:,1,:,1],
+      # z-edges
+      cell_nodes[:,0,0,:],
+      cell_nodes[:,0,1,:],
+      cell_nodes[:,1,0,:],
+      cell_nodes[:,1,1,:] ),
+    # NOTE: put the new face index as axis = 1, instead of axis = 0,
+    axis = 1 )
+
+  # sort nodes for each face, removing differences in node order
+  _cell_edge_nodes = np.sort(
+    # also reshape to a list of 4-node faces (NC,12,2) -> (12*NC,2)
+    cell_edge_nodes.reshape(12*nc, 2),
+    # sort over the 2 nodes of each edge
+    axis = 1 )
+
+  # reduce edges down to unique sets of 2 nodes
+  sort_idx, unique_mask, unique_idx, inv_idx = unique_full(
+    _cell_edge_nodes,
+    # unique over all cells
+    axis = 0 )
+
+  edge_nodes = _cell_edge_nodes[sort_idx[unique_mask]]
+
+  # mapping of cell to unique edges
+  _cell_edges = inv_idx
+  # mapping of unique edges to the cells that share it
+  edge_cells = (sort_idx // 12).astype(np.int32)
+  # mapping to cell's local index of each edge
+  edge_cells_inv = (sort_idx % 12).astype(np.int8)
+
+  edge_cells_inv = np.stack((
+    # (x,y,z)-edge
+    edge_cells_inv // 4,
+    # -/+(y,x,x)
+    (edge_cells_inv % 4) // 2,
+    # -/+(z,z,y)
+    edge_cells_inv % 2 ),
+    axis = 1 ).astype(np.int8)
+
+  edge_cell_counts = np.diff(unique_idx)
+  edge_cells_idx = unique_idx
+
+  # (12*NC,) -> (NC, 3, 2, 2)
+  cell_edges = _cell_edges.reshape(nc, 3, 2, 2)
+
+  edge_cells = jagged_array(
+    data = edge_cells,
+    row_idx = edge_cells_idx )
+
+  edge_cells_inv = jagged_array(
+    data = edge_cells_inv,
+    row_idx = edge_cells_idx )
+
+  # compute the number of edges incident on each node
+  nodes, node_edge_counts = np.unique(edge_nodes, return_counts = True)
+
+  return (
+    cell_edges,
+    edge_cells,
+    edge_cells_inv,
+    edge_cell_counts,
+    node_edge_counts )

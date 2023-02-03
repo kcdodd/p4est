@@ -48,7 +48,6 @@ class HexMesh:
   verts :
     Position of each vertex.
     (AKA :c:var:`p8est_connectivity_t.vertices`)
-    Indexing is ``[vertex, (x,y,z)]``
   cells :
     Mapping of hexahedral cells to the indices of their 8 vertices.
     (AKA :c:var:`p8est_connectivity_t.tree_to_vertex`)
@@ -84,11 +83,18 @@ class HexMesh:
 
     verts = np.ascontiguousarray(
       verts,
-      dtype = np.float64 ).reshape(-1, 3)
+      dtype = np.float64 )
 
+    if verts.ndim != 2 or verts.shape[1] != 3:
+      raise ValueError(f"'verts' must have shape (NV,3): {verts.ndim}")
+
+    #...........................................................................
     cells = np.ascontiguousarray(
       cells,
-      dtype = np.int32 ).reshape(-1, 2, 2, 2)
+      dtype = np.int32 )
+
+    if cells.ndim != 4 or cells.shape[1:] != (2,2,2):
+      raise ValueError(f"'cells' must have shape (NC,2,2,2): {cells.ndim}")
 
     #...........................................................................
     if vert_nodes is None:
@@ -188,29 +194,10 @@ class HexMesh:
     self._vert_geom = vert_geom
 
     #...........................................................................
-    # TODO: ensure proper dtype of the jagged_array?
-    if not (
-      isinstance(edge_cells, jagged_array)
-      and isinstance(edge_cells_inv, jagged_array)
-      and edge_cells.flat.shape == edge_cells_inv.flat.shape
-      and (
-        edge_cells.row_idx is edge_cells_inv.row_idx
-        or np.all(edge_cells.row_idx == edge_cells_inv.row_idx) ) ):
-
-      raise ValueError(f"edge_cells and edge_cells_inv must have the same structure")
-
-    edges = np.repeat(np.arange(len(edge_cells)), edge_cells.row_counts)
-    _edges = cell_edges.reshape(-1,12)[(edge_cells.flat, edge_cells_inv.flat)]
-
-    if not np.all(_edges == edges):
-      raise ValueError(
-        f"'cell_edges' is not consistent with 'edge_cells' and 'edge_cells_inv'")
-
-    #...........................................................................
     if not (
       isinstance(node_cells, jagged_array)
       and isinstance(node_cells_inv, jagged_array)
-      and node_cells.flat.shape == node_cells_inv.flat.shape
+      and node_cells.flat.shape[0] == node_cells_inv.flat.shape[0]
       and (
         node_cells.row_idx is node_cells_inv.row_idx
         or np.all(node_cells.row_idx == node_cells_inv.row_idx) ) ):
@@ -219,11 +206,38 @@ class HexMesh:
 
 
     nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
-    _nodes = self._cell_nodes.reshape(-1,8)[(node_cells.flat, node_cells_inv.flat)]
+    _nodes = self._cell_nodes[
+      (node_cells.flat,
+       node_cells_inv.flat[:,0],
+       node_cells_inv.flat[:,1],
+       node_cells_inv.flat[:,2])]
 
     if not np.all(_nodes == nodes):
       raise ValueError(
         f"'cell_nodes' is not consistent with 'node_cells' and 'node_cells_inv'.")
+
+    #...........................................................................
+    # TODO: ensure proper dtype of the jagged_array?
+    if not (
+      isinstance(edge_cells, jagged_array)
+      and isinstance(edge_cells_inv, jagged_array)
+      and edge_cells.flat.shape[0] == edge_cells_inv.flat.shape[0]
+      and (
+        edge_cells.row_idx is edge_cells_inv.row_idx
+        or np.all(edge_cells.row_idx == edge_cells_inv.row_idx) ) ):
+
+      raise ValueError(f"edge_cells and edge_cells_inv must have the same structure")
+
+    edges = np.repeat(np.arange(len(edge_cells)), edge_cells.row_counts)
+    _edges = cell_edges[(
+      edge_cells.flat,
+      edge_cells_inv.flat[:,0],
+      edge_cells_inv.flat[:,1],
+      edge_cells_inv.flat[:,2])]
+
+    if not np.all(_edges == edges):
+      raise ValueError(
+        f"'cell_edges' is not consistent with 'edge_cells' and 'edge_cells_inv'")
 
     #...........................................................................
     self._edge_cells = edge_cells

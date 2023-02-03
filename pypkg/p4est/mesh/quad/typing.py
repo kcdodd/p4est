@@ -137,8 +137,8 @@ r"""Mapping node :math:`\in` :class:`~p4est.typing.NN` ⟶ cell
 Indexing is ``[node, cell]``
 """
 
-NodeCellsInv = NewType('NodeCellsInv', jagged_array[NN, np.ndarray[M, np.dtype[np.integer]]])
-r"""Mapping node :math:`\in` :class:`~p4est.typing.NN` ⟶ *cell-node* :math:`\in [0,3]`
+NodeCellsInv = NewType('NodeCellsInv', jagged_array[NN, np.ndarray[(M,2), np.dtype[np.integer]]])
+r"""Mapping node :math:`\in` :class:`~p4est.typing.NN` ⟶ *cell-node* :math:`\in [0,1]^2`
 
-Indexing is ``[node, cell]``
+Indexing is ``[node, cell, (axis0, axis1)]``
 """

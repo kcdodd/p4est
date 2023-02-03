@@ -40,6 +40,7 @@ class QuadMesh:
   verts:
     Position of each vertex.
     (AKA :c:var:`p4est_connectivity_t.vertices`)
+    Indexing is ``[vertex, (axis0,axis1,axis2)]``
   cells:
     Mapping of quadrilateral cells to the indices of their 4 vertices.
     (AKA :c:var:`p4est_connectivity_t.tree_to_vertex`)
@@ -73,6 +74,21 @@ class QuadMesh:
     vert_nodes: VertNodes = None,
     geoms: Sequence[QuadGeometry] = None,
     vert_geom: VertGeom = None ):
+
+    verts = np.ascontiguousarray(
+      verts,
+      dtype = np.float64 )
+
+    if verts.ndim != 2 or verts.shape[1] != 3:
+      raise ValueError(f"'verts' must have shape (NV,3): {verts.shape}")
+
+    #...........................................................................
+    cells = np.ascontiguousarray(
+      cells,
+      dtype = np.int32 )
+
+    if cells.ndim != 3 or cells.shape[1:] != (2,2):
+      raise ValueError(f"'cells' must have shape (NC,2,2): {cells.shape}")
 
     #...........................................................................
     if vert_nodes is None:
@@ -151,7 +167,6 @@ class QuadMesh:
     if not (
       isinstance(node_cells, jagged_array)
       and isinstance(node_cells_inv, jagged_array)
-      and node_cells.flat.shape == node_cells_inv.flat.shape
       and (
         node_cells.row_idx is node_cells_inv.row_idx
         or np.all(node_cells.row_idx == node_cells_inv.row_idx) ) ):
@@ -182,7 +197,11 @@ class QuadMesh:
     self._vert_geom = vert_geom
 
     nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
-    _nodes = self._cell_nodes.reshape(-1,4)[(node_cells.flat, node_cells_inv.flat)]
+    _nodes = self._cell_nodes[
+      (node_cells.flat,
+       node_cells_inv.flat[:,0],
+       node_cells_inv.flat[:,1])]
+
     if not np.all(_nodes == nodes):
       raise ValueError(
         f"'node_cells' and 'node_cells_inv' are not consistent with 'node_cells'")
