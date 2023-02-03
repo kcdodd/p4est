@@ -55,12 +55,7 @@ cdef class P4estConnectivity:
       node_cell_counts = node_cell_counts[node_keep]
 
       nodes = np.repeat(np.arange(num_nodes), node_cell_counts)
-
-      idx = (
-        node_cells,
-        node_cells_inv[:,0],
-        node_cells_inv[:,1])
-      cell_nodes[idx] = nodes
+      cell_nodes[(node_cells, *node_cells_inv.T)] = nodes
 
     # convert to 'z-order' index
     node_cells_inv = (

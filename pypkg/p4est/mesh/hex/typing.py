@@ -158,7 +158,7 @@ Indexing is ``[node, cell]``
 NodeCellsInv = NewType('NodeCellsInv', jagged_array[NN, np.ndarray[(M,3), np.dtype[np.integer]]])
 r"""Mapping node :math:`\in` :class:`~p4est.typing.NN` ⟶ *cell-node* :math:`\in [0,1]^3`
 
-Indexing is ``[node, cell, (axis0, axis1, axis2)]``
+Indexing is ``[node, cell, (∓axis0, ∓axis1, ∓axis2)]``
 """
 
 NodeEdgeCounts = NewType('NodeEdgeCounts', np.ndarray[NN, np.dtype[np.integer]])
@@ -197,7 +197,7 @@ Indexing is ``[edge, cell]``
 EdgeCellsInv = NewType('EdgeCellsInv', jagged_array[NE, np.ndarray[(M,3), np.dtype[np.integer]]])
 r"""Mapping edge :math:`\in` :class:`~p4est.typing.NE` ⟶ *cell-edge* :math:`\in [0,2]\times[0,1]^2`
 
-Indexing is ``[edge, cell, (edge_axis0, axis1, axis2)]``
+Indexing is ``[edge, cell, (edge_axis0, ∓axis1, ∓axis2)]``
 """
 
 EdgeCellCounts = NewType('EdgeCellCounts', np.ndarray[NE, np.dtype[np.integer]])

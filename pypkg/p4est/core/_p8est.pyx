@@ -57,13 +57,7 @@ cdef class P8estConnectivity:
       node_cell_counts = node_cell_counts[node_keep]
 
       nodes = np.repeat(np.arange(num_nodes), node_cell_counts)
-
-      idx = (
-        node_cells,
-        node_cells_inv[:,0],
-        node_cells_inv[:,1],
-        node_cells_inv[:,2])
-      cell_nodes[idx] = nodes
+      cell_nodes[(node_cells, *node_cells_inv.T)] = nodes
 
     # convert to 'z-order' index
     node_cells_inv = (
@@ -91,13 +85,7 @@ cdef class P8estConnectivity:
       edge_cell_counts = edge_cell_counts[edge_keep]
 
       edges = np.repeat(np.arange(num_edges), edge_cell_counts)
-
-      idx = (
-        edge_cells,
-        edge_cells_inv[:,0],
-        edge_cells_inv[:,1],
-        edge_cells_inv[:,2])
-      cell_edges[idx] = edges
+      cell_edges[(edge_cells, *edge_cells_inv.T)] = edges
 
 
     # convert to 'z-order' index

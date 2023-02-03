@@ -197,10 +197,7 @@ class QuadMesh:
     self._vert_geom = vert_geom
 
     nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
-    _nodes = self._cell_nodes[
-      (node_cells.flat,
-       node_cells_inv.flat[:,0],
-       node_cells_inv.flat[:,1])]
+    _nodes = self._cell_nodes[(node_cells.flat, *node_cells_inv.flat.T)]
 
     if not np.all(_nodes == nodes):
       raise ValueError(
@@ -277,15 +274,16 @@ class QuadMesh:
   #-----------------------------------------------------------------------------
   @property
   def node_cells_inv(self) -> NodeCellsInv:
-    """Mapping to the cell's local vertex {0,1,2,3} in ``cell_nodes`` which maps
+    """Mapping to the cell's local vertex in ``cell_nodes`` which maps
     back to the node.
     (AKA :c:var:`p4est_connectivity_t.corner_to_corner`)
 
     .. code-block::
 
       nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
-      _nodes = cell_nodes.reshape(-1,4)[(node_cells.flat, node_cells_inv.flat)]
-      valid = nodes == _nodes
+      _nodes = cell_nodes[(node_cells.flat, *node_cells_inv.flat.T)]
+
+      assert np.all(nodes == _nodes)
     """
     return self._node_cells_inv
 
