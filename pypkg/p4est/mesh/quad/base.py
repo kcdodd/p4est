@@ -13,7 +13,8 @@ if TYPING:
     VertNodes,
     Cells,
     CellAdj,
-    CellAdjFace,
+    CellAdjInv,
+    CellAdjOrder,
     CellNodes,
     NodeCells,
     NodeCellsInv,
@@ -162,7 +163,14 @@ class QuadMesh:
     full_vert_nodes[independent] = np.arange(ni) + np.amax(self._vert_nodes) + 1
 
     ( cell_adj,
-      cell_adj_face ) = quad_cell_adj(full_vert_nodes[cells])
+      cell_adj_inv,
+      cell_adj_order) = quad_cell_adj(full_vert_nodes[cells])
+
+    _cells_idx = cell_adj[(cell_adj, *cell_adj_inv.transpose(3,0,1,2))]
+
+    if not np.all(np.arange(len(cells))[:,None,None] == _cells_idx):
+      raise ValueError(
+        f"'cell_adj' is not consistent with 'cell_adj_inv'")
 
     if not (
       isinstance(node_cells, jagged_array)
@@ -185,9 +193,11 @@ class QuadMesh:
       cell_adj,
       dtype = np.int32 )
 
-    self._cell_adj_face = np.ascontiguousarray(
-      cell_adj_face,
+    self._cell_adj_inv = np.ascontiguousarray(
+      cell_adj_inv,
       dtype = np.int8 )
+
+    self._cell_adj_order = cell_adj_order
 
     self._cell_nodes = np.ascontiguousarray(
       cell_nodes,
@@ -247,11 +257,20 @@ class QuadMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def cell_adj_face(self) -> CellAdjFace:
-    """Topological order of the faces of each connected cell.
+  def cell_adj_inv(self) -> CellAdjInv:
+    """Mapping to the cell's local face in ``cell_adj`` which maps back to the cell.
     (AKA :c:var:`p4est_connectivity_t.tree_to_face`)
     """
-    return self._cell_adj_face
+    return self._cell_adj_inv
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cell_adj_order(self) -> CellAdjOrder:
+    """Ordering of face in adjacent cell
+    (AKA :c:var:`p4est_connectivity_t.tree_to_face`)
+
+    """
+    return self._cell_adj_order
 
   #-----------------------------------------------------------------------------
   @property

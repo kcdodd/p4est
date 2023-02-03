@@ -63,6 +63,13 @@ cdef class P4estConnectivity:
       + 2*node_cells_inv[:,1] )
 
     #...........................................................................
+    # convert to 'z-order' index
+    tree_to_face = (
+      2 * mesh.cell_adj_inv[:,:,:,0]
+      + mesh.cell_adj_inv[:,:,:,1]
+      + 4*mesh.cell_adj_order )
+
+    #...........................................................................
     requirements = ['C_CONTIGUOUS', 'ALIGNED', 'OWNDATA']
 
     self.vertices = np.require(
@@ -78,7 +85,7 @@ cdef class P4estConnectivity:
       dtype = np.int32,
       requirements = requirements)
     self.tree_to_face = np.require(
-      mesh.cell_adj_face,
+      tree_to_face,
       dtype = np.int8,
       requirements = requirements)
 
@@ -429,7 +436,7 @@ cdef class P4est:
       weight = self._local.weight,
       adapt = self._local.adapt,
       cell_adj = self._local.cell_adj,
-      cell_adj_face = self._local.cell_adj_face,
+      cell_adj_inv = self._local.cell_adj_inv,
       cell_adj_subface = self._local.cell_adj_subface,
       cell_adj_order = self._local.cell_adj_order,
       cell_adj_level = self._local.cell_adj_level,
@@ -659,7 +666,7 @@ cdef void _sync_local_info(
   npy.npy_int32[:] weight,
   npy.npy_int8[:] adapt,
   npy.npy_int32[:,:,:,:] cell_adj,
-  npy.npy_int8[:,:,:] cell_adj_face,
+  npy.npy_int8[:,:,:] cell_adj_inv,
   npy.npy_int8[:,:,:] cell_adj_subface,
   npy.npy_int8[:,:,:] cell_adj_order,
   npy.npy_int8[:,:,:] cell_adj_level,
@@ -694,7 +701,7 @@ cdef void _sync_local_info(
     npy.npy_int32[:,:] prev_fine_idx
 
     npy.npy_int32 cell_adj_idx = 0
-    npy.npy_int8 cell_adj_face_idx = 0
+    npy.npy_int8 cell_adj_inv_idx = 0
     npy.npy_int8 face_order = 0
 
 
@@ -771,24 +778,24 @@ cdef void _sync_local_info(
         for j in  range(2):
 
           cell_adj_idx = quad_to_quad[cell_idx,i,j]
-          cell_adj_face_idx = quad_to_face[cell_idx,i,j]
+          cell_adj_inv_idx = quad_to_face[cell_idx,i,j]
 
           # A value of v = 0..7 indicates one same-size neighbor.
           # A value of v = 8..23 indicates a double-size neighbor.
           # designates the subface of the large neighbor that the quadrant
           # touches (this is the same as the large neighbor's face corner).
           # A value of v = -8..-1 indicates two half-size neighbors.
-          face_order = cell_adj_face_idx % 8
+          face_order = cell_adj_inv_idx % 8
 
-          cell_adj_face[cell_idx,i,j] = face_order % 4
+          cell_adj_inv[cell_idx,i,j] = face_order % 4
           cell_adj_order[cell_idx,i,j] = face_order // 4
 
-          cell_adj_subface[cell_idx,i,j] = cell_adj_face_idx // 16
+          cell_adj_subface[cell_idx,i,j] = cell_adj_inv_idx // 16
 
 
-          if cell_adj_face_idx >= 0:
+          if cell_adj_inv_idx >= 0:
             cell_adj[cell_idx,i,j] = cell_adj_idx
-            cell_adj_level[cell_idx,i,j] = 0 if (cell_adj_face_idx < 8) else -1
+            cell_adj_level[cell_idx,i,j] = 0 if (cell_adj_inv_idx < 8) else -1
           else:
             # In this case the corresponding quad_to_quad index points into the
             # quad_to_half array that stores two quadrant numbers per index,

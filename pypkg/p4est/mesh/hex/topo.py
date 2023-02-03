@@ -9,7 +9,7 @@ if TYPING:
     VertNodes,
     CellNodes,
     CellAdj,
-    CellAdjFace,
+    CellAdjInv,
     NodeCells,
     NodeCellsInv,
     NodeEdgeCounts,
@@ -126,7 +126,7 @@ def hex_cell_nodes(
     node_cells_inv )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def hex_cell_adj(cell_nodes: CellNodes) -> tuple[CellAdj, CellAdjFace]:
+def hex_cell_adj(cell_nodes: CellNodes) -> tuple[CellAdj, CellAdjInv]:
   """Derives topological adjacency between hex. cells accross shared faces
 
   Parameters
@@ -138,7 +138,7 @@ def hex_cell_adj(cell_nodes: CellNodes) -> tuple[CellAdj, CellAdjFace]:
   -------
   cell_adj :
     Topological connectivity to other cells accross each face.
-  cell_adj_face :
+  cell_adj_inv :
     Topological order of the faces of each connected cell
 
   """
@@ -234,15 +234,27 @@ def hex_cell_adj(cell_nodes: CellNodes) -> tuple[CellAdj, CellAdjFace]:
     np.nonzero(cell_face_nodes[c0,f0] == ref_node[:,None])[1] )
 
   # set the corresponding index of the face and relative orientation to adjacent cell
-  cell_adj_face = np.empty((nc, 6), dtype = np.int8)
-  # default adjacent face is same face
-  cell_adj_face[:] = np.arange(6)[None,:]
-  # computed adjacent face
-  cell_adj_face[c0,f0] = f1 + 6*orientation
-  cell_adj_face[c1,f1] = f0 + 6*orientation
-  cell_adj_face = cell_adj_face.reshape(nc, 3, 2)
+  cell_adj_inv = np.empty((nc,6,2), dtype = np.int8)
+  cell_adj_order = np.empty((nc,6), dtype = np.int8)
 
-  return cell_adj, cell_adj_face
+  # default adjacent face is same face of own cell
+  cell_adj_inv[:,:,0] = np.repeat(np.arange(3), 2)[None,:]
+  cell_adj_inv[:,:,1] = np.tile(np.arange(2), 3)[None,:]
+
+  # computed adjacent face
+  cell_adj_inv[c0,f0,0] = f1 // 2
+  cell_adj_inv[c0,f0,1] = f1 % 2
+  cell_adj_order[c0,f0] = orientation
+
+  cell_adj_inv[c1,f1,0] = f0 // 2
+  cell_adj_inv[c1,f1,1] = f0 % 2
+  cell_adj_order[c1,f1] = orientation
+
+
+  cell_adj_inv = cell_adj_inv.reshape(nc, 3, 2, 2)
+  cell_adj_order = cell_adj_order.reshape(nc, 3, 2)
+
+  return cell_adj, cell_adj_inv, cell_adj_order
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def hex_cell_edges(cell_nodes: CellNodes) \

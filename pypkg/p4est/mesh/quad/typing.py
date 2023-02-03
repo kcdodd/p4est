@@ -108,11 +108,26 @@ Indexing is ``[cell, (axis0, axis1), ∓{axis0|axis1}]``
   cell_adj[:,1,1] ⟶ face_axis1(+axis1)
 """
 
-CellAdjFace = NewType('CellAdjFace', np.ndarray[(NC, 2, 2), np.dtype[np.integer]])
-r"""Topological order of the faces of each connected cell,
-cell :math:`\in` :class:`~p4est.typing.NC` ⟶ *cell-face* :math:`\in [0,7]`
+CellAdjInv = NewType('CellAdjInv', np.ndarray[(NC, 2, 2, 2), np.dtype[np.integer]])
+r"""Mapping to the shared face back to cell,
+cell :math:`\in` :class:`~p4est.typing.NC` ⟶ *cell-face* :math:`\in [0,1]\times[0,1]`
 
-Indexing is ``[cell, (axis0, axis1), ∓{axis0|axis1}]``
+Indexing is ``[cell, (axis0, axis1), ∓axis{0|1}, (face_axis{0|1}, ∓axis{0|1})]``
+
+.. code-block:: python
+
+  # convert to 'z-order' index
+  tree_to_face = (
+    2 * cell_adj_inv[:,:,:,0]
+    + cell_adj_inv[:,:,:,1]
+    + 4*cell_adj_order ).reshape(-1,6)
+"""
+
+CellAdjOrder = NewType('CellAdjOrder', np.ndarray[(NC, 2, 2), np.dtype[np.integer]])
+r"""Topological order of the faces of each connected cell,
+cell :math:`\in` :class:`~p4est.typing.NC` ⟶ *order* :math:`\in [0,1]`
+
+Indexing is ``[cell, (axis0, axis1), ∓axis{0|1}]``
 """
 
 CellNodes = NewType('CellNodes', np.ndarray[(NC, 2, 2), np.dtype[np.integer]])

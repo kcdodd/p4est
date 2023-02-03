@@ -13,7 +13,8 @@ if TYPING:
     VertNodes,
     Cells,
     CellAdj,
-    CellAdjFace,
+    CellAdjInv,
+    CellAdjOrder,
     CellNodes,
     NodeCells,
     NodeCellsInv,
@@ -171,8 +172,14 @@ class HexMesh:
       self._node_edge_counts ) = hex_cell_edges(cell_nodes)
 
     ( cell_adj,
-      cell_adj_face ) = hex_cell_adj(cell_nodes)
+      cell_adj_inv,
+      cell_adj_order ) = hex_cell_adj(cell_nodes)
 
+    _cells_idx = cell_adj[(cell_adj, *cell_adj_inv.transpose(3,0,1,2))]
+
+    if not np.all(np.arange(len(cells))[:,None,None] == _cells_idx):
+      raise ValueError(
+        f"'cell_adj' is not consistent with 'cell_adj_inv'")
 
     self._verts = np.ascontiguousarray(
       verts,
@@ -184,7 +191,9 @@ class HexMesh:
 
     self._cell_adj = cell_adj
 
-    self._cell_adj_face = cell_adj_face
+    self._cell_adj_inv = cell_adj_inv
+
+    self._cell_adj_order = cell_adj_order
 
     self._cell_edges = cell_edges
 
@@ -251,7 +260,7 @@ class HexMesh:
     mesh._verts = copy(self._verts)
     mesh._cells = copy(self._cells)
     mesh._cell_adj = copy(self._cell_adj)
-    mesh._cell_adj_face = copy(self._cell_adj_face)
+    mesh._cell_adj_inv = copy(self._cell_adj_inv)
     mesh._cell_edges = copy(self._cell_edges)
     mesh._cell_nodes = copy(self._cell_nodes)
     mesh._edge_cells = copy(self._edge_cells)
@@ -303,11 +312,28 @@ class HexMesh:
 
   #-----------------------------------------------------------------------------
   @property
-  def cell_adj_face(self) -> CellAdjFace:
-    """Topological order of the faces of each connected cell.
+  def cell_adj_inv(self) -> CellAdjInv:
+    """Mapping to the cell's local face in ``cell_adj`` which maps back to the cell.
     (AKA :c:var:`p8est_connectivity_t.tree_to_face`)
+
+    .. code-block::
+
+      cell_idx = np.arange(len(cells))[:,None,None]
+      _cell_idx = cell_adj[(cell_adj, *cell_adj_inv.transpose(3,0,1,2))]
+
+      assert np.all(cell_idx == _cell_idx)
+
     """
-    return self._cell_adj_face
+    return self._cell_adj_inv
+
+  #-----------------------------------------------------------------------------
+  @property
+  def cell_adj_order(self) -> CellAdjOrder:
+    """Ordering of face in adjacent cell
+    (AKA :c:var:`p8est_connectivity_t.tree_to_face`)
+
+    """
+    return self._cell_adj_order
 
   #-----------------------------------------------------------------------------
   @property
@@ -337,7 +363,7 @@ class HexMesh:
     .. code-block::
 
       nodes = np.repeat(np.arange(len(node_cells)), node_cells.row_counts)
-      _nodes = self._cell_nodes[(node_cells.flat, *node_cells_inv.flat.T)]
+      _nodes = cell_nodes[(node_cells.flat, *node_cells_inv.flat.T)]
 
       assert np.all(nodes == _nodes)
     """

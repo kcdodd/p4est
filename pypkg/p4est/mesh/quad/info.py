@@ -65,7 +65,7 @@ class QuadLocalInfo(Info):
   Otherwise each half is shared with different cells of 1/2 size.
   """
 
-  cell_adj_face = InfoField((2,2), np.int8)
+  cell_adj_inv = InfoField((2,2), np.int8)
   """Connecting face {0..7} of the adjacent cell
 
   .. code-block::

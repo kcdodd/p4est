@@ -77,8 +77,7 @@ def plot_grid(grid):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def run_cube():
   mesh = cube()
-  print("Cube")
-  mesh.show()
+  # mesh.show()
 
   grid = HexAMR(
     mesh = mesh)

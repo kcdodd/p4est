@@ -95,6 +95,13 @@ cdef class P8estConnectivity:
       + 2*edge_cells_inv[:,2] )
 
     #...........................................................................
+    # convert to 'z-order' index
+    tree_to_face = (
+      2 * mesh.cell_adj_inv[:,:,:,0]
+      + mesh.cell_adj_inv[:,:,:,1]
+      + 6*mesh.cell_adj_order )
+
+    #...........................................................................
     requirements = ['C_CONTIGUOUS', 'ALIGNED', 'OWNDATA']
 
     self.vertices = np.require(
@@ -110,7 +117,7 @@ cdef class P8estConnectivity:
       dtype = np.int32,
       requirements = requirements)
     self.tree_to_face = np.require(
-      mesh.cell_adj_face,
+      tree_to_face,
       dtype = np.int8,
       requirements = requirements)
 
@@ -510,7 +517,7 @@ cdef class P8est:
       weight = self._local.weight,
       adapt = self._local.adapt,
       cell_adj = self._local.cell_adj,
-      cell_adj_face = self._local.cell_adj_face,
+      cell_adj_inv = self._local.cell_adj_inv,
       cell_adj_subface = self._local.cell_adj_subface,
       cell_adj_order = self._local.cell_adj_order,
       cell_adj_level = self._local.cell_adj_level,
@@ -732,7 +739,7 @@ cdef _sync_local(
   npy.npy_int32[:] weight,
   npy.npy_int8[:] adapt,
   npy.npy_int32[:,:,:,:,:] cell_adj,
-  npy.npy_int8[:,:,:] cell_adj_face,
+  npy.npy_int8[:,:,:] cell_adj_inv,
   npy.npy_int8[:,:,:] cell_adj_subface,
   npy.npy_int8[:,:,:] cell_adj_order,
   npy.npy_int8[:,:,:] cell_adj_level,
@@ -770,7 +777,7 @@ cdef _sync_local(
     const npy.npy_int32[:] _quad_to_half
 
     npy.npy_int32 cell_adj_idx = 0
-    npy.npy_int8 cell_adj_face_idx = 0
+    npy.npy_int8 cell_adj_inv_idx = 0
     npy.npy_int8 face_order = 0
 
   for root_idx in range(first_local_tree, last_local_tree+1):
@@ -854,7 +861,7 @@ cdef _sync_local(
         # loop -x,+x
         for j in  range(2):
           cell_adj_idx = quad_to_quad[cell_idx,i,j]
-          cell_adj_face_idx = quad_to_face[cell_idx,i,j]
+          cell_adj_inv_idx = quad_to_face[cell_idx,i,j]
 
           # A value of v = 0..23 indicates one same-size neighbor.
           # v = r * 6 + nf
@@ -866,21 +873,21 @@ cdef _sync_local(
           # v = 24 + h * 24 + r * 6 + nf
           # h = 0..3 is the number of the subface.
           # A value of v = -24..-1 indicates four half-size neighbors.
-          face_order = cell_adj_face_idx % 24
+          face_order = cell_adj_inv_idx % 24
 
-          cell_adj_face[cell_idx,i,j] = face_order % 6
+          cell_adj_inv[cell_idx,i,j] = face_order % 6
           cell_adj_order[cell_idx,i,j] = face_order // 6
 
           # v -> 0, or 1 + h
-          m = cell_adj_face_idx // 24
+          m = cell_adj_inv_idx // 24
 
           cell_adj_subface[cell_idx,i,j] = 0 if m == 0 else (m - 1)
 
 
-          if cell_adj_face_idx >= 0:
+          if cell_adj_inv_idx >= 0:
             # neighbor <= level
             cell_adj[cell_idx,i,j,:,:] = cell_adj_idx
-            cell_adj_level[cell_idx,i,j] = 0 if (cell_adj_face_idx < 8) else -1
+            cell_adj_level[cell_idx,i,j] = 0 if (cell_adj_inv_idx < 8) else -1
           else:
             # neighbor > level
             # In this case the corresponding quad_to_quad index points into the

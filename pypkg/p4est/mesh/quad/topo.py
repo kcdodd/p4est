@@ -9,7 +9,7 @@ if TYPING:
     VertNodes,
     CellNodes,
     CellAdj,
-    CellAdjFace,
+    CellAdjInv,
     NodeCells,
     NodeCellsInv)
 
@@ -124,7 +124,7 @@ def quad_cell_nodes(
     node_cells_inv )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def quad_cell_adj(cell_nodes : CellNodes) -> tuple[CellAdj, CellAdjFace]:
+def quad_cell_adj(cell_nodes : CellNodes) -> tuple[CellAdj, CellAdjInv]:
   """Derives topological adjacency between quad. cells accross shared faces
 
   Parameters
@@ -136,7 +136,7 @@ def quad_cell_adj(cell_nodes : CellNodes) -> tuple[CellAdj, CellAdjFace]:
   -------
   cell_adj :
     Topological connectivity to other cells accross each face.
-  cell_adj_face :
+  cell_adj_inv :
     Topological order of the faces of each connected cell.
 
   """
@@ -208,12 +208,24 @@ def quad_cell_adj(cell_nodes : CellNodes) -> tuple[CellAdj, CellAdjFace]:
   orientation = np.any(cell_face_nodes[c1,f1] != cell_face_nodes[c0,f0], axis = 1)
 
   # set the corresponding index of the face and relative orientation to adjacent cell
-  cell_adj_face = np.empty((nc, 4), dtype = np.int8)
-  # default adjacent face is same face
-  cell_adj_face[:] = np.arange(4)[None,:]
-  # computed adjacent face
-  cell_adj_face[c0,f0] = f1 + 4*orientation
-  cell_adj_face[c1,f1] = f0 + 4*orientation
-  cell_adj_face = cell_adj_face.reshape(nc, 2, 2)
+  cell_adj_inv = np.empty((nc,4,2), dtype = np.int8)
+  cell_adj_order = np.empty((nc,4), dtype = np.int8)
 
-  return cell_adj, cell_adj_face
+  # default adjacent face is same face
+  cell_adj_inv[:,:,0] = np.repeat(np.arange(2), 2)[None,:]
+  cell_adj_inv[:,:,1] = np.tile(np.arange(2), 2)[None,:]
+
+
+  # computed adjacent face
+  cell_adj_inv[c0,f0,0] = f1 // 2
+  cell_adj_inv[c0,f0,1] = f1 % 2
+  cell_adj_order[c0,f0] = orientation
+
+  cell_adj_inv[c1,f1,0] = f0 // 2
+  cell_adj_inv[c1,f1,1] = f0 % 2
+  cell_adj_order[c1,f1] = orientation
+
+  cell_adj_inv = cell_adj_inv.reshape(nc, 2, 2, 2)
+  cell_adj_order = cell_adj_order.reshape(nc, 2, 2)
+
+  return cell_adj, cell_adj_inv, cell_adj_order

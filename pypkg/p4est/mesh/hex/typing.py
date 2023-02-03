@@ -101,11 +101,11 @@ Indexing is ``[cell, ∓axis0, ∓axis1, ∓axis2]``
 """
 
 CellAdj = NewType('CellAdj', np.ndarray[(NC, 3, 2), np.dtype[np.integer]])
-r"""Topological connectivity to other cells accross each face,
+r"""Topological connectivity to other cells across each face,
 cell :math:`\in` :class:`~p4est.typing.NC` ⟶ *cell*
 :math:`\in` :class:`~p4est.typing.NC`.
 
-Indexing is ``[cell, (axis0, axis1, axis2), ∓{axis0|axis1|axis2}]``
+Indexing is ``[cell, (axis0, axis1, axis2), ∓axis{0|1|2}]``
 
 .. code-block::
 
@@ -119,11 +119,27 @@ Indexing is ``[cell, (axis0, axis1, axis2), ∓{axis0|axis1|axis2}]``
   cell_adj[:,2,1] ⟶ face_axis2(+axis2)
 """
 
-CellAdjFace = NewType('CellAdjFace', np.ndarray[(NC, 3, 2), np.dtype[np.integer]])
-r"""Topological order of the faces of each connected cell,
-cell :math:`\in` :class:`~p4est.typing.NC` ⟶ *cell-face* :math:`\in [0,11]`
+CellAdjInv = NewType('CellAdjInv', np.ndarray[(NC, 3, 2, 2), np.dtype[np.integer]])
+r"""Mapping to the shared face back to cell :math:`\in` :class:`~p4est.typing.NC`
+⟶ *cell-face* :math:`\in [0,2]\times[0,1]`
 
-Indexing is ``[cell, (axis0, axis1, axis2), ∓(axis0|axis1|axis2)]``
+Indexing is ``[cell, (axis0, axis1, axis2), ∓axis{0|1|2}, (face_axis{0|1|2}, ∓axis{0|1|2})]``
+
+
+.. code-block:: python
+
+  # convert to 'z-order' index
+  tree_to_face = (
+    2 * cell_adj_inv[:,:,:,0]
+    + cell_adj_inv[:,:,:,1]
+    + 6*cell_adj_order ).reshape(-1,6)
+"""
+
+CellAdjOrder = NewType('CellAdjOrder', np.ndarray[(NC, 3, 2), np.dtype[np.integer]])
+r"""Topological order of the faces of each connected cell,
+cell :math:`\in` :class:`~p4est.typing.NC` ⟶ *order* :math:`\in [0,3]`
+
+Indexing is ``[cell, (axis0, axis1, axis2), ∓axis{0|1|2}]``
 """
 
 CellNodes = NewType('CellNodes', np.ndarray[(NC,2,2,2), np.dtype[np.integer]])
@@ -168,7 +184,7 @@ r"""Number of edges incident upon each node ("valence" of node).
 CellEdges = NewType('CellEdges', np.ndarray[(NC, 3, 2, 2), np.dtype[np.integer]])
 r"""Mapping cell :math:`\in` :class:`~p4est.typing.NC` ⟶ edge :math:`\in` :class:`~p4est.typing.NE`
 
-Indexing is ``[cell, (axis0, axis1, axis2), ∓{axis1|axis0|axis0}, ∓{axis2|axis2|axis1}]``
+Indexing is ``[cell, (axis0, axis1, axis2), ∓axis{1|0|0}, ∓axis{2|2|1}]``
 
 .. code-block::
 
@@ -197,7 +213,7 @@ Indexing is ``[edge, cell]``
 EdgeCellsInv = NewType('EdgeCellsInv', jagged_array[NE, np.ndarray[(M,3), np.dtype[np.integer]]])
 r"""Mapping edge :math:`\in` :class:`~p4est.typing.NE` ⟶ *cell-edge* :math:`\in [0,2]\times[0,1]^2`
 
-Indexing is ``[edge, cell, (edge_axis0, ∓axis1, ∓axis2)]``
+Indexing is ``[edge, cell, (edge_axis{0|1|2}, ∓axis{1|0|0}, ∓axis{2|2|1})]``
 """
 
 EdgeCellCounts = NewType('EdgeCellCounts', np.ndarray[NE, np.dtype[np.integer]])
